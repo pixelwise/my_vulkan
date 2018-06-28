@@ -1,0 +1,7 @@
+export VULKAN_SDK=/opt/vulkan
+export PATH=$VULKAN_SDK/bin:$PATH
+export VK_ICD_FILENAMES=$VULKAN_SDK/etc/vulkan/icd.d/MoltenVK_icd.json
+export VK_LAYER_PATH=$VULKAN_SDK/etc/vulkan/explicit_layers.d
+export DYLD_LIBRARY_PATH=$VULKAN_SDK/lib:$DYLD_LIBRARY_PATH
+export VULKAN_FRAMEWORK_PATH=$VULKAN_SDK/Frameworks
+export DYLD_FRAMEWORK_PATH=$VULKAN_FRAMEWORK_PATH:$DYLD_FRAMEWORK_PATH
