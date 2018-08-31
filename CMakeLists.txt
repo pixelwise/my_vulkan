@@ -1,19 +1,19 @@
-cmake_minimum_required(VERSION 3.11)
+project(vulkanHelloWorld)
+cmake_minimum_required(VERSION 3.10)
 
-project (vulkan_tests)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++11  " )
 
-find_package(glfw3 3.2 REQUIRED)
+add_executable(${PROJECT_NAME} glfw_vulkan_test.cpp)
 
-add_executable(glfw_vulkan_test
-    glfw_vulkan_test.cpp
-)
+find_package(Vulkan REQUIRED)
+find_package(glfw3 3.3 REQUIRED)
 
-target_include_directories(glfw_vulkan_test
-    PRIVATE
-    "/opt/vulkan/include"
-)
+if (USE_ASAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+endif()
 
-target_link_libraries(glfw_vulkan_test
-    glfw
-    "/opt/vulkan/lib/libvulkan.dylib"
-)
+if (VULKAN_FOUND)
+    message(STATUS "Found Vulkan, Including and Linking now")
+    include_directories(${Vulkan_INCLUDE_DIRS})
+    target_link_libraries (${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw)
+endif (VULKAN_FOUND)
