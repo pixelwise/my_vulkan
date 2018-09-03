@@ -133,7 +133,13 @@ struct swap_chain_t
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
+    VkExtent2D extent;
+};
+
+struct pipeline_t
+{
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
 };
 
 class HelloTriangleApplication {
@@ -172,8 +178,7 @@ private:
 
     VkRenderPass renderPass;
     VkDescriptorSetLayout descriptorSetLayout;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
+    pipeline_t graphicsPipeline;
 
     VkCommandPool commandPool;
 
@@ -242,9 +247,14 @@ private:
         logical_device = createLogicalDevice(physicalDevice, surface, validationLayers, deviceExtensions);
         swap_chain = createSwapChain(physicalDevice, logical_device.device, surface, window);
         swapChainImageViews = createImageViews(logical_device.device, swap_chain);
-        createRenderPass(logical_device.device);
-        createDescriptorSetLayout(logical_device.device);
-        createGraphicsPipeline(logical_device.device);
+        renderPass = createRenderPass(logical_device.device, swap_chain.swapChainImageFormat, findDepthFormat());
+        descriptorSetLayout = createDescriptorSetLayout(logical_device.device);
+        graphicsPipeline = createGraphicsPipeline(
+            logical_device.device,
+            swap_chain.extent,
+            renderPass,
+            descriptorSetLayout
+        );
         createCommandPool(logical_device.device);
         createDepthResources(logical_device);
         createFramebuffers(logical_device.device);
@@ -282,8 +292,8 @@ private:
 
         vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
+        vkDestroyPipelineLayout(device, graphicsPipeline.layout, nullptr);
         vkDestroyRenderPass(device, renderPass, nullptr);
 
         for (auto imageView : swapChainImageViews) {
@@ -353,8 +363,13 @@ private:
 
         createSwapChain(physicalDevice, logical_device.device, surface, window);
         createImageViews(logical_device.device, swap_chain);
-        createRenderPass(logical_device.device);
-        createGraphicsPipeline(logical_device.device);
+        createRenderPass(logical_device.device, swap_chain.swapChainImageFormat, findDepthFormat());
+        graphicsPipeline = createGraphicsPipeline(
+            logical_device.device,
+            swap_chain.extent,
+            renderPass,
+            descriptorSetLayout
+        );
         createDepthResources(logical_device);
         createFramebuffers(logical_device.device);
         createCommandBuffers(logical_device.device);
@@ -550,7 +565,7 @@ private:
         vkGetSwapchainImagesKHR(device, result.swapChain, &imageCount, result.swapChainImages.data());
 
         result.swapChainImageFormat = surfaceFormat.format;
-        result.swapChainExtent = extent;
+        result.extent = extent;
         return result;
     }
 
@@ -569,10 +584,10 @@ private:
         return swapChainImageViews;
     }
 
-    void createRenderPass(VkDevice device)
+    static VkRenderPass createRenderPass(VkDevice device, VkFormat image_format, VkFormat depth_format)
     {
         VkAttachmentDescription colorAttachment = {};
-        colorAttachment.format = swap_chain.swapChainImageFormat;
+        colorAttachment.format = image_format;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -582,7 +597,7 @@ private:
         colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
         VkAttachmentDescription depthAttachment = {};
-        depthAttachment.format = findDepthFormat();
+        depthAttachment.format = depth_format;
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -623,11 +638,13 @@ private:
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies = &dependency;
 
+        VkRenderPass renderPass;
         if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
             throw std::runtime_error("failed to create render pass!");
+        return renderPass;
     }
 
-    void createDescriptorSetLayout(VkDevice device)
+    static VkDescriptorSetLayout createDescriptorSetLayout(VkDevice device)
     {
         VkDescriptorSetLayoutBinding uboLayoutBinding = {};
         uboLayoutBinding.binding = 0;
@@ -648,12 +665,18 @@ private:
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
-
+        VkDescriptorSetLayout descriptorSetLayout;
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
             throw std::runtime_error("failed to create descriptor set layout!");
+        return descriptorSetLayout;
     }
 
-    void createGraphicsPipeline(VkDevice device)
+    static pipeline_t createGraphicsPipeline(
+        VkDevice device,
+        VkExtent2D extent,
+        VkRenderPass render_pass,
+        VkDescriptorSetLayout descriptor_set_layout
+    )
     {
         auto vertShaderCode = readFile("shaders/26_shader_depth.vert.spv");
         auto fragShaderCode = readFile("shaders/26_shader_depth.frag.spv");
@@ -694,14 +717,14 @@ private:
         VkViewport viewport = {};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = (float) swap_chain.swapChainExtent.width;
-        viewport.height = (float) swap_chain.swapChainExtent.height;
+        viewport.width = (float) extent.width;
+        viewport.height = (float) extent.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 
         VkRect2D scissor = {};
         scissor.offset = {0, 0};
-        scissor.extent = swap_chain.swapChainExtent;
+        scissor.extent = extent;
 
         VkPipelineViewportStateCreateInfo viewportState = {};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -751,9 +774,10 @@ private:
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout;
 
-        if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        pipeline_t result;
+        if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &result.layout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
         }
 
@@ -768,17 +792,17 @@ private:
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.layout = pipelineLayout;
-        pipelineInfo.renderPass = renderPass;
+        pipelineInfo.layout = result.layout;
+        pipelineInfo.renderPass = render_pass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+        if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &result.pipeline) != VK_SUCCESS)
             throw std::runtime_error("failed to create graphics pipeline!");
-        }
 
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
+        return result;
     }
 
     void createFramebuffers(VkDevice device)
@@ -796,8 +820,8 @@ private:
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = swap_chain.swapChainExtent.width;
-            framebufferInfo.height = swap_chain.swapChainExtent.height;
+            framebufferInfo.width = swap_chain.extent.width;
+            framebufferInfo.height = swap_chain.extent.height;
             framebufferInfo.layers = 1;
 
             if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
@@ -824,8 +848,8 @@ private:
         createImage(
             logical_device.device,
             physicalDevice,
-            swap_chain.swapChainExtent.width,
-            swap_chain.swapChainExtent.height,
+            swap_chain.extent.width,
+            swap_chain.extent.height,
             depthFormat,
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -1421,7 +1445,7 @@ private:
             renderPassInfo.renderPass = renderPass;
             renderPassInfo.framebuffer = swapChainFramebuffers[i];
             renderPassInfo.renderArea.offset = {0, 0};
-            renderPassInfo.renderArea.extent = swap_chain.swapChainExtent;
+            renderPassInfo.renderArea.extent = swap_chain.extent;
 
             std::array<VkClearValue, 2> clearValues = {};
             clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -1432,7 +1456,7 @@ private:
 
             vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-                vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+                vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
 
                 VkBuffer vertexBuffers[] = {vertexBuffer};
                 VkDeviceSize offsets[] = {0};
@@ -1440,7 +1464,14 @@ private:
 
                 vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
+                vkCmdBindDescriptorSets(
+                    commandBuffers[i],
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    graphicsPipeline.layout,
+                    0, 1,
+                    &descriptorSets[i],
+                    0, nullptr
+                );
 
                 vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
@@ -1485,7 +1516,7 @@ private:
         UniformBufferObject ubo = {};
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), swap_chain.swapChainExtent.width / (float) swap_chain.swapChainExtent.height, 0.1f, 10.0f);
+        ubo.proj = glm::perspective(glm::radians(45.0f), swap_chain.extent.width / (float) swap_chain.extent.height, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
 
         void* data;
@@ -1557,7 +1588,7 @@ private:
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
-    VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code)
+    static VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code)
     {
         VkShaderModuleCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
