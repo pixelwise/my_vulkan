@@ -65,7 +65,7 @@ void vk_require(VkResult retcode, const char* why)
     }
 }
 
-VkInstance createInstance(
+VkInstance create_instance(
     std::vector<const char*> validationLayers = {}
 )
 {
@@ -89,12 +89,10 @@ VkInstance createInstance(
     createInfo.enabledExtensionCount = glfwExtensionCount;
     createInfo.ppEnabledExtensionNames = glfwExtensions;
     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-    createInfo.ppEnabledLayerNames = validationLayers.data();
+    createInfo.ppEnabledLayerNames = validationLayers.empty() ? 0 : validationLayers.data();
     std::cout << "extensions:" << std::endl;
     for (size_t i = 0; i < glfwExtensionCount; ++i)
-        std::cout << "- " << glfwExtensions[i] << std::endl;
-
-    createInfo.enabledLayerCount = 0;
+        std::cout << " - " << glfwExtensions[i] << std::endl;
     vk_require(vkCreateInstance(&createInfo, nullptr, &instance), "vk instance");
     return instance;
 }
@@ -191,7 +189,31 @@ bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface)
     return indices.isComplete();
 }
 
-VkPhysicalDevice pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
+struct vk_version_t
+{
+    uint32_t data;
+};
+
+template<typename ostream_t>
+ostream_t& operator<<(ostream_t& os, vk_version_t v)
+{
+    return os << VK_VERSION_MAJOR(v.data) << "." << VK_VERSION_MINOR(v.data) << "." << VK_VERSION_PATCH(v.data);
+}
+
+
+void describe_device(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(device, &properties);
+    std::cout
+        << "device '" << properties.deviceName << "'" << std::endl
+        << "- api " << vk_version_t{properties.apiVersion} << std::endl
+        << "- driver " << vk_version_t{properties.driverVersion} << std::endl
+        << "- vendor " << properties.vendorID << std::endl
+    ;
+}
+
+VkPhysicalDevice pick_physical_device(VkInstance instance, VkSurfaceKHR surface)
 {
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     uint32_t deviceCount = 0;
@@ -201,6 +223,7 @@ VkPhysicalDevice pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
     for (const auto& device : devices)
     {
+        describe_device(device);
         if (isDeviceSuitable(device, surface))
         {
             physicalDevice = device;
@@ -218,14 +241,14 @@ struct logical_device_info_t
     VkQueue presentQueue;
 };
 
-logical_device_info_t createLogicalDevice(
+logical_device_info_t create_logical_device(
     VkPhysicalDevice physicalDevice,
     VkSurfaceKHR surface,
     std::vector<const char*> validationLayers = {}
 )
 {
     VkDevice device;
-    VkQueue graphicsQueue, presentQueue;
+    VkQueue graphicsQueue = 0, presentQueue = 0;
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -257,7 +280,9 @@ logical_device_info_t createLogicalDevice(
 
     vk_require(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device), "logical device");
     vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
+    require(graphicsQueue, "graphics queue");
     vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
+    require(presentQueue, "present queue");
     return {device, graphicsQueue, presentQueue};
 }
 
@@ -372,7 +397,6 @@ swap_chain_info_t create_swap_chain(
 )
 {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
-
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, actualExtent);
@@ -386,9 +410,10 @@ swap_chain_info_t create_swap_chain(
 
     VkSwapchainCreateInfoKHR createInfo = {};
     memset(&createInfo, 0, sizeof(createInfo));
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface;
 
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.flags = 0;
+    createInfo.surface = surface;
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -405,9 +430,9 @@ swap_chain_info_t create_swap_chain(
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
         std::cout << "> concurrent queues" << std::endl;
     } else {
+        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         createInfo.queueFamilyIndexCount = 1;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         std::cout << "> exclusive queues" << std::endl;
     }
 
@@ -415,9 +440,29 @@ swap_chain_info_t create_swap_chain(
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
-
     createInfo.oldSwapchain = VK_NULL_HANDLE;
-
+/*
+typedef struct VkSwapchainCreateInfoKHR {
+    VkStructureType                  sType;
+    const void*                      pNext;
+    VkSwapchainCreateFlagsKHR        flags;
+    VkSurfaceKHR                     surface;
+    uint32_t                         minImageCount;
+    VkFormat                         imageFormat;
+    VkColorSpaceKHR                  imageColorSpace;
+    VkExtent2D                       imageExtent;
+    uint32_t                         imageArrayLayers;
+    VkImageUsageFlags                imageUsage;
+    VkSharingMode                    imageSharingMode;
+    uint32_t                         queueFamilyIndexCount;
+    const uint32_t*                  pQueueFamilyIndices;
+    VkSurfaceTransformFlagBitsKHR    preTransform;
+    VkCompositeAlphaFlagBitsKHR      compositeAlpha;
+    VkPresentModeKHR                 presentMode;
+    VkBool32                         clipped;
+    VkSwapchainKHR                   oldSwapchain;
+} VkSwapchainCreateInfoKHR;
+*/
     swap_chain_info_t result;
     result.image_format = surfaceFormat.format;
     vk_require(vkCreateSwapchainKHR(device, &createInfo, nullptr, &result.swap_chain), "swap chain");
@@ -460,16 +505,16 @@ std::vector<VkImageView> create_image_views(
 int main()
 {
     std::vector<const char*> validationLayers = {
-        "VK_LAYER_LUNARG_standard_validation"
+        //"VK_LAYER_LUNARG_standard_validation"
     };
     require(glfwInit(), "glfw init");
     require(glfwVulkanSupported(), "vulkan support");
-    auto instance = createInstance(validationLayers);
+    auto instance = create_instance(validationLayers);
     auto window = make_window(800, 600);
     auto surface = create_surface(instance, window);
-    auto callback = setupDebugCallback(instance);
-    auto device = pickPhysicalDevice(instance, surface);
-    auto logical = createLogicalDevice(device, surface, validationLayers);
+    //auto callback = setupDebugCallback(instance);
+    auto device = pick_physical_device(instance, surface);
+    auto logical = create_logical_device(device, surface, validationLayers);
     auto swap_chain = create_swap_chain(device, logical.device, surface, {800, 600});
     auto image_views = create_image_views(logical.device, swap_chain.images, swap_chain.image_format);
     mainLoop(window);
