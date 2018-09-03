@@ -121,6 +121,13 @@ const std::vector<uint16_t> indices = {
     4, 5, 6, 6, 7, 4
 };
 
+struct logical_device_t
+{
+    VkDevice device;
+    VkQueue graphicsQueue;
+    VkQueue presentQueue;  
+};
+
 class HelloTriangleApplication {
 public:
     HelloTriangleApplication()
@@ -147,10 +154,8 @@ private:
     VkSurfaceKHR surface;
 
     VkPhysicalDevice physicalDevice;
-    VkDevice device;
 
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
+    logical_device_t logical_device;
 
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
@@ -228,8 +233,8 @@ private:
         callback = setupDebugCallback(instance);
         surface = createSurface(instance, window);
         physicalDevice = pickPhysicalDevice(instance, surface, deviceExtensions);
-        createLogicalDevice(validationLayers, deviceExtensions);
-        createSwapChain();
+        logical_device = createLogicalDevice(physicalDevice, surface, validationLayers, deviceExtensions);
+        createSwapChain(logical_device.device);
         createImageViews();
         createRenderPass();
         createDescriptorSetLayout();
@@ -250,69 +255,70 @@ private:
     }
 
     void mainLoop() {
-        while (!glfwWindowShouldClose(window)) {
+        while (!glfwWindowShouldClose(window))
+        {
             glfwPollEvents();
-            drawFrame();
+            drawFrame(logical_device.device);
         }
 
-        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(logical_device.device);
     }
 
     void cleanupSwapChain() {
-        vkDestroyImageView(device, depthImageView, nullptr);
-        vkDestroyImage(device, depthImage, nullptr);
-        vkFreeMemory(device, depthImageMemory, nullptr);
+        vkDestroyImageView(logical_device.device, depthImageView, nullptr);
+        vkDestroyImage(logical_device.device, depthImage, nullptr);
+        vkFreeMemory(logical_device.device, depthImageMemory, nullptr);
 
         for (auto framebuffer : swapChainFramebuffers) {
-            vkDestroyFramebuffer(device, framebuffer, nullptr);
+            vkDestroyFramebuffer(logical_device.device, framebuffer, nullptr);
         }
 
-        vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+        vkFreeCommandBuffers(logical_device.device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyRenderPass(device, renderPass, nullptr);
+        vkDestroyPipeline(logical_device.device, graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(logical_device.device, pipelineLayout, nullptr);
+        vkDestroyRenderPass(logical_device.device, renderPass, nullptr);
 
         for (auto imageView : swapChainImageViews) {
-            vkDestroyImageView(device, imageView, nullptr);
+            vkDestroyImageView(logical_device.device, imageView, nullptr);
         }
 
-        vkDestroySwapchainKHR(device, swapChain, nullptr);
+        vkDestroySwapchainKHR(logical_device.device, swapChain, nullptr);
     }
 
     void cleanup() {
         cleanupSwapChain();
 
-        vkDestroySampler(device, textureSampler, nullptr);
-        vkDestroyImageView(device, textureImageView, nullptr);
+        vkDestroySampler(logical_device.device, textureSampler, nullptr);
+        vkDestroyImageView(logical_device.device, textureImageView, nullptr);
 
-        vkDestroyImage(device, textureImage, nullptr);
-        vkFreeMemory(device, textureImageMemory, nullptr);
+        vkDestroyImage(logical_device.device, textureImage, nullptr);
+        vkFreeMemory(logical_device.device, textureImageMemory, nullptr);
 
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+        vkDestroyDescriptorPool(logical_device.device, descriptorPool, nullptr);
 
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+        vkDestroyDescriptorSetLayout(logical_device.device, descriptorSetLayout, nullptr);
 
         for (size_t i = 0; i < swapChainImages.size(); i++) {
-            vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-            vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+            vkDestroyBuffer(logical_device.device, uniformBuffers[i], nullptr);
+            vkFreeMemory(logical_device.device, uniformBuffersMemory[i], nullptr);
         }
 
-        vkDestroyBuffer(device, indexBuffer, nullptr);
-        vkFreeMemory(device, indexBufferMemory, nullptr);
+        vkDestroyBuffer(logical_device.device, indexBuffer, nullptr);
+        vkFreeMemory(logical_device.device, indexBufferMemory, nullptr);
 
-        vkDestroyBuffer(device, vertexBuffer, nullptr);
-        vkFreeMemory(device, vertexBufferMemory, nullptr);
+        vkDestroyBuffer(logical_device.device, vertexBuffer, nullptr);
+        vkFreeMemory(logical_device.device, vertexBufferMemory, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(device, inFlightFences[i], nullptr);
+            vkDestroySemaphore(logical_device.device, renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(logical_device.device, imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(logical_device.device, inFlightFences[i], nullptr);
         }
 
-        vkDestroyCommandPool(device, commandPool, nullptr);
+        vkDestroyCommandPool(logical_device.device, commandPool, nullptr);
 
-        vkDestroyDevice(device, nullptr);
+        vkDestroyDevice(logical_device.device, nullptr);
 
         if (enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(instance, callback, nullptr);
@@ -326,18 +332,19 @@ private:
         glfwTerminate();
     }
 
-    void recreateSwapChain() {
+    void recreateSwapChain(VkDevice device)
+    {
         int width = 0, height = 0;
         while (width == 0 || height == 0) {
             glfwGetFramebufferSize(window, &width, &height);
             glfwWaitEvents();
         }
 
-        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(logical_device.device);
 
         cleanupSwapChain();
 
-        createSwapChain();
+        createSwapChain(device);
         createImageViews();
         createRenderPass();
         createGraphicsPipeline();
@@ -430,7 +437,9 @@ private:
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 
-    void createLogicalDevice(
+    static logical_device_t createLogicalDevice(
+        VkPhysicalDevice physicalDevice,
+        VkSurfaceKHR surface,
         std::vector<const char*> validationLayers,
         std::vector<const char*> deviceExtensions
     ) 
@@ -471,15 +480,16 @@ private:
             createInfo.enabledLayerCount = 0;
         }
 
-        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+        logical_device_t result;
+        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &result.device) != VK_SUCCESS)
             throw std::runtime_error("failed to create logical device!");
-        }
-
-        vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
-        vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
+        vkGetDeviceQueue(result.device, indices.graphicsFamily, 0, &result.graphicsQueue);
+        vkGetDeviceQueue(result.device, indices.presentFamily, 0, &result.presentQueue);
+        return result;
     }
 
-    void createSwapChain() {
+    void createSwapChain(VkDevice device)
+    {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -1311,14 +1321,16 @@ private:
         vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
     }
 
-    void drawFrame() {
+    void drawFrame(VkDevice device)
+    {
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            recreateSwapChain();
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            recreateSwapChain(device);
             return;
         } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             throw std::runtime_error("failed to acquire swap chain image!");
