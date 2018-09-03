@@ -47,6 +47,10 @@ add_executable(tutorial_22 22_descriptor_sets.cpp)
 add_dependencies(tutorial_22 Shaders)
 target_link_libraries (tutorial_22 ${Vulkan_LIBRARIES} glfw)
 
+add_executable(tutorial_26 26_depth_buffering.cpp)
+add_dependencies(tutorial_26 Shaders)
+target_link_libraries (tutorial_26 ${Vulkan_LIBRARIES} glfw)
+
 add_executable(tutorial_29 29_multisampling.cpp)
 add_dependencies(tutorial_29 Shaders)
 target_link_libraries (tutorial_29 ${Vulkan_LIBRARIES} glfw)
