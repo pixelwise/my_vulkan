@@ -142,6 +142,13 @@ struct pipeline_t
     VkPipelineLayout layout;
 };
 
+struct image_t
+{
+    VkImage image;
+    VkDeviceMemory memory;
+    VkFormat format;
+};
+
 class HelloTriangleApplication {
 public:
     HelloTriangleApplication()
@@ -167,7 +174,7 @@ private:
     VkDebugUtilsMessengerEXT callback;
     VkSurfaceKHR surface;
 
-    VkPhysicalDevice physicalDevice;
+    VkPhysicalDevice physical_device;
 
     logical_device_t logical_device;
 
@@ -182,12 +189,10 @@ private:
 
     VkCommandPool commandPool;
 
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
+    image_t depth_image;
     VkImageView depthImageView;
 
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
+    image_t texture_image;
     VkImageView textureImageView;
     VkSampler textureSampler;
 
@@ -243,9 +248,9 @@ private:
         instance = createInstance(validationLayers);
         callback = setupDebugCallback(instance);
         surface = createSurface(instance, window);
-        physicalDevice = pickPhysicalDevice(instance, surface, deviceExtensions);
-        logical_device = createLogicalDevice(physicalDevice, surface, validationLayers, deviceExtensions);
-        swap_chain = createSwapChain(physicalDevice, logical_device.device, surface, window);
+        physical_device = pickPhysicalDevice(instance, surface, deviceExtensions);
+        logical_device = createLogicalDevice(physical_device, surface, validationLayers, deviceExtensions);
+        swap_chain = createSwapChain(physical_device, logical_device.device, surface, window);
         swapChainImageViews = createImageViews(logical_device.device, swap_chain);
         renderPass = createRenderPass(logical_device.device, swap_chain.swapChainImageFormat, findDepthFormat());
         descriptorSetLayout = createDescriptorSetLayout(logical_device.device);
@@ -255,10 +260,22 @@ private:
             renderPass,
             descriptorSetLayout
         );
-        createCommandPool(logical_device.device);
-        createDepthResources(logical_device);
+        commandPool = createCommandPool(physical_device, logical_device.device, surface);
+        depth_image = createDepthResources(
+            physical_device,
+            logical_device,
+            commandPool,
+            findDepthFormat(),
+            swap_chain.extent
+        );
+        depthImageView = createImageView(
+            logical_device.device,
+            depth_image.image,
+            depth_image.format,
+            VK_IMAGE_ASPECT_DEPTH_BIT
+        );
         createFramebuffers(logical_device.device);
-        createTextureImage(physicalDevice, logical_device);
+        texture_image = createTextureImage(physical_device, logical_device, commandPool);
         createTextureImageView(logical_device.device);
         createTextureSampler(logical_device.device);
         createVertexBuffer(logical_device);
@@ -283,8 +300,8 @@ private:
     void cleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain)
     {
         vkDestroyImageView(device, depthImageView, nullptr);
-        vkDestroyImage(device, depthImage, nullptr);
-        vkFreeMemory(device, depthImageMemory, nullptr);
+        vkDestroyImage(device, depth_image.image, nullptr);
+        vkFreeMemory(device, depth_image.memory, nullptr);
 
         for (auto framebuffer : swapChainFramebuffers) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -309,8 +326,8 @@ private:
         vkDestroySampler(logical_device.device, textureSampler, nullptr);
         vkDestroyImageView(logical_device.device, textureImageView, nullptr);
 
-        vkDestroyImage(logical_device.device, textureImage, nullptr);
-        vkFreeMemory(logical_device.device, textureImageMemory, nullptr);
+        vkDestroyImage(logical_device.device, texture_image.image, nullptr);
+        vkFreeMemory(logical_device.device, texture_image.memory, nullptr);
 
         vkDestroyDescriptorPool(logical_device.device, descriptorPool, nullptr);
 
@@ -361,7 +378,7 @@ private:
 
         cleanupSwapChain(logical_device.device, swap_chain.swapChain);
 
-        createSwapChain(physicalDevice, logical_device.device, surface, window);
+        createSwapChain(physical_device, logical_device.device, surface, window);
         createImageViews(logical_device.device, swap_chain);
         createRenderPass(logical_device.device, swap_chain.swapChainImageFormat, findDepthFormat());
         graphicsPipeline = createGraphicsPipeline(
@@ -370,7 +387,19 @@ private:
             renderPass,
             descriptorSetLayout
         );
-        createDepthResources(logical_device);
+        depth_image = createDepthResources(
+            physical_device,
+            logical_device,
+            commandPool,
+            findDepthFormat(),
+            swap_chain.extent
+        );
+        depthImageView = createImageView(
+            logical_device.device,
+            depth_image.image,
+            depth_image.format,
+            VK_IMAGE_ASPECT_DEPTH_BIT
+        );
         createFramebuffers(logical_device.device);
         createCommandBuffers(logical_device.device);
     }
@@ -460,13 +489,13 @@ private:
     }
 
     static logical_device_t createLogicalDevice(
-        VkPhysicalDevice physicalDevice,
+        VkPhysicalDevice physical_device,
         VkSurfaceKHR surface,
         std::vector<const char*> validationLayers,
         std::vector<const char*> deviceExtensions
     ) 
     {
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices indices = findQueueFamilies(physical_device, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<int> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
@@ -503,7 +532,7 @@ private:
         }
 
         logical_device_t result;
-        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &result.device) != VK_SUCCESS)
+        if (vkCreateDevice(physical_device, &createInfo, nullptr, &result.device) != VK_SUCCESS)
             throw std::runtime_error("failed to create logical device!");
         vkGetDeviceQueue(result.device, indices.graphicsFamily, 0, &result.graphicsQueue);
         vkGetDeviceQueue(result.device, indices.presentFamily, 0, &result.presentQueue);
@@ -511,13 +540,13 @@ private:
     }
 
     static swap_chain_t createSwapChain(
-        VkPhysicalDevice physicalDevice,
+        VkPhysicalDevice physical_device,
         VkDevice device,
         VkSurfaceKHR surface,
         GLFWwindow* window
     )
     {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physical_device, surface);
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -539,7 +568,7 @@ private:
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices indices = findQueueFamilies(physical_device, surface);
         uint32_t queueFamilyIndices[] = {(uint32_t) indices.graphicsFamily, (uint32_t) indices.presentFamily};
 
         if (indices.graphicsFamily != indices.presentFamily) {
@@ -829,48 +858,53 @@ private:
         }
     }
 
-    void createCommandPool(VkDevice device)
+    static VkCommandPool createCommandPool(VkPhysicalDevice physical_device, VkDevice device, VkSurfaceKHR surface)
     {
-        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physical_device, surface);
 
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
 
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+        VkCommandPool result;
+        if (vkCreateCommandPool(device, &poolInfo, nullptr, &result) != VK_SUCCESS)
             throw std::runtime_error("failed to create graphics command pool!");
-        }
+        return result;
     }
 
-    void createDepthResources(logical_device_t& logical_device)
+    static image_t createDepthResources(
+        VkPhysicalDevice physical_device,
+        logical_device_t& logical_device,
+        VkCommandPool commandPool,
+        VkFormat format,
+        VkExtent2D extent
+    )
     {
-        VkFormat depthFormat = findDepthFormat();
-        createImage(
+        image_t result = createImage(
             logical_device.device,
-            physicalDevice,
-            swap_chain.extent.width,
-            swap_chain.extent.height,
-            depthFormat,
+            physical_device,
+            extent.width,
+            extent.height,
+            format,
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            depthImage,
-            depthImageMemory
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
-        depthImageView = createImageView(
-            logical_device.device,
-            depthImage,
-            depthFormat,
-            VK_IMAGE_ASPECT_DEPTH_BIT
+        transitionImageLayout(
+            logical_device,
+            commandPool,
+            result.image,
+            format,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
         );
-
-        transitionImageLayout(logical_device, depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        return result;
     }
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
         for (VkFormat format : candidates) {
             VkFormatProperties props;
-            vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+            vkGetPhysicalDeviceFormatProperties(physical_device, format, &props);
 
             if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
                 return format;
@@ -890,13 +924,15 @@ private:
         );
     }
 
-    bool hasStencilComponent(VkFormat format) {
+    static bool hasStencilComponent(VkFormat format)
+    {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    void createTextureImage(
-        VkPhysicalDevice physicalDevice,
-        logical_device_t& logical_device
+    static image_t createTextureImage(
+        VkPhysicalDevice physical_device,
+        logical_device_t& logical_device,
+        VkCommandPool commandPool
     )
     {
         int texWidth, texHeight, texChannels;
@@ -910,7 +946,7 @@ private:
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         createBuffer(
-            physicalDevice,
+            physical_device,
             logical_device.device,
             imageSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -926,30 +962,50 @@ private:
 
         stbi_image_free(pixels);
 
-        createImage(
+        auto result = createImage(
             logical_device.device,
-            physicalDevice,
+            physical_device,
             texWidth,
             texHeight,
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            textureImage,
-            textureImageMemory
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         );
 
-        transitionImageLayout(logical_device, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyBufferToImage(logical_device, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-        transitionImageLayout(logical_device, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        transitionImageLayout(
+            logical_device,
+            commandPool,
+            result.image,
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        );
+        copyBufferToImage(
+            logical_device,
+            commandPool,
+            stagingBuffer,
+            result.image,
+            static_cast<uint32_t>(texWidth),
+            static_cast<uint32_t>(texHeight)
+        );
+        transitionImageLayout(
+            logical_device,
+            commandPool,
+            result.image,
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        );
 
         vkDestroyBuffer(logical_device.device, stagingBuffer, nullptr);
         vkFreeMemory(logical_device.device, stagingBufferMemory, nullptr);
+        return result;
     }
 
     void createTextureImageView(VkDevice device) 
     {
-        textureImageView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+        textureImageView = createImageView(device, texture_image.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
     void createTextureSampler(VkDevice device)
@@ -1000,17 +1056,15 @@ private:
         return imageView;
     }
 
-    void createImage(
+    static image_t createImage(
         VkDevice device,
-        VkPhysicalDevice physicalDevice,
+        VkPhysicalDevice physical_device,
         uint32_t width,
         uint32_t height,
         VkFormat format,
         VkImageTiling tiling,
         VkImageUsageFlags usage,
-        VkMemoryPropertyFlags properties,
-        VkImage& image,
-        VkDeviceMemory& imageMemory
+        VkMemoryPropertyFlags properties
     ) 
     {
         VkImageCreateInfo imageInfo = {};
@@ -1028,38 +1082,42 @@ private:
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+        image_t result;
+        result.format = format;
+        if (vkCreateImage(device, &imageInfo, nullptr, &result.image) != VK_SUCCESS) {
             throw std::runtime_error("failed to create image!");
         }
 
         VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(device, image, &memRequirements);
+        vkGetImageMemoryRequirements(device, result.image, &memRequirements);
 
         VkMemoryAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = findMemoryType(
-            physicalDevice,
+            physical_device,
             memRequirements.memoryTypeBits,
             properties
         );
 
-        if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+        if (vkAllocateMemory(device, &allocInfo, nullptr, &result.memory) != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate image memory!");
         }
 
-        vkBindImageMemory(device, image, imageMemory, 0);
+        vkBindImageMemory(device, result.image, result.memory, 0);
+        return result;
     }
 
-    void transitionImageLayout(
+    static void transitionImageLayout(
         logical_device_t& logical_device,
+        VkCommandPool commandPool,
         VkImage image,
         VkFormat format,
         VkImageLayout oldLayout,
         VkImageLayout newLayout
     ) 
     {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(logical_device.device);
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(logical_device.device, commandPool);
 
         VkImageMemoryBarrier barrier = {};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1118,18 +1176,19 @@ private:
             1, &barrier
         );
 
-        endSingleTimeCommands(logical_device, commandBuffer);
+        endSingleTimeCommands(logical_device, commandPool, commandBuffer);
     }
 
-    void copyBufferToImage(
+    static void copyBufferToImage(
         logical_device_t& logical_device,
+        VkCommandPool commandPool,
         VkBuffer buffer,
         VkImage image,
         uint32_t width,
         uint32_t height
     ) 
     {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(logical_device.device);
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(logical_device.device, commandPool);
 
         VkBufferImageCopy region = {};
         region.bufferOffset = 0;
@@ -1148,7 +1207,7 @@ private:
 
         vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        endSingleTimeCommands(logical_device, commandBuffer);
+        endSingleTimeCommands(logical_device, commandPool, commandBuffer);
     }
 
     void createVertexBuffer(logical_device_t& logical_device)
@@ -1158,7 +1217,7 @@ private:
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         createBuffer(
-            physicalDevice,
+            physical_device,
             logical_device.device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -1173,7 +1232,7 @@ private:
         vkUnmapMemory(logical_device.device, stagingBufferMemory);
 
         createBuffer(
-            physicalDevice,
+            physical_device,
             logical_device.device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -1195,7 +1254,7 @@ private:
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         createBuffer(
-            physicalDevice,
+            physical_device,
             logical_device.device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -1210,7 +1269,7 @@ private:
         vkUnmapMemory(logical_device.device, stagingBufferMemory);
 
         createBuffer(
-            physicalDevice,
+            physical_device,
             logical_device.device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -1234,7 +1293,7 @@ private:
 
         for (size_t i = 0; i < swap_chain.swapChainImages.size(); i++) {
             createBuffer(
-                physicalDevice,
+                physical_device,
                 device,
                 bufferSize,
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -1312,7 +1371,7 @@ private:
     }
 
     static void createBuffer(
-        VkPhysicalDevice physicalDevice,
+        VkPhysicalDevice physical_device,
         VkDevice device,
         VkDeviceSize size,
         VkBufferUsageFlags usage,
@@ -1338,7 +1397,7 @@ private:
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = findMemoryType(
-            physicalDevice,
+            physical_device,
             memRequirements.memoryTypeBits,
             properties
         );
@@ -1350,7 +1409,7 @@ private:
         vkBindBufferMemory(device, buffer, bufferMemory, 0);
     }
 
-    VkCommandBuffer beginSingleTimeCommands(VkDevice device)
+    static VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool)
     {
         VkCommandBufferAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1370,7 +1429,11 @@ private:
         return commandBuffer;
     }
 
-    void endSingleTimeCommands(logical_device_t& logical_device, VkCommandBuffer commandBuffer)
+    static void endSingleTimeCommands(
+        logical_device_t& logical_device,
+        VkCommandPool commandPool,
+        VkCommandBuffer commandBuffer
+    )
     {
         vkEndCommandBuffer(commandBuffer);
 
@@ -1391,23 +1454,23 @@ private:
         VkDeviceSize size
     ) 
     {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(logical_device.device);
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(logical_device.device, commandPool);
 
         VkBufferCopy copyRegion = {};
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(logical_device, commandBuffer);
+        endSingleTimeCommands(logical_device, commandPool, commandBuffer);
     }
 
     static uint32_t findMemoryType(
-        VkPhysicalDevice physicalDevice,
+        VkPhysicalDevice physical_device,
         uint32_t typeFilter,
         VkMemoryPropertyFlags properties
     )
     {
         VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+        vkGetPhysicalDeviceMemoryProperties(physical_device, &memProperties);
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
             if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
                 return i;
