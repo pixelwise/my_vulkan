@@ -26,6 +26,15 @@ const int HEIGHT = 600;
 
 const int MAX_FRAMES_IN_FLIGHT = 3;
 
+// so...
+// need like 1 swap chain and stuff
+// and then per renderer one graphics pipeline i guess
+// and fill the command buffer with draw commands and stuff...
+// so those are my main top-level primitives
+// - swap chain
+// - graphics pipeline
+// -- command buffer
+
 void vk_require(VkResult result, const char* description)
 {
     if (result != VK_SUCCESS)
@@ -1187,6 +1196,7 @@ private:
 
     void recreateSwapChain(device_t& logical_device)
     {
+        std::cout << "recreating swap chain" << std::endl;
         int width = 0, height = 0;
         while (width == 0 || height == 0) {
             glfwGetFramebufferSize(window, &width, &height);
@@ -1354,7 +1364,10 @@ private:
         fragShaderStageInfo.module = fragShaderModule;
         fragShaderStageInfo.pName = "main";
 
-        VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+        VkPipelineShaderStageCreateInfo shaderStages[] = {
+            vertShaderStageInfo,
+            fragShaderStageInfo
+        };
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -2143,8 +2156,6 @@ private:
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        updateUniformBuffer(logical_device.get(), imageIndex);
-
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -2162,6 +2173,8 @@ private:
         submitInfo.pSignalSemaphores = signalSemaphores;
 
         sync.inFlight.reset();
+
+        updateUniformBuffer(logical_device.get(), imageIndex);
 
         vk_require(
             vkQueueSubmit(
@@ -2192,7 +2205,6 @@ private:
             framebufferResized
         )
         {
-            std::cout << "recreating swap chain" << std::endl;
             framebufferResized = false;
             recreateSwapChain(logical_device);
         }
