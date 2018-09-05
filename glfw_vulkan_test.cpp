@@ -26,11 +26,45 @@ const int HEIGHT = 600;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = false;
-#endif
+std::vector<const char*> getRequiredExtensions(bool enableValidationLayers)
+{
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    std::vector<const char*> extensions(
+        glfwExtensions,
+        glfwExtensions + glfwExtensionCount
+    );
+    if (enableValidationLayers)
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    return extensions;
+}
+
+bool checkValidationLayerSupport(std::vector<const char*> validationLayers)
+{
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validationLayers) {
+        bool layerFound = false;
+
+        for (const auto& layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 VkResult CreateDebugUtilsMessengerEXT(
     VkInstance instance,
@@ -279,6 +313,87 @@ uint32_t findMemoryType(
 
     throw std::runtime_error("failed to find suitable memory type!");
 }
+
+struct instance_t
+{
+    instance_t(
+        const std::string& name = "vulkan",
+        std::vector<const char*> validationLayers = {}
+    )
+    {
+        if (!checkValidationLayerSupport(validationLayers))
+            throw std::runtime_error("validation layers requested, but not available!");
+        VkApplicationInfo appInfo = {};
+        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        appInfo.pApplicationName = name.c_str();
+        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.pEngineName = "No Engine";
+        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.apiVersion = VK_API_VERSION_1_0;
+        VkInstanceCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        createInfo.pApplicationInfo = &appInfo;
+        auto extensions = getRequiredExtensions(!validationLayers.empty());
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+        createInfo.ppEnabledExtensionNames = extensions.data();
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+        if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS)
+            throw std::runtime_error("failed to create instance!");
+    }
+    instance_t(const instance_t&) = delete;
+    instance_t(instance_t&& other) noexcept
+    {
+        *this = std::move(other);
+    }
+    instance_t& operator=(const instance_t& other) = delete;
+    instance_t& operator=(instance_t&& other) noexcept
+    {
+        cleanup();
+        std::swap(_instance, other._instance);
+        return *this;
+    }
+    VkInstance get()
+    {
+        return _instance;
+    }
+    ~instance_t()
+    {
+        cleanup();
+    }
+private:
+    void cleanup()
+    {
+        if (_instance)
+        {
+            vkDestroyInstance(_instance, 0);
+            _instance = 0;
+        }
+    }
+    VkInstance _instance{0};
+};
+
+struct surface_t
+{
+    surface_t(VkInstance instance, GLFWwindow* window)
+    : _instance{instance}
+    {
+        if (glfwCreateWindowSurface(instance, window, nullptr, &_surface) != VK_SUCCESS)
+            throw std::runtime_error("failed to create window surface!");
+    }
+    ~surface_t()
+    {
+        vkDestroySurfaceKHR(_instance, _surface, 0);
+    }
+    surface_t(const surface_t& other) = delete;
+    surface_t(surface_t&& other) = delete;
+    surface_t& operator=(const surface_t& other) = delete;
+    surface_t& operator=(surface_t&& other) = delete;
+    VkSurfaceKHR get() {return _surface;}
+private:
+    VkInstance _instance;
+    VkSurfaceKHR _surface;
+};
 
 struct logical_device_t
 {
@@ -695,129 +810,34 @@ private:
 class HelloTriangleApplication {
 public:
     HelloTriangleApplication()
-    {
-        window = initWindow(this);        
-        initVulkan();
+    : window{initWindow(this)}
+    , validationLayers{
+        //"VK_LAYER_LUNARG_standard_validation"        
     }
-    
-    void run()
-    {
-        mainLoop();
-    }
-
-    ~HelloTriangleApplication()
-    {
-        cleanup();        
-    }
-
-private:
-    GLFWwindow* window;
-
-    VkInstance instance;
-    VkDebugUtilsMessengerEXT callback;
-    VkSurfaceKHR surface;
-
-    VkPhysicalDevice physical_device;
-
-    logical_device_t logical_device;
-
-    std::unique_ptr<swap_chain_t> swap_chain;
-
-    std::vector<image_view_t> swapChainImageViews;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
-
-    std::unique_ptr<render_pass_t> renderPass;
-    VkDescriptorSetLayout descriptorSetLayout;
-    pipeline_t graphicsPipeline;
-
-    VkCommandPool commandPool;
-
-    std::unique_ptr<image_t> depth_image;
-    image_view_t depth_view;
-
-    std::unique_ptr<image_t> texture_image;
-    image_view_t textureImageView;
-    VkSampler textureSampler;
-
-    buffer_t vertex_buffer;
-    buffer_t index_buffer;
-
-    std::vector<buffer_t> uniform_buffers;
-
-    VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
-
-    std::vector<VkCommandBuffer> commandBuffers;
-
-    std::vector<frame_sync_points_t> frame_sync_points;
-    size_t currentFrame = 0;
-
-    bool framebufferResized = false;
-
-    static GLFWwindow* initWindow(void* userdata)
-    {
-        GLFWwindow* window;
-        glfwInit();
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(window, userdata);
-        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-        return window;
-    }
-
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
-    {
-        auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
-        app->framebufferResized = true;
-    }
-
-    VkExtent2D window_extent() const
-    {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        return VkExtent2D{
-            static_cast<uint32_t>(width),
-            static_cast<uint32_t>(height)
-        };        
-    }
-
-    void initVulkan()
-    {
-        const std::vector<const char*> validationLayers = {
-            "VK_LAYER_LUNARG_standard_validation"
-        };
-
-        const std::vector<const char*> deviceExtensions = {
+    , deviceExtensions{
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        };
-        instance = createInstance(
-            validationLayers
-        );
-        callback = setupDebugCallback(
-            instance
-        );
-        surface = createSurface(
-            instance,
-            window
-        );
+    }
+    , instance{"test", validationLayers}
+    , surface{instance.get(), window}
+    {
+        if (!validationLayers.empty())
+            callback = setupDebugCallback(instance.get());
         physical_device = pickPhysicalDevice(
-            instance,
-            surface,
+            instance.get(),
+            surface.get(),
             deviceExtensions
         );
         auto depth_format = findDepthFormat(physical_device);
         logical_device = createLogicalDevice(
             physical_device,
-            surface,
+            surface.get(),
             validationLayers,
             deviceExtensions
         );
         commandPool = createCommandPool(
             physical_device,
             logical_device.device,
-            surface
+            surface.get()
         );
         textureSampler = createTextureSampler(
             logical_device.device
@@ -828,7 +848,7 @@ private:
         swap_chain.reset(new swap_chain_t{
             physical_device,
             logical_device.device,
-            surface,
+            surface.get(),
             window_extent()
         });
         swapChainImageViews = createImageViews(
@@ -912,6 +932,91 @@ private:
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
             frame_sync_points.emplace_back(logical_device.device);
     }
+    
+    void run()
+    {
+        mainLoop();
+    }
+
+    ~HelloTriangleApplication()
+    {
+        cleanup();        
+    }
+
+private:
+    GLFWwindow* window;
+    std::vector<const char*> validationLayers;
+    std::vector<const char*> deviceExtensions;
+
+    instance_t instance;
+    VkDebugUtilsMessengerEXT callback;
+    surface_t surface;
+
+    VkPhysicalDevice physical_device;
+
+    logical_device_t logical_device;
+
+    std::unique_ptr<swap_chain_t> swap_chain;
+
+    std::vector<image_view_t> swapChainImageViews;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
+
+    std::unique_ptr<render_pass_t> renderPass;
+    VkDescriptorSetLayout descriptorSetLayout;
+    pipeline_t graphicsPipeline;
+
+    VkCommandPool commandPool;
+
+    std::unique_ptr<image_t> depth_image;
+    image_view_t depth_view;
+
+    std::unique_ptr<image_t> texture_image;
+    image_view_t textureImageView;
+    VkSampler textureSampler;
+
+    buffer_t vertex_buffer;
+    buffer_t index_buffer;
+
+    std::vector<buffer_t> uniform_buffers;
+
+    VkDescriptorPool descriptorPool;
+    std::vector<VkDescriptorSet> descriptorSets;
+
+    std::vector<VkCommandBuffer> commandBuffers;
+
+    std::vector<frame_sync_points_t> frame_sync_points;
+    size_t currentFrame = 0;
+
+    bool framebufferResized = false;
+
+    static GLFWwindow* initWindow(void* userdata)
+    {
+        GLFWwindow* window;
+        glfwInit();
+
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+        glfwSetWindowUserPointer(window, userdata);
+        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+        return window;
+    }
+
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
+    {
+        auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+        app->framebufferResized = true;
+    }
+
+    VkExtent2D window_extent() const
+    {
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        return VkExtent2D{
+            static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height)
+        };        
+    }
 
     void mainLoop() {
         while (!glfwWindowShouldClose(window))
@@ -938,31 +1043,18 @@ private:
     void cleanup()
     {
         cleanupSwapChain(logical_device.device);
-
         vkDestroySampler(logical_device.device, textureSampler, nullptr);
-
         vkDestroyDescriptorPool(logical_device.device, descriptorPool, nullptr);
-
         vkDestroyDescriptorSetLayout(logical_device.device, descriptorSetLayout, nullptr);
-
         for (auto&& buffer : uniform_buffers)
             buffer.destroy(logical_device.device);
         index_buffer.destroy(logical_device.device);
         vertex_buffer.destroy(logical_device.device);
-
         vkDestroyCommandPool(logical_device.device, commandPool, nullptr);
-
         vkDestroyDevice(logical_device.device, nullptr);
-
-        if (enableValidationLayers) {
-            DestroyDebugUtilsMessengerEXT(instance, callback, nullptr);
-        }
-
-        vkDestroySurfaceKHR(instance, surface, nullptr);
-        vkDestroyInstance(instance, nullptr);
-
+        if (callback)
+            DestroyDebugUtilsMessengerEXT(instance.get(), callback, nullptr);
         glfwDestroyWindow(window);
-
         glfwTerminate();
     }
 
@@ -982,7 +1074,7 @@ private:
         swap_chain.reset(new swap_chain_t{
             physical_device,
             logical_device.device,
-            surface,
+            surface.get(),
             window_extent()
         });
         swapChainImageViews = createImageViews(
@@ -1029,44 +1121,8 @@ private:
         );
     }
 
-    static VkInstance createInstance(std::vector<const char*> validationLayers)
-    {
-        if (enableValidationLayers && !checkValidationLayerSupport(validationLayers))
-            throw std::runtime_error("validation layers requested, but not available!");
-
-        VkApplicationInfo appInfo = {};
-        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "Hello Triangle";
-        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "No Engine";
-        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
-
-        VkInstanceCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        createInfo.pApplicationInfo = &appInfo;
-
-        auto extensions = getRequiredExtensions();
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-        createInfo.ppEnabledExtensionNames = extensions.data();
-
-        if (enableValidationLayers) {
-            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
-        } else {
-            createInfo.enabledLayerCount = 0;
-        }
-        VkInstance instance;
-        if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create instance!");
-        }
-        return instance;
-    }
-
     static VkDebugUtilsMessengerEXT setupDebugCallback(VkInstance instance)
     {
-        if (!enableValidationLayers) return 0;
-
         VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         createInfo.messageSeverity =
@@ -1083,14 +1139,6 @@ private:
         if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &callback) != VK_SUCCESS)
             throw std::runtime_error("failed to set up debug callback!");
         return callback;
-    }
-
-    static VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow* window)
-    {
-        VkSurfaceKHR surface;
-        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
-            throw std::runtime_error("failed to create window surface!");
-        return surface;
     }
 
     static VkPhysicalDevice pickPhysicalDevice(
@@ -1155,12 +1203,8 @@ private:
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-        if (enableValidationLayers) {
-            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
-        } else {
-            createInfo.enabledLayerCount = 0;
-        }
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
 
         logical_device_t result;
         if (vkCreateDevice(physical_device, &createInfo, nullptr, &result.device) != VK_SUCCESS)
@@ -2116,47 +2160,6 @@ private:
         }
 
         return requiredExtensions.empty();
-    }
-
-    static std::vector<const char*> getRequiredExtensions()
-    {
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-        if (enableValidationLayers) {
-            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }
-
-        return extensions;
-    }
-
-    static bool checkValidationLayerSupport(std::vector<const char*> validationLayers)
-    {
-        uint32_t layerCount;
-        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-        std::vector<VkLayerProperties> availableLayers(layerCount);
-        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-        for (const char* layerName : validationLayers) {
-            bool layerFound = false;
-
-            for (const auto& layerProperties : availableLayers) {
-                if (strcmp(layerName, layerProperties.layerName) == 0) {
-                    layerFound = true;
-                    break;
-                }
-            }
-
-            if (!layerFound) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     static std::vector<char> readFile(const std::string& filename) {
