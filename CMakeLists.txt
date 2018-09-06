@@ -33,24 +33,21 @@ add_custom_target(
 
 include_directories(${Vulkan_INCLUDE_DIRS})
 
+add_library(my_vulkan
+  my_vulkan/instance.cpp
+  my_vulkan/utils.cpp
+  my_vulkan/surface.cpp
+  my_vulkan/device.cpp
+  my_vulkan/image_view.cpp
+  my_vulkan/image.cpp
+  my_vulkan/device_memory.cpp
+  my_vulkan/swap_chain.cpp
+)
+
 add_executable(${PROJECT_NAME} glfw_vulkan_test.cpp)
-target_link_libraries (${PROJECT_NAME} ${Vulkan_LIBRARIES} glfw)
-
-add_executable(tutorial_06 06_swap_chain_creation.cpp)
-target_link_libraries (tutorial_06 ${Vulkan_LIBRARIES} glfw)
-
-add_executable(tutorial_15 15_hello_triangle.cpp)
-add_dependencies(tutorial_15 Shaders)
-target_link_libraries (tutorial_15 ${Vulkan_LIBRARIES} glfw)
-
-add_executable(tutorial_22 22_descriptor_sets.cpp)
-add_dependencies(tutorial_22 Shaders)
-target_link_libraries (tutorial_22 ${Vulkan_LIBRARIES} glfw)
-
-add_executable(tutorial_26 26_depth_buffering.cpp)
-add_dependencies(tutorial_26 Shaders)
-target_link_libraries (tutorial_26 ${Vulkan_LIBRARIES} glfw)
-
-add_executable(tutorial_29 29_multisampling.cpp)
-add_dependencies(tutorial_29 Shaders)
-target_link_libraries (tutorial_29 ${Vulkan_LIBRARIES} glfw)
+target_link_libraries (
+  ${PROJECT_NAME}
+  ${Vulkan_LIBRARIES}
+  glfw
+  my_vulkan
+)

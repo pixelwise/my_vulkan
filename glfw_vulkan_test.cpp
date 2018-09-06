@@ -9,6 +9,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "my_vulkan/utils.hpp"
+#include "my_vulkan/instance.hpp"
+#include "my_vulkan/surface.hpp"
+#include "my_vulkan/device.hpp"
+#include "my_vulkan/swap_chain.hpp"
+#include "my_vulkan/image.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -34,16 +41,10 @@ const int MAX_FRAMES_IN_FLIGHT = 3;
 // - swap chain
 // - graphics pipeline
 // -- command buffer
+// see also: 
+// https://stackoverflow.com/questions/47098748/draw-multiple-objects-with-their-textures-in-vulkan?rq=1
 
-void vk_require(VkResult result, const char* description)
-{
-    if (result != VK_SUCCESS)
-    {
-        std::stringstream os;
-        os << description << ": " << result;
-        throw std::runtime_error{os.str()};
-    }
-}
+using my_vulkan::vk_require;
 
 std::vector<const char*> getRequiredExtensions(bool enableValidationLayers)
 {
@@ -57,32 +58,6 @@ std::vector<const char*> getRequiredExtensions(bool enableValidationLayers)
     if (enableValidationLayers)
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     return extensions;
-}
-
-bool checkValidationLayerSupport(std::vector<const char*> validationLayers)
-{
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-    for (const char* layerName : validationLayers) {
-        bool layerFound = false;
-
-        for (const auto& layerProperties : availableLayers) {
-            if (strcmp(layerName, layerProperties.layerName) == 0) {
-                layerFound = true;
-                break;
-            }
-        }
-
-        if (!layerFound) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 VkResult CreateDebugUtilsMessengerEXT(
@@ -110,156 +85,6 @@ void DestroyDebugUtilsMessengerEXT(
     if (func != nullptr) {
         func(instance, callback, pAllocator);
     }
-}
-
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
-SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
-{
-    SwapChainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-
-    if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
-    }
-
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-
-    if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
-    }
-
-    return details;
-}
-
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
-{
-    if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED) {
-        return{VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
-    }
-
-    for (const auto& availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return availableFormat;
-        }
-    }
-
-    return availableFormats[0];
-}
-
-VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes)
-{
-    VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
-
-    for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-            return availablePresentMode;
-        } else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-            bestMode = availablePresentMode;
-        }
-    }
-
-    return bestMode;
-}
-
-VkExtent2D chooseSwapExtent(VkExtent2D actualExtent, const VkSurfaceCapabilitiesKHR& capabilities)
-{
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-        return capabilities.currentExtent;
-    } else {
-        actualExtent.width = std::max(
-            capabilities.minImageExtent.width,
-            std::min(capabilities.maxImageExtent.width, actualExtent.width));
-        actualExtent.height = std::max(
-            capabilities.minImageExtent.height,
-            std::min(capabilities.maxImageExtent.height, actualExtent.height));
-
-        return actualExtent;
-    }
-}
-
-struct QueueFamilyIndices {
-    int graphics = -1;
-    int present = -1;
-    bool isComplete() const
-    {
-        return graphics >= 0 && present >= 0;
-    }
-    std::vector<int> unique_indices() const
-    {
-        auto index_set = std::set<int>{graphics, present};
-        return {index_set.begin(), index_set.end()};
-    }
-};
-
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
-{
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-    int i = 0;
-    for (const auto& queueFamily : queueFamilies) {
-        if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphics = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-
-        if (queueFamily.queueCount > 0 && presentSupport) {
-            indices.present = i;
-        }
-
-        if (indices.isComplete()) {
-            break;
-        }
-
-        i++;
-    }
-
-    return indices;
-}
-
-VkImageView createImageView(
-    VkDevice device,
-    VkImage image,
-    VkFormat format,
-    VkImageAspectFlags aspectFlags
-)
-{
-    VkImageViewCreateInfo viewInfo = {};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = aspectFlags;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-
-    VkImageView imageView;
-    if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture image view!");
-    }
-
-    return imageView;
 }
 
 struct Vertex {
@@ -339,139 +164,6 @@ uint32_t findMemoryType(
     }
     throw std::runtime_error("failed to find suitable memory type!");
 }
-
-struct instance_t
-{
-    instance_t(
-        const std::string& name = "vulkan",
-        std::vector<const char*> validationLayers = {}
-    )
-    {
-        if (!checkValidationLayerSupport(validationLayers))
-            throw std::runtime_error("validation layers requested, but not available!");
-        VkApplicationInfo appInfo = {};
-        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = name.c_str();
-        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "No Engine";
-        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
-        VkInstanceCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        createInfo.pApplicationInfo = &appInfo;
-        auto extensions = getRequiredExtensions(!validationLayers.empty());
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-        createInfo.ppEnabledExtensionNames = extensions.data();
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
-        if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS)
-            throw std::runtime_error("failed to create instance!");
-    }
-    instance_t(const instance_t&) = delete;
-    instance_t(instance_t&& other) noexcept
-    {
-        *this = std::move(other);
-    }
-    instance_t& operator=(const instance_t& other) = delete;
-    instance_t& operator=(instance_t&& other) noexcept
-    {
-        cleanup();
-        std::swap(_instance, other._instance);
-        return *this;
-    }
-    VkInstance get()
-    {
-        return _instance;
-    }
-    ~instance_t()
-    {
-        cleanup();
-    }
-private:
-    void cleanup()
-    {
-        if (_instance)
-        {
-            vkDestroyInstance(_instance, 0);
-            _instance = 0;
-        }
-    }
-    VkInstance _instance{0};
-};
-
-struct surface_t
-{
-    surface_t(VkInstance instance, GLFWwindow* window)
-    : _instance{instance}
-    {
-        if (glfwCreateWindowSurface(instance, window, nullptr, &_surface) != VK_SUCCESS)
-            throw std::runtime_error("failed to create window surface!");
-    }
-    ~surface_t()
-    {
-        vkDestroySurfaceKHR(_instance, _surface, 0);
-    }
-    surface_t(const surface_t& other) = delete;
-    surface_t(surface_t&& other) = delete;
-    surface_t& operator=(const surface_t& other) = delete;
-    surface_t& operator=(surface_t&& other) = delete;
-    VkSurfaceKHR get() {return _surface;}
-private:
-    VkInstance _instance;
-    VkSurfaceKHR _surface;
-};
-
-struct device_t
-{
-    device_t(
-        VkPhysicalDevice physical_device,
-        QueueFamilyIndices queue_indices,
-        std::vector<const char*> validation_layers,
-        std::vector<const char*> device_extensions        
-    )
-    {
-        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        float queuePriority = 1.0f;
-        for (int queueFamily : queue_indices.unique_indices())
-        {
-            VkDeviceQueueCreateInfo queueCreateInfo = {};
-            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfo.queueFamilyIndex = queueFamily;
-            queueCreateInfo.queueCount = 1;
-            queueCreateInfo.pQueuePriorities = &queuePriority;
-            queueCreateInfos.push_back(queueCreateInfo);
-        }
-        VkPhysicalDeviceFeatures deviceFeatures = {};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
-        VkDeviceCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-        createInfo.pQueueCreateInfos = queueCreateInfos.data();
-        createInfo.pEnabledFeatures = &deviceFeatures;
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(device_extensions.size());
-        createInfo.ppEnabledExtensionNames = device_extensions.data();
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
-        createInfo.ppEnabledLayerNames = validation_layers.data();
-        vk_require(
-            vkCreateDevice(physical_device, &createInfo, nullptr, &_device),
-            "create logical device"
-        );
-        vkGetDeviceQueue(_device, queue_indices.graphics, 0, &_graphicsQueue);
-        vkGetDeviceQueue(_device, queue_indices.present, 0, &_presentQueue);      
-    }
-    device_t(const device_t&) = delete;
-    ~device_t()
-    {
-        vkDestroyDevice(_device, 0);
-    }
-    VkDevice get() {return _device;}
-    VkQueue graphics_queue() {return _graphicsQueue;}
-    VkQueue present_queue() {return _presentQueue;}
-private:
-    VkDevice _device;
-    VkQueue _graphicsQueue;
-    VkQueue _presentQueue;
-};
 
 struct texture_sampler_t
 {
@@ -577,154 +269,6 @@ private:
     VkRenderPass _render_pass;
 };
 
-struct image_view_t
-{
-    image_view_t() {}
-    image_view_t(VkDevice device, VkImageView view)
-    : _device{device}
-    , _view{view}
-    {
-    }
-    image_view_t(image_view_t&& other) noexcept
-    {
-        *this = std::move(other);
-    }
-    image_view_t(const image_view_t&) = delete;
-    image_view_t& operator=(image_view_t&& other) noexcept
-    {
-        cleanup();
-        _view = other._view;
-        std::swap(_device, other._device);
-        return *this;
-    }
-    image_view_t& operator=(const image_view_t&) = delete;
-    VkImageView get() const {return _view;}
-private:
-    void cleanup()
-    {
-        if (_device)
-        {
-            vkDestroyImageView(_device, _view, 0);
-            _device = 0;
-        }
-    }
-    VkDevice _device{0};
-    VkImageView _view{0};
-};
-
-struct device_reference_t
-{
-    VkPhysicalDevice physical_device;
-    VkDevice logical_device;
-};
-
-struct image_t
-{
-    image_t(
-        device_reference_t device,
-        VkExtent3D extent,
-        VkFormat format,
-        VkImageUsageFlags usage,
-        VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
-        VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-    ) 
-    : _device{device.logical_device}
-    , image{0}
-    , memory{0}
-    , format{format}
-    {
-        VkImageCreateInfo imageInfo = {};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent = extent;
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.format = format;
-        imageInfo.tiling = tiling;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = usage;
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        if (vkCreateImage(_device, &imageInfo, nullptr, &image) != VK_SUCCESS)
-        {
-            cleanup();
-            throw std::runtime_error("failed to create image!");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(_device, image, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = findMemoryType(
-            device.physical_device,
-            memRequirements.memoryTypeBits,
-            properties
-        );
-        if (vkAllocateMemory(_device, &allocInfo, nullptr, &memory) != VK_SUCCESS)
-        {
-            cleanup();
-            throw std::runtime_error("failed to allocate image memory!");
-        }
-        vkBindImageMemory(_device, image, memory, 0);
-    }
-    image_t(const image_t&) = delete;
-    image_t(image_t&& other) noexcept
-    {
-        *this = std::move(other);
-    }
-    image_t& operator=(const image_t&) = delete;
-    image_t& operator=(image_t&& other) noexcept
-    {
-        cleanup();
-        image = other.image;
-        memory = other.memory;
-        format = other.format;
-        std::swap(_device, other._device);
-        return *this;
-    }
-    ~image_t()
-    {
-        cleanup();
-    }
-    image_view_t view(VkImageAspectFlagBits flags) const
-    {
-        return image_view_t{
-            _device,
-            createImageView(
-                _device,
-                image,
-                format,
-                flags
-            )
-        };
-    }
-    image_t(VkDevice device, VkImage image, VkFormat format)
-    : _device{device}
-    , image{image}
-    , format{format}
-    , _borrowed{true}
-    {
-
-    }
-    VkImage image;
-    VkDeviceMemory memory{0};
-    VkFormat format;
-private:
-    bool _borrowed;
-    void cleanup()
-    {
-        if (_device && !_borrowed)
-        {
-            vkDestroyImage(_device, image, nullptr);
-            vkFreeMemory(_device, memory, nullptr);
-        }
-        _device = 0;
-    }
-    VkDevice _device{0};
-};
-
 struct buffer_t
 {
     VkBuffer buffer;
@@ -734,77 +278,6 @@ struct buffer_t
         vkDestroyBuffer(device, buffer, nullptr);
         vkFreeMemory(device, memory, nullptr);
     }
-};
-
-struct swap_chain_t
-{
-    swap_chain_t(
-        VkPhysicalDevice physical_device,
-        VkDevice device,
-        VkSurfaceKHR surface,
-        VkExtent2D actual_extent
-    )
-    : _device{device}
-    {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physical_device, surface);
-        VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-        VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-        _extent = chooseSwapExtent(actual_extent, swapChainSupport.capabilities);
-
-        uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-        if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-            imageCount = swapChainSupport.capabilities.maxImageCount;
-        }
-
-        VkSwapchainCreateInfoKHR createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = surface;
-
-        createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = surfaceFormat.format;
-        createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = _extent;
-        createInfo.imageArrayLayers = 1;
-        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-        QueueFamilyIndices indices = findQueueFamilies(physical_device, surface);
-        uint32_t queueFamilyIndices[] = {
-            (uint32_t) indices.graphics,
-            (uint32_t) indices.present
-        };
-        if (indices.graphics != indices.present) {
-            createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            createInfo.queueFamilyIndexCount = 2;
-            createInfo.pQueueFamilyIndices = queueFamilyIndices;
-        } else {
-            createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        }
-
-        createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = presentMode;
-        createInfo.clipped = VK_TRUE;
-        if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &_swap_chain) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create swap chain!");
-        }
-        std::vector<VkImage> images;
-        vkGetSwapchainImagesKHR(device, _swap_chain, &imageCount, nullptr);
-        images.resize(imageCount);
-        vkGetSwapchainImagesKHR(device, _swap_chain, &imageCount, images.data());
-        _format = surfaceFormat.format;
-        for (auto image : images)
-            _images.push_back(image_t{_device, image, _format});
-    }
-    VkSwapchainKHR swap_chain() {return _swap_chain;}
-    const std::vector<image_t>& images() {return _images;}
-    VkFormat format() const {return _format;}
-    VkExtent2D extent() const {return _extent;}
-private:
-    VkDevice _device;
-    VkSwapchainKHR _swap_chain;
-    std::vector<image_t> _images;
-    VkFormat _format;
-    VkExtent2D _extent;    
 };
 
 struct render_pipeline_t
@@ -949,14 +422,18 @@ public:
     , deviceExtensions{
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
     }
-    , instance{"test", validationLayers}
+    , instance{
+        "test",
+        getRequiredExtensions(!validationLayers.empty()),
+        validationLayers
+    }
     , surface{instance.get(), window}
     , physical_device{pickPhysicalDevice(
         instance.get(),
         surface.get(),
         deviceExtensions
     )}
-    , queue_indices{findQueueFamilies(
+    , queue_indices{my_vulkan::findQueueFamilies(
         physical_device,
         surface.get()
     )}
@@ -980,14 +457,14 @@ public:
         descriptorSetLayout = createDescriptorSetLayout(
             logical_device.get()
         );
-        swap_chain.reset(new swap_chain_t{
+        swap_chain.reset(new my_vulkan::swap_chain_t{
             physical_device,
             logical_device.get(),
             surface.get(),
+            queue_indices,
             window_extent()
         });
         swapChainImageViews = createImageViews(
-            logical_device.get(),
             swap_chain->images()
         );
         depth_image = createDepthImage(
@@ -1082,17 +559,17 @@ private:
     std::vector<const char*> validationLayers;
     std::vector<const char*> deviceExtensions;
 
-    instance_t instance;
+    my_vulkan::instance_t instance;
     VkDebugUtilsMessengerEXT callback;
-    surface_t surface;
+    my_vulkan::surface_t surface;
 
     VkPhysicalDevice physical_device;
-    QueueFamilyIndices queue_indices;
-    device_t logical_device;
+    my_vulkan::queue_family_indices_t queue_indices;
+    my_vulkan::device_t logical_device;
 
-    std::unique_ptr<swap_chain_t> swap_chain;
+    std::unique_ptr<my_vulkan::swap_chain_t> swap_chain;
 
-    std::vector<image_view_t> swapChainImageViews;
+    std::vector<my_vulkan::image_view_t> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
     std::unique_ptr<render_pass_t> renderPass;
@@ -1101,11 +578,11 @@ private:
 
     VkCommandPool commandPool;
 
-    std::unique_ptr<image_t> depth_image;
-    image_view_t depth_view;
+    std::unique_ptr<my_vulkan::image_t> depth_image;
+    my_vulkan::image_view_t depth_view;
 
-    std::unique_ptr<image_t> texture_image;
-    image_view_t textureImageView;
+    std::unique_ptr<my_vulkan::image_t> texture_image;
+    my_vulkan::image_view_t textureImageView;
     VkSampler textureSampler;
 
     buffer_t vertex_buffer;
@@ -1194,7 +671,7 @@ private:
         glfwTerminate();
     }
 
-    void recreateSwapChain(device_t& logical_device)
+    void recreateSwapChain(my_vulkan::device_t& logical_device)
     {
         std::cout << "recreating swap chain" << std::endl;
         int width = 0, height = 0;
@@ -1208,14 +685,14 @@ private:
         cleanupSwapChain(logical_device.get());
 
         auto depth_format = findDepthFormat(physical_device);
-        swap_chain.reset(new swap_chain_t{
+        swap_chain.reset(new my_vulkan::swap_chain_t{
             physical_device,
             logical_device.get(),
             surface.get(),
+            queue_indices,
             window_extent()
         });
         swapChainImageViews = createImageViews(
-            logical_device.get(),
             swap_chain->images()
         );
         renderPass.reset(new render_pass_t{
@@ -1304,9 +781,11 @@ private:
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 
-    static std::vector<image_view_t> createImageViews(VkDevice device, const std::vector<image_t>& images)
+    static std::vector<my_vulkan::image_view_t> createImageViews(
+        const std::vector<my_vulkan::image_t>& images
+    )
     {
-        std::vector<image_view_t> result;
+        std::vector<my_vulkan::image_view_t> result;
         for (uint32_t i = 0; i < images.size(); i++)
             result.push_back(images[i].view(VK_IMAGE_ASPECT_COLOR_BIT));
         return result;
@@ -1482,8 +961,8 @@ private:
 
     static std::vector<VkFramebuffer> createFramebuffers(
         VkDevice device,
-        const std::vector<image_view_t>& image_views,
-        image_view_t& depth_view,
+        const std::vector<my_vulkan::image_view_t>& image_views,
+        my_vulkan::image_view_t& depth_view,
         VkRenderPass renderPass,
         VkExtent2D extent
     )
@@ -1514,7 +993,7 @@ private:
 
     static VkCommandPool createCommandPool(
         VkDevice device,
-        QueueFamilyIndices queueFamilyIndices
+        my_vulkan::queue_family_indices_t queueFamilyIndices
     )
     {
         VkCommandPoolCreateInfo poolInfo = {};
@@ -1526,16 +1005,17 @@ private:
         return result;
     }
 
-    static std::unique_ptr<image_t> createDepthImage(
+    static std::unique_ptr<my_vulkan::image_t> createDepthImage(
         VkPhysicalDevice physical_device,
-        device_t& logical_device,
+        my_vulkan::device_t& logical_device,
         VkCommandPool commandPool,
         VkFormat format,
         VkExtent2D extent
     )
     {
-        std::unique_ptr<image_t> result{new image_t{
-            {physical_device, logical_device.get()},
+        std::unique_ptr<my_vulkan::image_t> result{new my_vulkan::image_t{
+            physical_device,
+            logical_device.get(),
             {extent.width, extent.height, 1},
             format,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -1590,9 +1070,9 @@ private:
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    static std::unique_ptr<image_t> createTextureImage(
+    static std::unique_ptr<my_vulkan::image_t> createTextureImage(
         VkPhysicalDevice physical_device,
-        device_t& logical_device,
+        my_vulkan::device_t& logical_device,
         VkCommandPool commandPool
     )
     {
@@ -1620,8 +1100,9 @@ private:
         stbi_image_free(pixels);
 
 
-        std::unique_ptr<image_t> result{new image_t{
-            {physical_device, logical_device.get()},            
+        std::unique_ptr<my_vulkan::image_t> result{new my_vulkan::image_t{
+            physical_device,
+            logical_device.get(),
             {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)},
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -1638,7 +1119,7 @@ private:
             logical_device,
             commandPool,
             staging_buffer.buffer,
-            result->image,
+            result->get(),
             static_cast<uint32_t>(texWidth),
             static_cast<uint32_t>(texHeight)
         );
@@ -1678,9 +1159,9 @@ private:
     }
 
     static void transitionImageLayout(
-        device_t& logical_device,
+        my_vulkan::device_t& logical_device,
         VkCommandPool commandPool,
-        image_t& image,
+        my_vulkan::image_t& image,
         VkImageLayout oldLayout,
         VkImageLayout newLayout
     ) 
@@ -1693,12 +1174,12 @@ private:
         barrier.newLayout = newLayout;
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = image.image;
+        barrier.image = image.get();
 
         if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
             barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-            if (hasStencilComponent(image.format)) {
+            if (hasStencilComponent(image.format())) {
                 barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
         } else {
@@ -1748,7 +1229,7 @@ private:
     }
 
     static void copyBufferToImage(
-        device_t& logical_device,
+        my_vulkan::device_t& logical_device,
         VkCommandPool commandPool,
         VkBuffer buffer,
         VkImage image,
@@ -1780,7 +1261,7 @@ private:
 
     static buffer_t createVertexBuffer(
         VkPhysicalDevice physical_device,
-        device_t& logical_device,
+        my_vulkan::device_t& logical_device,
         VkCommandPool commandPool
     )
     {
@@ -1816,7 +1297,7 @@ private:
 
     static buffer_t createIndexBuffer(
         VkPhysicalDevice physical_device,
-        device_t& logical_device,
+        my_vulkan::device_t& logical_device,
         VkCommandPool commandPool
     )
     {
@@ -2003,7 +1484,7 @@ private:
     }
 
     static void endSingleTimeCommands(
-        device_t& logical_device,
+        my_vulkan::device_t& logical_device,
         VkCommandPool commandPool,
         VkCommandBuffer commandBuffer
     )
@@ -2021,7 +1502,7 @@ private:
     }
 
     static void copyBuffer(
-        device_t& logical_device,
+        my_vulkan::device_t& logical_device,
         VkCommandPool commandPool,
         VkBuffer srcBuffer,
         VkBuffer dstBuffer,
@@ -2133,7 +1614,7 @@ private:
         vkUnmapMemory(device, buffer.memory);
     }
 
-    void drawFrame(device_t& logical_device)
+    void drawFrame(my_vulkan::device_t& logical_device)
     {
         auto& sync = frame_sync_points[currentFrame];
         sync.inFlight.wait();
@@ -2233,20 +1714,18 @@ private:
 
     static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, std::vector<const char*> deviceExtensions)
     {
-        QueueFamilyIndices indices = findQueueFamilies(device, surface);
-
-        bool extensionsSupported = checkDeviceExtensionSupport(device, deviceExtensions);
-
-        bool swapChainAdequate = false;
-        if (extensionsSupported) {
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
-            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        auto indices = my_vulkan::findQueueFamilies(device, surface);
+        if (!indices.isComplete())
+            return false;
+        if (checkDeviceExtensionSupport(device, deviceExtensions))
+        {
+            auto swapChainSupport = my_vulkan::query_swap_chain_support(device, surface);
+            if (swapChainSupport.formats.empty() || swapChainSupport.presentModes.empty())
+                return false;
         }
-
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-
-        return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+        return supportedFeatures.samplerAnisotropy;
     }
 
     static bool checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char*> deviceExtensions)
