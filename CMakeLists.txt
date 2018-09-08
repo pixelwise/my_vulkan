@@ -44,6 +44,7 @@ add_library(my_vulkan
   my_vulkan/instance.cpp
   my_vulkan/surface.cpp
   my_vulkan/swap_chain.cpp
+  my_vulkan/queue.cpp
   my_vulkan/utils.cpp
 )
 

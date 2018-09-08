@@ -17,6 +17,7 @@ namespace my_vulkan
             vkCreateCommandPool(device, &poolInfo, nullptr, &_command_pool),
             "creating command pool"
         );
+        vkGetDeviceQueue(_device, queueFamilyIndex, 0, &_queue);
     }
 
     command_pool_t::command_pool_t(command_pool_t&& other) noexcept
@@ -31,6 +32,18 @@ namespace my_vulkan
         _command_pool = other._command_pool;
         std::swap(_device, other._device);
         return *this;
+    }
+
+    command_buffer_t command_pool_t::make_buffer(
+        VkCommandBufferLevel level
+    )
+    {
+        return {_device, _command_pool, level};
+    }
+
+    queue_reference_t command_pool_t::queue()
+    {
+        return _queue;
     }
 
     VkCommandPool command_pool_t::get()

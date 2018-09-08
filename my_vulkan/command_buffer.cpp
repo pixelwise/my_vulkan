@@ -223,7 +223,13 @@ namespace my_vulkan
         std::vector<VkBufferCopy> operations
     )
     {
-        vkCmdCopyBuffer(_command_buffer, src, dst, operations.size(), operations.data());
+        vkCmdCopyBuffer(
+            _command_buffer,
+            src,
+            dst,
+            operations.size(),
+            operations.data()
+        );
     }
 
     void command_buffer_t::scope_t::copy(

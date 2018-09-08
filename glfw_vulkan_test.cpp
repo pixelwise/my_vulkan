@@ -17,6 +17,7 @@
 #include "my_vulkan/image.hpp"
 #include "my_vulkan/buffer.hpp"
 #include "my_vulkan/command_pool.hpp"
+#include "my_vulkan/command_buffer.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -440,11 +441,11 @@ public:
     }
     , vertex_buffer{createVertexBuffer(
         logical_device,
-        commandPool.get()
+        commandPool
     )}
     , index_buffer{createIndexBuffer(
         logical_device,
-        commandPool.get()
+        commandPool
     )}
     {
         auto depth_format = findDepthFormat(physical_device);
@@ -469,7 +470,7 @@ public:
         depth_image = createDepthImage(
             physical_device,
             logical_device,
-            commandPool.get(),
+            commandPool,
             depth_format,
             swap_chain->extent()
         );
@@ -497,7 +498,7 @@ public:
         texture_image = createTextureImage(
             physical_device,
             logical_device,
-            commandPool.get()
+            commandPool
         );
         textureImageView = texture_image->view(VK_IMAGE_ASPECT_COLOR_BIT);
         descriptorSets = createDescriptorSets(
@@ -691,7 +692,7 @@ private:
         depth_image = createDepthImage(
             physical_device,
             logical_device,
-            commandPool.get(),
+            commandPool,
             depth_format,
             swap_chain->extent()
         );
@@ -976,7 +977,7 @@ private:
     static std::unique_ptr<my_vulkan::image_t> createDepthImage(
         VkPhysicalDevice physical_device,
         my_vulkan::device_t& logical_device,
-        VkCommandPool commandPool,
+        my_vulkan::command_pool_t& commandPool,
         VkFormat format,
         VkExtent2D extent
     )
@@ -988,7 +989,6 @@ private:
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
         }};
         transitionImageLayout(
-            logical_device,
             commandPool,
             *result,
             VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1040,7 +1040,7 @@ private:
     static std::unique_ptr<my_vulkan::image_t> createTextureImage(
         VkPhysicalDevice physical_device,
         my_vulkan::device_t& logical_device,
-        VkCommandPool commandPool
+        my_vulkan::command_pool_t& commandPool
     )
     {
         int texWidth, texHeight, texChannels;
@@ -1074,7 +1074,6 @@ private:
         }};
 
         transitionImageLayout(
-            logical_device,
             commandPool,
             *result,
             VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1082,14 +1081,13 @@ private:
         );
         copyBufferToImage(
             logical_device,
-            commandPool,
+            commandPool.get(),
             staging_buffer.get(),
             result->get(),
             static_cast<uint32_t>(texWidth),
             static_cast<uint32_t>(texHeight)
         );
         transitionImageLayout(
-            logical_device,
             commandPool,
             *result,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -1121,14 +1119,16 @@ private:
     }
 
     static void transitionImageLayout(
-        my_vulkan::device_t& logical_device,
-        VkCommandPool commandPool,
+        my_vulkan::command_pool_t& command_pool,
         my_vulkan::image_t& image,
         VkImageLayout oldLayout,
         VkImageLayout newLayout
     ) 
     {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(logical_device.get(), commandPool);
+        auto command_buffer = command_pool.make_buffer();
+        auto command_scope = command_buffer.begin(
+            VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+        );
 
         VkImageMemoryBarrier barrier = {};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1178,16 +1178,16 @@ private:
             throw std::invalid_argument("unsupported layout transition!");
         }
 
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            sourceStage, destinationStage,
+        command_scope.pipeline_barrier(
+            sourceStage,
+            destinationStage,
             0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier
+            {},
+            {},
+            {barrier}
         );
-
-        endSingleTimeCommands(logical_device, commandPool, commandBuffer);
+        command_pool.queue().submit(command_buffer.get());
+        command_pool.queue().wait_idle();
     }
 
     static void copyBufferToImage(
@@ -1223,7 +1223,7 @@ private:
 
     static my_vulkan::buffer_t createVertexBuffer(
         my_vulkan::device_t& logical_device,
-        VkCommandPool commandPool
+        my_vulkan::command_pool_t& command_pool
     )
     {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
@@ -1247,13 +1247,13 @@ private:
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         };
 
-        copyBuffer(logical_device, commandPool, staging_buffer.get(), result.get(), bufferSize);
+        copyBuffer(command_pool, staging_buffer.get(), result.get(), bufferSize);
         return result;
     }
 
     static my_vulkan::buffer_t createIndexBuffer(
         my_vulkan::device_t& logical_device,
-        VkCommandPool commandPool
+        my_vulkan::command_pool_t& command_pool
     )
     {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
@@ -1277,7 +1277,7 @@ private:
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         };
 
-        copyBuffer(logical_device, commandPool, staging_buffer.get(), result.get(), bufferSize);
+        copyBuffer(command_pool, staging_buffer.get(), result.get(), bufferSize);
         return result;
     }
 
@@ -1414,20 +1414,18 @@ private:
     }
 
     static void copyBuffer(
-        my_vulkan::device_t& logical_device,
-        VkCommandPool commandPool,
+        my_vulkan::command_pool_t& command_pool,
         VkBuffer srcBuffer,
         VkBuffer dstBuffer,
         VkDeviceSize size
     ) 
     {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(logical_device.get(), commandPool);
-
-        VkBufferCopy copyRegion = {};
-        copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-        endSingleTimeCommands(logical_device, commandPool, commandBuffer);
+        auto command_buffer = command_pool.make_buffer();
+        command_buffer.begin(
+            VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+        ).copy(srcBuffer, dstBuffer, {{0, 0, size}});
+        command_pool.queue().submit(command_buffer.get());
+        command_pool.queue().wait_idle();
     }
 
     static std::vector<VkCommandBuffer> createCommandBuffers(

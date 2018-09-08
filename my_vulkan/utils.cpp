@@ -1,5 +1,6 @@
 #include "utils.hpp"
 
+#include <iostream>
 #include <sstream>
 #include <set>
 
@@ -13,6 +14,7 @@ namespace my_vulkan
             os << description << ": " << result;
             throw std::runtime_error{os.str()};
         }
+        //std::cout << description << ": OK" << std::endl;
     }
 
     bool queue_family_indices_t::isComplete() const
