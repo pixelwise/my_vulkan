@@ -29,6 +29,7 @@ namespace my_vulkan
     }
 
     device_memory_t::device_memory_t(device_memory_t&& other) noexcept
+    : _device{0}
     {
         *this = std::move(other);
     }
@@ -48,6 +49,25 @@ namespace my_vulkan
         return _size;
     }
 
+    void device_memory_t::set_data(const void* data, size_t size)
+    {
+        auto mapping = map();
+        memcpy(mapping.data(), data, size);
+    }
+
+    device_memory_t::mapping_t device_memory_t::map(
+        boost::optional<region_t> region,
+        VkMemoryMapFlags flags
+    )
+    {
+        return {*this, region, flags};
+    }
+
+    VkDeviceMemory device_memory_t::get()
+    {
+        return _memory;
+    }
+
     device_memory_t::~device_memory_t()
     {
         cleanup();
@@ -57,8 +77,7 @@ namespace my_vulkan
     {
         if (_device)
         {
-            if (_memory)
-                vkFreeMemory(_device, _memory, 0);
+            vkFreeMemory(_device, _memory, 0);
             _device = 0;
         }
     }
@@ -104,9 +123,9 @@ namespace my_vulkan
         return *this;
     }
     
-    VkDeviceMemory device_memory_t::get()
+    void device_memory_t::mapping_t::unmap()
     {
-        return _memory;
+        cleanup();
     }
 
     device_memory_t::mapping_t::~mapping_t()

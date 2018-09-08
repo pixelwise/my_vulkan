@@ -131,8 +131,8 @@ namespace my_vulkan
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
         uint32_t queueFamilyIndices[] = {
-            (uint32_t) queue_indices.graphics,
-            (uint32_t) queue_indices.present
+            *queue_indices.graphics,
+            *queue_indices.present
         };
         if (queue_indices.graphics != queue_indices.present) {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;

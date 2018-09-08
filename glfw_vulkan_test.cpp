@@ -15,6 +15,8 @@
 #include "my_vulkan/device.hpp"
 #include "my_vulkan/swap_chain.hpp"
 #include "my_vulkan/image.hpp"
+#include "my_vulkan/buffer.hpp"
+#include "my_vulkan/command_pool.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -269,17 +271,6 @@ private:
     VkRenderPass _render_pass;
 };
 
-struct buffer_t
-{
-    VkBuffer buffer;
-    VkDeviceMemory memory;
-    void destroy(VkDevice device)
-    {
-        vkDestroyBuffer(device, buffer, nullptr);
-        vkFreeMemory(device, memory, nullptr);
-    }
-};
-
 struct render_pipeline_t
 {
     render_pipeline_t(
@@ -443,14 +434,22 @@ public:
         validationLayers,
         deviceExtensions
     }
+    , commandPool{
+        logical_device.get(),
+        *queue_indices.graphics
+    }
+    , vertex_buffer{createVertexBuffer(
+        logical_device,
+        commandPool.get()
+    )}
+    , index_buffer{createIndexBuffer(
+        logical_device,
+        commandPool.get()
+    )}
     {
         auto depth_format = findDepthFormat(physical_device);
         if (!validationLayers.empty())
             callback = setupDebugCallback(instance.get());
-        commandPool = createCommandPool(
-            logical_device.get(),
-            queue_indices
-        );
         textureSampler = createTextureSampler(
             logical_device.get()
         );
@@ -470,7 +469,7 @@ public:
         depth_image = createDepthImage(
             physical_device,
             logical_device,
-            commandPool,
+            commandPool.get(),
             depth_format,
             swap_chain->extent()
         );
@@ -488,8 +487,7 @@ public:
             swap_chain->extent()
         );
         uniform_buffers = createUniformBuffers(
-            physical_device,
-            logical_device.get(),
+            logical_device,
             swap_chain->images().size()
         );
         descriptorPool = createDescriptorPool(
@@ -499,7 +497,7 @@ public:
         texture_image = createTextureImage(
             physical_device,
             logical_device,
-            commandPool
+            commandPool.get()
         );
         textureImageView = texture_image->view(VK_IMAGE_ASPECT_COLOR_BIT);
         descriptorSets = createDescriptorSets(
@@ -517,25 +515,15 @@ public:
             renderPass->get(),
             descriptorSetLayout
         );
-        vertex_buffer = createVertexBuffer(
-            physical_device,
-            logical_device,
-            commandPool
-        );
-        index_buffer = createIndexBuffer(
-            physical_device,
-            logical_device,
-            commandPool
-        );
         commandBuffers = createCommandBuffers(
             logical_device.get(),
-            commandPool,
+            commandPool.get(),
             renderPass->get(),
             swapChainFramebuffers,
             swap_chain->extent(),
-            vertex_buffer.buffer,
+            vertex_buffer.get(),
             graphicsPipeline,
-            index_buffer.buffer,
+            index_buffer.get(),
             descriptorSets,
             swapChainFramebuffers.size()
         );
@@ -576,7 +564,7 @@ private:
     VkDescriptorSetLayout descriptorSetLayout;
     pipeline_t graphicsPipeline;
 
-    VkCommandPool commandPool;
+    my_vulkan::command_pool_t commandPool;
 
     std::unique_ptr<my_vulkan::image_t> depth_image;
     my_vulkan::image_view_t depth_view;
@@ -585,10 +573,10 @@ private:
     my_vulkan::image_view_t textureImageView;
     VkSampler textureSampler;
 
-    buffer_t vertex_buffer;
-    buffer_t index_buffer;
+    my_vulkan::buffer_t vertex_buffer;
+    my_vulkan::buffer_t index_buffer;
 
-    std::vector<buffer_t> uniform_buffers;
+    std::vector<my_vulkan::buffer_t> uniform_buffers;
 
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
@@ -645,7 +633,7 @@ private:
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         vkFreeCommandBuffers(
             device,
-            commandPool,
+            commandPool.get(),
             static_cast<uint32_t>(commandBuffers.size()),
             commandBuffers.data()
         );
@@ -659,12 +647,6 @@ private:
         vkDestroySampler(logical_device.get(), textureSampler, nullptr);
         vkDestroyDescriptorPool(logical_device.get(), descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(logical_device.get(), descriptorSetLayout, nullptr);
-        for (auto&& buffer : uniform_buffers)
-            buffer.destroy(logical_device.get());
-        index_buffer.destroy(logical_device.get());
-        vertex_buffer.destroy(logical_device.get());
-        vkDestroyCommandPool(logical_device.get(), commandPool, nullptr);
-        vkDestroyDevice(logical_device.get(), nullptr);
         if (callback)
             DestroyDebugUtilsMessengerEXT(instance.get(), callback, nullptr);
         glfwDestroyWindow(window);
@@ -709,7 +691,7 @@ private:
         depth_image = createDepthImage(
             physical_device,
             logical_device,
-            commandPool,
+            commandPool.get(),
             depth_format,
             swap_chain->extent()
         );
@@ -723,13 +705,13 @@ private:
         );
         commandBuffers = createCommandBuffers(
             logical_device.get(),
-            commandPool,
+            commandPool.get(),
             renderPass->get(),
             swapChainFramebuffers,
             swap_chain->extent(),
-            vertex_buffer.buffer,
+            vertex_buffer.get(),
             graphicsPipeline,
-            index_buffer.buffer,
+            index_buffer.get(),
             descriptorSets,
             swapChainFramebuffers.size()
         );
@@ -991,20 +973,6 @@ private:
         return result;
     }
 
-    static VkCommandPool createCommandPool(
-        VkDevice device,
-        my_vulkan::queue_family_indices_t queueFamilyIndices
-    )
-    {
-        VkCommandPoolCreateInfo poolInfo = {};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphics;
-        VkCommandPool result;
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, &result) != VK_SUCCESS)
-            throw std::runtime_error("failed to create graphics command pool!");
-        return result;
-    }
-
     static std::unique_ptr<my_vulkan::image_t> createDepthImage(
         VkPhysicalDevice physical_device,
         my_vulkan::device_t& logical_device,
@@ -1014,8 +982,7 @@ private:
     )
     {
         std::unique_ptr<my_vulkan::image_t> result{new my_vulkan::image_t{
-            physical_device,
-            logical_device.get(),
+            logical_device,
             {extent.width, extent.height, 1},
             format,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -1084,25 +1051,23 @@ private:
             throw std::runtime_error("failed to load texture image!");
         }
 
-        auto staging_buffer = createBuffer(
-            physical_device,
-            logical_device.get(),
+        my_vulkan::buffer_t staging_buffer{
+            logical_device,
             imageSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        );
+        };
 
         void* data;
-        vkMapMemory(logical_device.get(), staging_buffer.memory, 0, imageSize, 0, &data);
+        vkMapMemory(logical_device.get(), staging_buffer.memory()->get(), 0, imageSize, 0, &data);
         memcpy(data, pixels, static_cast<size_t>(imageSize));
-        vkUnmapMemory(logical_device.get(), staging_buffer.memory);
+        vkUnmapMemory(logical_device.get(), staging_buffer.memory()->get());
 
         stbi_image_free(pixels);
 
 
         std::unique_ptr<my_vulkan::image_t> result{new my_vulkan::image_t{
-            physical_device,
-            logical_device.get(),
+            logical_device,
             {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)},
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -1118,7 +1083,7 @@ private:
         copyBufferToImage(
             logical_device,
             commandPool,
-            staging_buffer.buffer,
+            staging_buffer.get(),
             result->get(),
             static_cast<uint32_t>(texWidth),
             static_cast<uint32_t>(texHeight)
@@ -1130,9 +1095,6 @@ private:
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
-
-        vkDestroyBuffer(logical_device.get(), staging_buffer.buffer, nullptr);
-        vkFreeMemory(logical_device.get(), staging_buffer.memory, nullptr);
         return result;
     }
 
@@ -1259,94 +1221,80 @@ private:
         endSingleTimeCommands(logical_device, commandPool, commandBuffer);
     }
 
-    static buffer_t createVertexBuffer(
-        VkPhysicalDevice physical_device,
+    static my_vulkan::buffer_t createVertexBuffer(
         my_vulkan::device_t& logical_device,
         VkCommandPool commandPool
     )
     {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-        auto staging_buffer = createBuffer(
-            physical_device,
-            logical_device.get(),
+        my_vulkan::buffer_t staging_buffer{
+            logical_device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        );
+        };
 
         void* data;
-        vkMapMemory(logical_device.get(), staging_buffer.memory, 0, bufferSize, 0, &data);
+        vkMapMemory(logical_device.get(), staging_buffer.memory()->get(), 0, bufferSize, 0, &data);
         memcpy(data, vertices.data(), (size_t) bufferSize);
-        vkUnmapMemory(logical_device.get(), staging_buffer.memory);
+        vkUnmapMemory(logical_device.get(), staging_buffer.memory()->get());
 
-        auto result = createBuffer(
-            physical_device,
-            logical_device.get(),
+        my_vulkan::buffer_t result{
+            logical_device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        );
+        };
 
-        copyBuffer(logical_device, commandPool, staging_buffer.buffer, result.buffer, bufferSize);
-
-        vkDestroyBuffer(logical_device.get(), staging_buffer.buffer, nullptr);
-        vkFreeMemory(logical_device.get(), staging_buffer.memory, nullptr);
+        copyBuffer(logical_device, commandPool, staging_buffer.get(), result.get(), bufferSize);
         return result;
     }
 
-    static buffer_t createIndexBuffer(
-        VkPhysicalDevice physical_device,
+    static my_vulkan::buffer_t createIndexBuffer(
         my_vulkan::device_t& logical_device,
         VkCommandPool commandPool
     )
     {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
-        auto staging_buffer = createBuffer(
-            physical_device,
-            logical_device.get(),
+        my_vulkan::buffer_t staging_buffer{
+            logical_device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        );
+        };
 
         void* data;
-        vkMapMemory(logical_device.get(), staging_buffer.memory, 0, bufferSize, 0, &data);
-            memcpy(data, indices.data(), (size_t) bufferSize);
-        vkUnmapMemory(logical_device.get(), staging_buffer.memory);
+        vkMapMemory(logical_device.get(), staging_buffer.memory()->get(), 0, bufferSize, 0, &data);
+        memcpy(data, indices.data(), (size_t) bufferSize);
+        vkUnmapMemory(logical_device.get(), staging_buffer.memory()->get());
 
-        auto result = createBuffer(
-            physical_device,
-            logical_device.get(),
+        my_vulkan::buffer_t result{
+            logical_device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        );
+        };
 
-        copyBuffer(logical_device, commandPool, staging_buffer.buffer, result.buffer, bufferSize);
-
-        vkDestroyBuffer(logical_device.get(), staging_buffer.buffer, nullptr);
-        vkFreeMemory(logical_device.get(), staging_buffer.memory, nullptr);
+        copyBuffer(logical_device, commandPool, staging_buffer.get(), result.get(), bufferSize);
         return result;
     }
 
-    static std::vector<buffer_t> createUniformBuffers(
-        VkPhysicalDevice physical_device,
-        VkDevice device,
+    static std::vector<my_vulkan::buffer_t> createUniformBuffers(
+        my_vulkan::device_t& device,
         size_t n
     )
     {
         const VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-        std::vector<buffer_t> result;
+        std::vector<my_vulkan::buffer_t> result;
         for (size_t i = 0; i < n; i++) {
-            result.push_back(createBuffer(
-                physical_device,
+            result.emplace_back(
                 device,
                 bufferSize,
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            ));
+            );
         }
         return result;
     }
@@ -1373,7 +1321,7 @@ private:
     static std::vector<VkDescriptorSet> createDescriptorSets(
         VkDevice device,
         VkDescriptorPool descriptorPool,
-        std::vector<buffer_t>& uniform_buffers,
+        std::vector<my_vulkan::buffer_t>& uniform_buffers,
         VkImageView textureImageView,
         VkSampler textureSampler,
         const VkDescriptorSetLayout& descriptorSetLayout,
@@ -1395,7 +1343,7 @@ private:
         for (size_t i = 0; i < size; i++)
         {
             VkDescriptorBufferInfo bufferInfo = {};
-            bufferInfo.buffer = uniform_buffers[i].buffer;
+            bufferInfo.buffer = uniform_buffers[i].get();
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1425,42 +1373,6 @@ private:
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
         return descriptorSets;
-    }
-
-    static buffer_t createBuffer(
-        VkPhysicalDevice physical_device,
-        VkDevice device,
-        VkDeviceSize size,
-        VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties
-    ) 
-    {
-        VkBufferCreateInfo bufferInfo = {};
-        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = size;
-        bufferInfo.usage = usage;
-        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        buffer_t result;
-        if (vkCreateBuffer(device, &bufferInfo, nullptr, &result.buffer) != VK_SUCCESS)
-            throw std::runtime_error("failed to create buffer!");
-
-        VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(device, result.buffer, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = findMemoryType(
-            physical_device,
-            memRequirements.memoryTypeBits,
-            properties
-        );
-
-        if (vkAllocateMemory(device, &allocInfo, nullptr, &result.memory) != VK_SUCCESS)
-            throw std::runtime_error("failed to allocate buffer memory!");
-        vkBindBufferMemory(device, result.buffer, result.memory, 0);
-        return result;
     }
 
     static VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool)
@@ -1609,9 +1521,9 @@ private:
 
         void* data;
         auto& buffer = uniform_buffers[currentImage];
-        vkMapMemory(device, buffer.memory, 0, sizeof(ubo), 0, &data);
+        vkMapMemory(device, buffer.memory()->get(), 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(device, buffer.memory);
+        vkUnmapMemory(device, buffer.memory()->get());
     }
 
     void drawFrame(my_vulkan::device_t& logical_device)

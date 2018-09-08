@@ -3,6 +3,7 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 #include "image_view.hpp"
+#include "device.hpp"
 #include "device_memory.hpp"
 
 namespace my_vulkan
@@ -10,8 +11,7 @@ namespace my_vulkan
     struct image_t
     {
         image_t(
-            VkPhysicalDevice physical_device,
-            VkDevice logical_device,
+            device_t& device,
             VkExtent3D extent,
             VkFormat format,
             VkImageUsageFlags usage,
@@ -29,11 +29,11 @@ namespace my_vulkan
         device_memory_t* memory();
         VkFormat format();
     private:
-        bool _borrowed;
         void cleanup();
         VkDevice _device{0};
-        VkFormat _format;
         VkImage _image;
+        VkFormat _format;
+        bool _borrowed;
         std::unique_ptr<device_memory_t> _memory;
     };
 }

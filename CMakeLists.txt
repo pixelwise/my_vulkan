@@ -1,7 +1,7 @@
 project(vulkanHelloWorld)
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++11  " )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11  " )
 
 find_package(Vulkan REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
@@ -34,14 +34,17 @@ add_custom_target(
 include_directories(${Vulkan_INCLUDE_DIRS})
 
 add_library(my_vulkan
-  my_vulkan/instance.cpp
-  my_vulkan/utils.cpp
-  my_vulkan/surface.cpp
+  my_vulkan/buffer.cpp
+  my_vulkan/command_buffer.cpp
+  my_vulkan/command_pool.cpp
   my_vulkan/device.cpp
-  my_vulkan/image_view.cpp
-  my_vulkan/image.cpp
   my_vulkan/device_memory.cpp
+  my_vulkan/image.cpp
+  my_vulkan/image_view.cpp
+  my_vulkan/instance.cpp
+  my_vulkan/surface.cpp
   my_vulkan/swap_chain.cpp
+  my_vulkan/utils.cpp
 )
 
 add_executable(${PROJECT_NAME} glfw_vulkan_test.cpp)

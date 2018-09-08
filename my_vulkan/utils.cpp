@@ -17,12 +17,12 @@ namespace my_vulkan
 
     bool queue_family_indices_t::isComplete() const
     {
-        return graphics >= 0 && present >= 0;
+        return graphics && present;
     }
 
-    std::vector<int> queue_family_indices_t::unique_indices() const
+    std::vector<uint32_t> queue_family_indices_t::unique_indices() const
     {
-        auto index_set = std::set<int>{graphics, present};
+        auto index_set = std::set<uint32_t>{*graphics, *present};
         return {index_set.begin(), index_set.end()};
     }
 

@@ -25,6 +25,7 @@ namespace my_vulkan
             mapping_t& operator=(const mapping_t&&) = delete;
             mapping_t& operator=(mapping_t&& other) noexcept;
             ~mapping_t();
+            void unmap();
         private:
             void cleanup();
             void* _data;
@@ -43,14 +44,26 @@ namespace my_vulkan
         device_memory_t(device_memory_t&& other) noexcept;
         device_memory_t& operator=(const device_memory_t&&) = delete;
         device_memory_t& operator=(device_memory_t&& other) noexcept;
-        mapping_t map();
+        ~device_memory_t(); 
+        mapping_t map(
+            boost::optional<region_t> region = boost::none,
+            VkMemoryMapFlags flags = 0
+        );
         size_t size() const;
+        template<typename T>
+        void set_data(const std::vector<T>& data);
+        void set_data(const void* data, size_t size);
         VkDeviceMemory get();
-        ~device_memory_t();
     private:
         void cleanup();
         VkDevice _device{0};
         VkDeviceMemory _memory{0};
         size_t _size;
     };
+
+    template<typename T>
+    void device_memory_t::set_data(const std::vector<T>& data)
+    {
+        set_data(data.data(), data.size() * sizeof(T));
+    }
 }

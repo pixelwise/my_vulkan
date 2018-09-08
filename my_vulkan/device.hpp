@@ -22,7 +22,9 @@ namespace my_vulkan
         VkDevice get();
         VkQueue graphics_queue();
         VkQueue present_queue();
+        VkPhysicalDevice physical_device();
     private:
+        VkPhysicalDevice _physical_device;
         VkDevice _device;
         VkQueue _graphicsQueue;
         VkQueue _presentQueue;

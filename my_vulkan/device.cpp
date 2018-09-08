@@ -8,6 +8,7 @@ namespace my_vulkan
         std::vector<const char*> validation_layers,
         std::vector<const char*> device_extensions        
     )
+    : _physical_device{physical_device}
     {
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         float queuePriority = 1.0f;
@@ -35,21 +36,30 @@ namespace my_vulkan
             vkCreateDevice(physical_device, &createInfo, nullptr, &_device),
             "create logical device"
         );
-        vkGetDeviceQueue(_device, queue_indices.graphics, 0, &_graphicsQueue);
-        vkGetDeviceQueue(_device, queue_indices.present, 0, &_presentQueue);      
+        vkGetDeviceQueue(_device, *queue_indices.graphics, 0, &_graphicsQueue);
+        vkGetDeviceQueue(_device, *queue_indices.present, 0, &_presentQueue);      
     }
+
     device_t::~device_t()
     {
         vkDestroyDevice(_device, 0);
     }
+
+    VkPhysicalDevice device_t::physical_device()
+    {
+        return _physical_device;
+    }
+
     VkDevice device_t::get()
     {
         return _device;
     }
+
     VkQueue device_t::graphics_queue()
     {
         return _graphicsQueue;
     }
+
     VkQueue device_t::present_queue()
     {
         return _presentQueue;

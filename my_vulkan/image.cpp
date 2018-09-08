@@ -54,28 +54,28 @@ namespace my_vulkan
     }
 
     image_t::image_t(
-        VkPhysicalDevice physical_device,
-        VkDevice logical_device,
+        device_t& device,
         VkExtent3D extent,
         VkFormat format,
         VkImageUsageFlags usage,
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties
     )
-    : _device{logical_device}
-    , _format{format}
+    : _device{device.get()}
     , _image{make_image(
-        logical_device,
+        _device,
         extent,
         format,
         usage,
         tiling
     )}
+    , _format{format}
+    , _borrowed{false}
     , _memory{new device_memory_t{
-        logical_device,
+        _device,
         find_image_memory_config(
-            physical_device,
-            logical_device,
+            device.physical_device(),
+            _device,
             _image,
             properties
         )
@@ -93,6 +93,8 @@ namespace my_vulkan
     }
 
     image_t::image_t(image_t&& other) noexcept
+    : _device{0}
+    , _borrowed{false}
     {
         *this = std::move(other);
     }
@@ -103,6 +105,7 @@ namespace my_vulkan
         _image = other._image;
         _memory = std::move(other._memory);
         _format = other._format;
+        _borrowed = other._borrowed;
         std::swap(_device, other._device);
         return *this;
     }
