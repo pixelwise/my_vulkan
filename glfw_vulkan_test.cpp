@@ -18,6 +18,7 @@
 #include "my_vulkan/buffer.hpp"
 #include "my_vulkan/command_pool.hpp"
 #include "my_vulkan/command_buffer.hpp"
+#include "my_vulkan/descriptor_pool.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -419,6 +420,11 @@ public:
         getRequiredExtensions(!validationLayers.empty()),
         validationLayers
     }
+    , callback{
+        validationLayers.empty() ?
+            0 :
+            setupDebugCallback(instance.get())
+    }
     , surface{instance.get(), window}
     , physical_device{pickPhysicalDevice(
         instance.get(),
@@ -447,53 +453,54 @@ public:
         logical_device,
         commandPool
     )}
-    {
-        auto depth_format = findDepthFormat(physical_device);
-        if (!validationLayers.empty())
-            callback = setupDebugCallback(instance.get());
+    , swap_chain{
+        physical_device,
+        logical_device.get(),
+        surface.get(),
+        queue_indices,
+        window_extent()
+    }
+    , descriptor_pool{
+        logical_device.get(),
+        swap_chain.images().size()
+    }
+    , depth_format{
+        findDepthFormat(physical_device)
+    }
+    , render_pass{
+        logical_device.get(),
+        swap_chain.format(),
+        depth_format
+    }
+    {        
+        depth_image = createDepthImage(
+            physical_device,
+            logical_device,
+            commandPool,
+            depth_format,
+            swap_chain.extent()
+        );
+        depth_view = depth_image->view(VK_IMAGE_ASPECT_DEPTH_BIT);
+        swapChainImageViews = createImageViews(
+            swap_chain.images()
+        );
+        swapChainFramebuffers = createFramebuffers(
+            logical_device.get(),
+            swapChainImageViews,
+            depth_view,
+            render_pass.get(),
+            swap_chain.extent()
+        );
+
         textureSampler = createTextureSampler(
             logical_device.get()
         );
         descriptorSetLayout = createDescriptorSetLayout(
             logical_device.get()
         );
-        swap_chain.reset(new my_vulkan::swap_chain_t{
-            physical_device,
-            logical_device.get(),
-            surface.get(),
-            queue_indices,
-            window_extent()
-        });
-        swapChainImageViews = createImageViews(
-            swap_chain->images()
-        );
-        depth_image = createDepthImage(
-            physical_device,
-            logical_device,
-            commandPool,
-            depth_format,
-            swap_chain->extent()
-        );
-        renderPass.reset(new render_pass_t{
-            logical_device.get(),
-            swap_chain->format(),
-            depth_format
-        });
-        depth_view = depth_image->view(VK_IMAGE_ASPECT_DEPTH_BIT);
-        swapChainFramebuffers = createFramebuffers(
-            logical_device.get(),
-            swapChainImageViews,
-            depth_view,
-            renderPass->get(),
-            swap_chain->extent()
-        );
         uniform_buffers = createUniformBuffers(
             logical_device,
-            swap_chain->images().size()
-        );
-        descriptorPool = createDescriptorPool(
-            logical_device.get(),
-            static_cast<uint32_t>(swap_chain->images().size())
+            swap_chain.images().size()
         );
         texture_image = createTextureImage(
             physical_device,
@@ -503,25 +510,25 @@ public:
         textureImageView = texture_image->view(VK_IMAGE_ASPECT_COLOR_BIT);
         descriptorSets = createDescriptorSets(
             logical_device.get(),
-            descriptorPool,
+            descriptor_pool.get(),
             uniform_buffers,
             textureImageView.get(),
             textureSampler,
             descriptorSetLayout,
-            static_cast<uint32_t>(swap_chain->images().size())
+            static_cast<uint32_t>(swap_chain.images().size())
         );
         graphicsPipeline = createGraphicsPipeline(
             logical_device.get(),
-            swap_chain->extent(),
-            renderPass->get(),
+            swap_chain.extent(),
+            render_pass.get(),
             descriptorSetLayout
         );
         commandBuffers = createCommandBuffers(
             logical_device.get(),
             commandPool.get(),
-            renderPass->get(),
+            render_pass.get(),
             swapChainFramebuffers,
-            swap_chain->extent(),
+            swap_chain.extent(),
             vertex_buffer.get(),
             graphicsPipeline,
             index_buffer.get(),
@@ -556,12 +563,14 @@ private:
     my_vulkan::queue_family_indices_t queue_indices;
     my_vulkan::device_t logical_device;
 
-    std::unique_ptr<my_vulkan::swap_chain_t> swap_chain;
+    my_vulkan::swap_chain_t swap_chain;
+
+    VkFormat depth_format;
 
     std::vector<my_vulkan::image_view_t> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
-    std::unique_ptr<render_pass_t> renderPass;
+    render_pass_t render_pass;
     VkDescriptorSetLayout descriptorSetLayout;
     pipeline_t graphicsPipeline;
 
@@ -579,7 +588,7 @@ private:
 
     std::vector<my_vulkan::buffer_t> uniform_buffers;
 
-    VkDescriptorPool descriptorPool;
+    my_vulkan::descriptor_pool_t descriptor_pool;
     std::vector<VkDescriptorSet> descriptorSets;
 
     std::vector<VkCommandBuffer> commandBuffers;
@@ -646,7 +655,6 @@ private:
     {
         cleanupSwapChain(logical_device.get());
         vkDestroySampler(logical_device.get(), textureSampler, nullptr);
-        vkDestroyDescriptorPool(logical_device.get(), descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(logical_device.get(), descriptorSetLayout, nullptr);
         if (callback)
             DestroyDebugUtilsMessengerEXT(instance.get(), callback, nullptr);
@@ -668,25 +676,25 @@ private:
         cleanupSwapChain(logical_device.get());
 
         auto depth_format = findDepthFormat(physical_device);
-        swap_chain.reset(new my_vulkan::swap_chain_t{
+        swap_chain = my_vulkan::swap_chain_t{
             physical_device,
             logical_device.get(),
             surface.get(),
             queue_indices,
             window_extent()
-        });
+        };
         swapChainImageViews = createImageViews(
-            swap_chain->images()
+            swap_chain.images()
         );
-        renderPass.reset(new render_pass_t{
+        render_pass = render_pass_t{
             logical_device.get(),
-            swap_chain->format(),
+            swap_chain.format(),
             depth_format
-        });
+        };
         graphicsPipeline = createGraphicsPipeline(
             logical_device.get(),
-            swap_chain->extent(),
-            renderPass->get(),
+            swap_chain.extent(),
+            render_pass.get(),
             descriptorSetLayout
         );
         depth_image = createDepthImage(
@@ -694,22 +702,22 @@ private:
             logical_device,
             commandPool,
             depth_format,
-            swap_chain->extent()
+            swap_chain.extent()
         );
         depth_view = depth_image->view(VK_IMAGE_ASPECT_DEPTH_BIT);
         swapChainFramebuffers = createFramebuffers(
             logical_device.get(),
             swapChainImageViews,
             depth_view,
-            renderPass->get(),
-            swap_chain->extent()
+            render_pass.get(),
+            swap_chain.extent()
         );
         commandBuffers = createCommandBuffers(
             logical_device.get(),
             commandPool.get(),
-            renderPass->get(),
+            render_pass.get(),
             swapChainFramebuffers,
-            swap_chain->extent(),
+            swap_chain.extent(),
             vertex_buffer.get(),
             graphicsPipeline,
             index_buffer.get(),
@@ -1081,7 +1089,7 @@ private:
         );
         copyBufferToImage(
             logical_device,
-            commandPool.get(),
+            commandPool,
             staging_buffer.get(),
             result->get(),
             static_cast<uint32_t>(texWidth),
@@ -1156,25 +1164,41 @@ private:
         VkPipelineStageFlags sourceStage;
         VkPipelineStageFlags destinationStage;
 
-        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        if (
+            oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+            newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        )
+        {
             barrier.srcAccessMask = 0;
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
             sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        }
+        else if (
+            oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
+            newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        ) 
+        {
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        }
+        else if (
+            oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+            newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        )
+        {
             barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
+            barrier.dstAccessMask =
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
             sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        } else {
+        }
+        else
+        {
             throw std::invalid_argument("unsupported layout transition!");
         }
 
@@ -1192,14 +1216,17 @@ private:
 
     static void copyBufferToImage(
         my_vulkan::device_t& logical_device,
-        VkCommandPool commandPool,
+        my_vulkan::command_pool_t& command_pool,
         VkBuffer buffer,
         VkImage image,
         uint32_t width,
         uint32_t height
     ) 
     {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(logical_device.get(), commandPool);
+        auto command_buffer = command_pool.make_buffer();
+        auto command_scope = command_buffer.begin(
+            VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+        );
 
         VkBufferImageCopy region = {};
         region.bufferOffset = 0;
@@ -1215,10 +1242,14 @@ private:
             height,
             1
         };
-
-        vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-        endSingleTimeCommands(logical_device, commandPool, commandBuffer);
+        command_scope.copy(
+            buffer,
+            image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            {region}
+        );
+        command_pool.queue().submit(command_buffer.get());
+        command_pool.queue().wait_idle();
     }
 
     static my_vulkan::buffer_t createVertexBuffer(
@@ -1299,25 +1330,6 @@ private:
         return result;
     }
 
-    static VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t size)
-    {
-        std::array<VkDescriptorPoolSize, 2> poolSizes = {};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = size;
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = size;
-
-        VkDescriptorPoolCreateInfo poolInfo = {};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = size;
-        VkDescriptorPool result;
-        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &result) != VK_SUCCESS)
-            throw std::runtime_error("failed to create descriptor pool!");
-        return result;
-    }
-
     static std::vector<VkDescriptorSet> createDescriptorSets(
         VkDevice device,
         VkDescriptorPool descriptorPool,
@@ -1370,47 +1382,15 @@ private:
             descriptorWrites[1].descriptorCount = 1;
             descriptorWrites[1].pImageInfo = &imageInfo;
 
-            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+            vkUpdateDescriptorSets(
+                device,
+                static_cast<uint32_t>(descriptorWrites.size()),
+                descriptorWrites.data(),
+                0,
+                nullptr
+            );
         }
         return descriptorSets;
-    }
-
-    static VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool)
-    {
-        VkCommandBufferAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = commandPool;
-        allocInfo.commandBufferCount = 1;
-
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
-
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-        return commandBuffer;
-    }
-
-    static void endSingleTimeCommands(
-        my_vulkan::device_t& logical_device,
-        VkCommandPool commandPool,
-        VkCommandBuffer commandBuffer
-    )
-    {
-        vkEndCommandBuffer(commandBuffer);
-
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        vkQueueSubmit(logical_device.graphics_queue(), 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(logical_device.graphics_queue());
-        vkFreeCommandBuffers(logical_device.get(), commandPool, 1, &commandBuffer);
     }
 
     static void copyBuffer(
@@ -1509,12 +1489,27 @@ private:
         static auto startTime = std::chrono::high_resolution_clock::now();
 
         auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(
+            currentTime - startTime
+        ).count();
 
         UniformBufferObject ubo = {};
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), swap_chain->extent().width / (float) swap_chain->extent().height, 0.1f, 10.0f);
+        ubo.model = glm::rotate(
+            glm::mat4(1.0f),
+            time * glm::radians(90.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f)
+        );
+        ubo.view = glm::lookAt(
+            glm::vec3(2.0f, 2.0f, 2.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f)
+        );
+        ubo.proj = glm::perspective(
+            glm::radians(45.0f),
+            swap_chain.extent().width / (float) swap_chain.extent().height,
+            0.1f,
+            10.0f
+        );
         ubo.proj[1][1] *= -1;
 
         void* data;
@@ -1532,7 +1527,7 @@ private:
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(
             logical_device.get(),
-            swap_chain->swap_chain(),
+            swap_chain.swap_chain(),
             std::numeric_limits<uint64_t>::max(),
             sync.imageAvailable.get(),
             VK_NULL_HANDLE,
@@ -1583,7 +1578,7 @@ private:
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
 
-        VkSwapchainKHR swapChains[] = {swap_chain->swap_chain()};
+        VkSwapchainKHR swapChains[] = {swap_chain.swap_chain()};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
 
@@ -1622,7 +1617,11 @@ private:
         return shaderModule;
     }
 
-    static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, std::vector<const char*> deviceExtensions)
+    static bool isDeviceSuitable(
+        VkPhysicalDevice device,
+        VkSurfaceKHR surface,
+        std::vector<const char*> deviceExtensions
+    )
     {
         auto indices = my_vulkan::findQueueFamilies(device, surface);
         if (!indices.isComplete())
@@ -1638,15 +1637,26 @@ private:
         return supportedFeatures.samplerAnisotropy;
     }
 
-    static bool checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char*> deviceExtensions)
+    static bool checkDeviceExtensionSupport(
+        VkPhysicalDevice device,
+        std::vector<const char*> deviceExtensions
+    )
     {
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
         std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+        vkEnumerateDeviceExtensionProperties(
+            device,
+            nullptr,
+            &extensionCount,
+            availableExtensions.data()
+        );
 
-        std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+        std::set<std::string> requiredExtensions(
+            deviceExtensions.begin(),
+            deviceExtensions.end()
+        );
 
         for (const auto& extension : availableExtensions) {
             requiredExtensions.erase(extension.extensionName);
