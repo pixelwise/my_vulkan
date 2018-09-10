@@ -524,8 +524,7 @@ public:
             descriptorSetLayout
         );
         commandBuffers = createCommandBuffers(
-            logical_device.get(),
-            commandPool.get(),
+            commandPool,
             render_pass.get(),
             swapChainFramebuffers,
             swap_chain.extent(),
@@ -591,7 +590,7 @@ private:
     my_vulkan::descriptor_pool_t descriptor_pool;
     std::vector<my_vulkan::descriptor_set_t> descriptorSets;
 
-    std::vector<VkCommandBuffer> commandBuffers;
+    std::vector<my_vulkan::command_buffer_t> commandBuffers;
 
     std::vector<frame_sync_points_t> frame_sync_points;
     size_t currentFrame = 0;
@@ -645,12 +644,6 @@ private:
     {
         for (auto framebuffer : swapChainFramebuffers)
             vkDestroyFramebuffer(device, framebuffer, nullptr);
-        vkFreeCommandBuffers(
-            device,
-            commandPool.get(),
-            static_cast<uint32_t>(commandBuffers.size()),
-            commandBuffers.data()
-        );
         vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
         vkDestroyPipelineLayout(device, graphicsPipeline.layout, nullptr);
     }
@@ -717,8 +710,7 @@ private:
             swap_chain.extent()
         );
         commandBuffers = createCommandBuffers(
-            logical_device.get(),
-            commandPool.get(),
+            commandPool,
             render_pass.get(),
             swapChainFramebuffers,
             swap_chain.extent(),
@@ -1386,9 +1378,8 @@ private:
         command_pool.queue().wait_idle();
     }
 
-    static std::vector<VkCommandBuffer> createCommandBuffers(
-        VkDevice device,
-        VkCommandPool commandPool,
+    static std::vector<my_vulkan::command_buffer_t> createCommandBuffers(
+        my_vulkan::command_pool_t& command_pool,
         VkRenderPass renderPass,
         std::vector<VkFramebuffer>& swapChainFramebuffers,
         VkExtent2D extent, // swap_chain.extent
@@ -1399,67 +1390,46 @@ private:
         size_t size
     )
     {
-        std::vector<VkCommandBuffer> commandBuffers(size);
-
-        VkCommandBufferAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
-
-        if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate command buffers!");
-        }
-
-        for (size_t i = 0; i < commandBuffers.size(); i++) {
-            VkCommandBufferBeginInfo beginInfo = {};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-            if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-                throw std::runtime_error("failed to begin recording command buffer!");
-            }
-
-            VkRenderPassBeginInfo renderPassInfo = {};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = renderPass;
-            renderPassInfo.framebuffer = swapChainFramebuffers[i];
-            renderPassInfo.renderArea.offset = {0, 0};
-            renderPassInfo.renderArea.extent = extent;
-
-            std::array<VkClearValue, 2> clearValues = {};
-            clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-            clearValues[1].depthStencil = {1.0f, 0};
-
-            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-            renderPassInfo.pClearValues = clearValues.data();
-
-            vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
-
-            VkBuffer vertexBuffers[] = {vertex_buffer};
-            VkDeviceSize offsets[] = {0};
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-
-            vkCmdBindIndexBuffer(commandBuffers[i], index_buffer, 0, VK_INDEX_TYPE_UINT16);
-            auto descriptor_set_handle = descriptorSets[i].get();
-            vkCmdBindDescriptorSets(
-                commandBuffers[i],
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                graphicsPipeline.layout,
-                0, 1,
-                &descriptor_set_handle,
-                0, nullptr
+        std::vector<my_vulkan::command_buffer_t> command_buffers;
+        for (size_t i = 0; i < size; ++i)
+        {
+            auto command_buffer = command_pool.make_buffer();
+            auto command_scope = command_buffer.begin(
+                VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
             );
-
-            vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-
-            vkCmdEndRenderPass(commandBuffers[i]);
-
-            vk_require(vkEndCommandBuffer(commandBuffers[i]), "record command buffer");
+            command_scope.begin_render_pass(
+                renderPass, 
+                swapChainFramebuffers[i],
+                {{0, 0}, extent},
+                {
+                    {.color = {0.0f, 0.0f, 0.0f, 1.0f}},
+                    {.depthStencil = {1.0f, 0}},
+                },
+                VK_SUBPASS_CONTENTS_INLINE
+            );
+            command_scope.bind_pipeline(
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                graphicsPipeline.pipeline
+            );
+            command_scope.bind_vertex_buffers(
+                {{vertex_buffer, 0}}
+            );
+            command_scope.bind_index_buffer(
+                index_buffer,
+                VK_INDEX_TYPE_UINT16
+            );
+            command_scope.bind_descriptor_set(
+                VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                graphicsPipeline.layout,
+                {descriptorSets[i].get()}
+            );
+            command_scope.draw_indexed(
+                {0, static_cast<uint32_t>(indices.size())}
+            );
+            command_scope.end();
+            command_buffers.push_back(std::move(command_buffer));
         }
-        return commandBuffers;
+        return command_buffers;
     }
 
     void updateUniformBuffer(VkDevice device, uint32_t currentImage)
@@ -1529,8 +1499,9 @@ private:
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
+        auto command_buffer_handle = commandBuffers[imageIndex].get();
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+        submitInfo.pCommandBuffers = &command_buffer_handle;
 
         VkSemaphore signalSemaphores[] = {sync.renderFinished.get()};
         submitInfo.signalSemaphoreCount = 1;
