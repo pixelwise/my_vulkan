@@ -37,6 +37,11 @@ namespace my_vulkan
         return *this;
     }
 
+    descriptor_set_t descriptor_pool_t::make_descriptor_set(VkDescriptorSetLayout layout)
+    {
+        return {_device, _descriptor_pool, layout};
+    }
+
     VkDescriptorPool descriptor_pool_t::get()
     {
         return _descriptor_pool;
@@ -49,10 +54,15 @@ namespace my_vulkan
     
     void descriptor_pool_t::cleanup()
     {
-        vkDestroyDescriptorPool(
-            _device,
-            _descriptor_pool,
-            0
-        );
+        if (_device)
+        {
+            vkDestroyDescriptorPool(
+                _device,
+                _descriptor_pool,
+                0
+            );
+            _descriptor_pool = 0;
+            _device = 0;            
+        }
     }
 }

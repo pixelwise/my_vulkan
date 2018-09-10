@@ -2,6 +2,8 @@
 
 #include "vulkan/vulkan.h"
 
+#include "descriptor_set.hpp"
+
 namespace my_vulkan
 {
     struct descriptor_pool_t
@@ -13,6 +15,7 @@ namespace my_vulkan
         descriptor_pool_t& operator=(descriptor_pool_t&& other) noexcept;
         ~descriptor_pool_t();
         VkDescriptorPool get();
+        descriptor_set_t make_descriptor_set(VkDescriptorSetLayout layout);
     private:
         void cleanup();
         VkDevice _device;

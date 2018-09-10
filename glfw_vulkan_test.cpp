@@ -19,6 +19,7 @@
 #include "my_vulkan/command_pool.hpp"
 #include "my_vulkan/command_buffer.hpp"
 #include "my_vulkan/descriptor_pool.hpp"
+#include "my_vulkan/descriptor_set.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -509,8 +510,7 @@ public:
         );
         textureImageView = texture_image->view(VK_IMAGE_ASPECT_COLOR_BIT);
         descriptorSets = createDescriptorSets(
-            logical_device.get(),
-            descriptor_pool.get(),
+            descriptor_pool,
             uniform_buffers,
             textureImageView.get(),
             textureSampler,
@@ -589,7 +589,7 @@ private:
     std::vector<my_vulkan::buffer_t> uniform_buffers;
 
     my_vulkan::descriptor_pool_t descriptor_pool;
-    std::vector<VkDescriptorSet> descriptorSets;
+    std::vector<my_vulkan::descriptor_set_t> descriptorSets;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -613,7 +613,11 @@ private:
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
     {
-        auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+        auto app = reinterpret_cast<HelloTriangleApplication*>(
+            glfwGetWindowUserPointer(
+                window
+            )
+        );
         app->framebufferResized = true;
     }
 
@@ -739,10 +743,16 @@ private:
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = debugCallback;
-
         VkDebugUtilsMessengerEXT callback;
-        if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &callback) != VK_SUCCESS)
-            throw std::runtime_error("failed to set up debug callback!");
+        vk_require(
+            CreateDebugUtilsMessengerEXT(
+                instance,
+                &createInfo, 
+                nullptr,
+                &callback
+            ),
+            "cerating debug messenger"
+        );
         return callback;
     }
 
@@ -1330,67 +1340,35 @@ private:
         return result;
     }
 
-    static std::vector<VkDescriptorSet> createDescriptorSets(
-        VkDevice device,
-        VkDescriptorPool descriptorPool,
+    static std::vector<my_vulkan::descriptor_set_t> createDescriptorSets(
+        my_vulkan::descriptor_pool_t& descriptor_pool,
         std::vector<my_vulkan::buffer_t>& uniform_buffers,
         VkImageView textureImageView,
         VkSampler textureSampler,
-        const VkDescriptorSetLayout& descriptorSetLayout,
+        const VkDescriptorSetLayout& layout,
         uint32_t size
     )
     {
-        std::vector<VkDescriptorSet> descriptorSets;
-        std::vector<VkDescriptorSetLayout> layouts(size, descriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = size;
-        allocInfo.pSetLayouts = layouts.data();
-
-        descriptorSets.resize(size);
-        if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[0]) != VK_SUCCESS)
-            throw std::runtime_error("failed to allocate descriptor sets!");
-
+        std::vector<my_vulkan::descriptor_set_t> result;
         for (size_t i = 0; i < size; i++)
         {
-            VkDescriptorBufferInfo bufferInfo = {};
-            bufferInfo.buffer = uniform_buffers[i].get();
-            bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
-
-            VkDescriptorImageInfo imageInfo = {};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = textureImageView;
-            imageInfo.sampler = textureSampler;
-
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
-
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = descriptorSets[i];
-            descriptorWrites[0].dstBinding = 0;
-            descriptorWrites[0].dstArrayElement = 0;
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = descriptorSets[i];
-            descriptorWrites[1].dstBinding = 1;
-            descriptorWrites[1].dstArrayElement = 0;
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(
-                device,
-                static_cast<uint32_t>(descriptorWrites.size()),
-                descriptorWrites.data(),
+            auto descriptor_set = descriptor_pool.make_descriptor_set(layout);
+            descriptor_set.update_buffer_write(
                 0,
-                nullptr
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                {{uniform_buffers[i].get(), 0, sizeof(UniformBufferObject)}}
             );
+            descriptor_set.update_combined_image_sampler_write(
+                1,
+                {{
+                    textureSampler,
+                    textureImageView,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                }}
+            );
+            result.push_back(std::move(descriptor_set));
         }
-        return descriptorSets;
+        return result;
     }
 
     static void copyBuffer(
@@ -1417,7 +1395,7 @@ private:
         VkBuffer vertex_buffer, // vertex_buffer.buffer
         pipeline_t& graphicsPipeline,
         VkBuffer index_buffer, // index_buffer.buffer
-        std::vector<VkDescriptorSet>& descriptorSets,
+        std::vector<my_vulkan::descriptor_set_t>& descriptorSets,
         size_t size
     )
     {
@@ -1465,13 +1443,13 @@ private:
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
             vkCmdBindIndexBuffer(commandBuffers[i], index_buffer, 0, VK_INDEX_TYPE_UINT16);
-
+            auto descriptor_set_handle = descriptorSets[i].get();
             vkCmdBindDescriptorSets(
                 commandBuffers[i],
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 graphicsPipeline.layout,
                 0, 1,
-                &descriptorSets[i],
+                &descriptor_set_handle,
                 0, nullptr
             );
 
