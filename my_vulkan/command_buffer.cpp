@@ -197,10 +197,61 @@ namespace my_vulkan
     void command_buffer_t::scope_t::pipeline_barrier(
         VkPipelineStageFlags src_stage_mask,
         VkPipelineStageFlags dst_stage_mask,
-        VkDependencyFlags dependency_flags,
+        std::vector<VkMemoryBarrier> barriers,
+        VkDependencyFlags dependency_flags
+    )
+    {
+        pipeline_barrier(
+            src_stage_mask,
+            dst_stage_mask,
+            std::move(barriers),
+            {},
+            {},
+            dependency_flags
+        );   
+    }
+
+    void command_buffer_t::scope_t::pipeline_barrier(
+        VkPipelineStageFlags src_stage_mask,
+        VkPipelineStageFlags dst_stage_mask,
+        std::vector<VkBufferMemoryBarrier> barriers,
+        VkDependencyFlags dependency_flags
+    )
+    {
+        pipeline_barrier(
+            src_stage_mask,
+            dst_stage_mask,
+            {},
+            std::move(barriers),
+            {},
+            dependency_flags
+        );   
+    }
+
+    void command_buffer_t::scope_t::pipeline_barrier(
+        VkPipelineStageFlags src_stage_mask,
+        VkPipelineStageFlags dst_stage_mask,
+        std::vector<VkImageMemoryBarrier> barriers,
+        VkDependencyFlags dependency_flags
+    )
+    {
+        pipeline_barrier(
+            src_stage_mask,
+            dst_stage_mask,
+            {},
+            {},
+            std::move(barriers),
+            dependency_flags
+        );   
+    }
+
+    void command_buffer_t::scope_t::pipeline_barrier(
+        VkPipelineStageFlags src_stage_mask,
+        VkPipelineStageFlags dst_stage_mask,
         std::vector<VkMemoryBarrier> memory_barriers,
         std::vector<VkBufferMemoryBarrier> buffer_barriers,
-        std::vector<VkImageMemoryBarrier> image_barriers
+        std::vector<VkImageMemoryBarrier> image_barriers,
+        VkDependencyFlags dependency_flags
     )
     {
         vkCmdPipelineBarrier(

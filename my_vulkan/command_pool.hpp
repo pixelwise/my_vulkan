@@ -9,6 +9,16 @@ namespace my_vulkan
 {
     struct command_pool_t
     {
+        struct one_time_scope_t
+        {
+            one_time_scope_t(command_pool_t& pool);
+            command_buffer_t::scope_t& commands();
+            void execute_and_wait();
+        private:
+            command_buffer_t _buffer;
+            command_buffer_t::scope_t _scope;
+            queue_reference_t _queue;
+        };
        command_pool_t(
             VkDevice device,
             uint32_t queueFamilyIndex
@@ -21,6 +31,7 @@ namespace my_vulkan
         command_buffer_t make_buffer(
             VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY
         );
+        one_time_scope_t begin_oneshot();
         queue_reference_t queue();
         ~command_pool_t();
     private:

@@ -70,6 +70,7 @@ namespace my_vulkan
         tiling
     )}
     , _format{format}
+    , _extent{extent}
     , _borrowed{false}
     , _memory{new device_memory_t{
         _device,
@@ -84,11 +85,26 @@ namespace my_vulkan
         vkBindImageMemory(_device, _image, _memory->get(), 0);
     }
 
-    image_t::image_t(VkDevice device, VkImage image, VkFormat format)
+    image_t::image_t(
+        VkDevice device,
+        VkImage image,
+        VkFormat format,
+        VkExtent2D extent
+    ) : image_t{device, image, format, {extent.width, extent.height, 1}}
+    {
+    }
+
+    image_t::image_t(
+        VkDevice device,
+        VkImage image,
+        VkFormat format,
+        VkExtent3D extent
+    )
     : _device{device}
     , _image{image}
     , _format{format}
-    , _borrowed{true}
+    , _extent{extent}
+    , _borrowed{true} 
     {
     }
 
@@ -105,6 +121,7 @@ namespace my_vulkan
         _image = other._image;
         _memory = std::move(other._memory);
         _format = other._format;
+        _extent = other._extent;
         _borrowed = other._borrowed;
         std::swap(_device, other._device);
         return *this;
@@ -159,8 +176,131 @@ namespace my_vulkan
         return _memory.get();
     }
 
-    VkFormat image_t::format()
+    VkFormat image_t::format() const
     {
         return _format;
+    }
+
+    VkExtent3D image_t::extent() const
+    {
+        return _extent;
+    }
+
+    void image_t::copy_from(
+        VkBuffer buffer,
+        command_pool_t& command_pool,
+        boost::optional<VkExtent3D> extent
+    )
+    {
+        auto command_buffer = command_pool.make_buffer();
+        auto command_scope = command_buffer.begin(
+            VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+        );
+        copy_from(buffer, command_scope, extent);
+        command_scope.end();
+        command_pool.queue().submit(command_buffer.get());
+        command_pool.queue().wait_idle();   
+    }
+
+    void image_t::copy_from(
+        VkBuffer buffer,
+        command_buffer_t::scope_t& command_scope,
+        boost::optional<VkExtent3D> in_extent
+    )
+    {
+        VkBufferImageCopy region = {};
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0;
+        region.bufferImageHeight = 0;
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = in_extent.value_or(extent());
+        command_scope.copy(
+            buffer,
+            _image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            {region}
+        );
+    }
+
+    void image_t::transition_layout(
+        VkImageLayout oldLayout,
+        VkImageLayout newLayout,
+        command_buffer_t::scope_t& command_scope
+    )
+    {
+        VkImageMemoryBarrier barrier = {};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = oldLayout;
+        barrier.newLayout = newLayout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = get();
+
+        if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        {
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            if (has_stencil_component(format()))
+                barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+        else
+        {
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+
+        VkPipelineStageFlags sourceStage;
+        VkPipelineStageFlags destinationStage;
+
+        if (
+            oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+            newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        )
+        {
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        }
+        else if (
+            oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
+            newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        ) 
+        {
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else if (
+            oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+            newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        )
+        {
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask =
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        }
+        else
+        {
+            throw std::invalid_argument("unsupported layout transition!");
+        }
+
+        command_scope.pipeline_barrier(
+            sourceStage,
+            destinationStage,
+            {barrier}
+        );        
     }
 }

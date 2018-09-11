@@ -155,7 +155,7 @@ namespace my_vulkan
         vkGetSwapchainImagesKHR(device, _swap_chain, &imageCount, images.data());
         _format = surfaceFormat.format;
         for (auto image : images)
-            _images.push_back(image_t{_device, image, _format});
+            _images.push_back(image_t{_device, image, _format, _extent});
     }
     
     swap_chain_t::acquisition_outcome_t swap_chain_t::acquire_next_image(

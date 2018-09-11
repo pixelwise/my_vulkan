@@ -41,6 +41,7 @@ add_library(my_vulkan
   my_vulkan/device_memory.cpp
   my_vulkan/descriptor_pool.cpp
   my_vulkan/descriptor_set.cpp
+  my_vulkan/descriptor_set_layout.cpp
   my_vulkan/image.cpp
   my_vulkan/image_view.cpp
   my_vulkan/instance.cpp

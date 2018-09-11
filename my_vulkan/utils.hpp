@@ -33,5 +33,6 @@ namespace my_vulkan
     {
         uint32_t offset, count;
     };
+    bool has_stencil_component(VkFormat format);
 }
 
