@@ -473,15 +473,16 @@ public:
         swap_chain.format(),
         depth_format
     }
+    , depth_image{createDepthImage(
+        physical_device,
+        logical_device,
+        commandPool,
+        depth_format,
+        swap_chain.extent()
+    )}
     {        
-        depth_image = createDepthImage(
-            physical_device,
-            logical_device,
-            commandPool,
-            depth_format,
-            swap_chain.extent()
-        );
-        depth_view = depth_image->view(VK_IMAGE_ASPECT_DEPTH_BIT);
+        ;
+        depth_view = depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT);
         swapChainImageViews = createImageViews(
             swap_chain.images()
         );
@@ -575,7 +576,7 @@ private:
 
     my_vulkan::command_pool_t commandPool;
 
-    std::unique_ptr<my_vulkan::image_t> depth_image;
+    my_vulkan::image_t depth_image;
     my_vulkan::image_view_t depth_view;
 
     std::unique_ptr<my_vulkan::image_t> texture_image;
@@ -701,7 +702,7 @@ private:
             depth_format,
             swap_chain.extent()
         );
-        depth_view = depth_image->view(VK_IMAGE_ASPECT_DEPTH_BIT);
+        depth_view = depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT);
         swapChainFramebuffers = createFramebuffers(
             logical_device.get(),
             swapChainImageViews,
@@ -984,7 +985,7 @@ private:
         return result;
     }
 
-    static std::unique_ptr<my_vulkan::image_t> createDepthImage(
+    static my_vulkan::image_t createDepthImage(
         VkPhysicalDevice physical_device,
         my_vulkan::device_t& logical_device,
         my_vulkan::command_pool_t& commandPool,
@@ -992,15 +993,15 @@ private:
         VkExtent2D extent
     )
     {
-        std::unique_ptr<my_vulkan::image_t> result{new my_vulkan::image_t{
+        my_vulkan::image_t result{
             logical_device,
             {extent.width, extent.height, 1},
             format,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        }};
+        };
         transitionImageLayout(
             commandPool,
-            *result,
+            result,
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
         );
@@ -1055,26 +1056,9 @@ private:
     {
         int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load("../texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-        if (!pixels) {
+        if (!pixels)
             throw std::runtime_error("failed to load texture image!");
-        }
-
-        my_vulkan::buffer_t staging_buffer{
-            logical_device,
-            imageSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        };
-
-        void* data;
-        vkMapMemory(logical_device.get(), staging_buffer.memory()->get(), 0, imageSize, 0, &data);
-        memcpy(data, pixels, static_cast<size_t>(imageSize));
-        vkUnmapMemory(logical_device.get(), staging_buffer.memory()->get());
-
-        stbi_image_free(pixels);
-
+        VkDeviceSize imageSize = texWidth * texHeight * 4;
 
         std::unique_ptr<my_vulkan::image_t> result{new my_vulkan::image_t{
             logical_device,
@@ -1089,6 +1073,15 @@ private:
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
         );
+
+#if 1
+        my_vulkan::buffer_t staging_buffer{
+            logical_device,
+            imageSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        };
+        staging_buffer.memory()->set_data(pixels, imageSize);
         copyBufferToImage(
             logical_device,
             commandPool,
@@ -1097,6 +1090,12 @@ private:
             static_cast<uint32_t>(texWidth),
             static_cast<uint32_t>(texHeight)
         );
+#else
+        result->memory()->set_data(pixels, imageSize);
+#endif
+
+        stbi_image_free(pixels);
+
         transitionImageLayout(
             commandPool,
             *result,
