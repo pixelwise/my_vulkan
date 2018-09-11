@@ -21,9 +21,10 @@ namespace my_vulkan
         device_t(const device_t&) = delete;
         ~device_t();
         VkDevice get();
-        VkQueue graphics_queue();
-        VkQueue present_queue();
+        queue_reference_t graphics_queue();
+        queue_reference_t present_queue();
         VkPhysicalDevice physical_device();
+        void wait_idle();
     private:
         VkPhysicalDevice _physical_device;
         VkDevice _device;

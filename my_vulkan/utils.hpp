@@ -6,6 +6,12 @@
 
 namespace my_vulkan
 {
+    enum class acquisition_failure_t {
+        not_ready,
+        timeout,
+        out_of_date,
+        suboptimal
+    };
     void vk_require(VkResult result, const char* description);
     struct queue_family_indices_t
     {

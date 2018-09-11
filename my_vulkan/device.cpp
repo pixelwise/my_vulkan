@@ -55,13 +55,21 @@ namespace my_vulkan
         return _device;
     }
 
-    VkQueue device_t::graphics_queue()
+    queue_reference_t device_t::graphics_queue()
     {
         return _graphicsQueue;
     }
 
-    VkQueue device_t::present_queue()
+    queue_reference_t device_t::present_queue()
     {
         return _presentQueue;
+    }
+
+    void device_t::wait_idle()
+    {
+        vk_require(
+            vkDeviceWaitIdle(_device),
+            "waiting for device to be idle"
+        );
     }
 }

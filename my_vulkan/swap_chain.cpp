@@ -158,7 +158,63 @@ namespace my_vulkan
             _images.push_back(image_t{_device, image, _format});
     }
     
-    VkSwapchainKHR swap_chain_t::swap_chain()
+    swap_chain_t::acquisition_outcome_t swap_chain_t::acquire_next_image(
+        VkSemaphore semaphore,
+        boost::optional<uint64_t> timeout
+    )
+    {
+        return acquire_next_image(semaphore, 0, timeout);
+    }
+
+    swap_chain_t::acquisition_outcome_t swap_chain_t::acquire_next_image(
+        VkFence fence,
+        boost::optional<uint64_t> timeout
+    )
+    {
+        return acquire_next_image(0, fence, timeout);
+    }
+
+    swap_chain_t::acquisition_outcome_t swap_chain_t::acquire_next_image(
+        VkSemaphore semaphore,
+        VkFence fence,
+        boost::optional<uint64_t> timeout
+    )
+    {
+        swap_chain_t::acquisition_outcome_t result;
+        uint32_t image_index;
+        VkResult result_code = vkAcquireNextImageKHR(
+            _device,
+            _swap_chain,
+            timeout.value_or(std::numeric_limits<uint64_t>::max()),
+            semaphore,
+            fence,
+            &image_index
+        );
+        switch(result_code)
+        {
+            case VK_SUCCESS:
+                result.image_index = image_index;
+                break;
+            case VK_SUBOPTIMAL_KHR:
+                result.image_index = image_index;
+                result.failure = acquisition_failure_t::suboptimal;
+                break;
+            case VK_NOT_READY:
+                result.failure = acquisition_failure_t::not_ready;
+                break;
+            case VK_TIMEOUT:
+                result.failure = acquisition_failure_t::timeout;
+                break;
+            case VK_ERROR_OUT_OF_DATE_KHR:
+                result.failure = acquisition_failure_t::out_of_date;
+                break;
+            default:
+                vk_require(result_code, "acquiring image from swap chain");
+        }
+        return result;
+    }
+
+    VkSwapchainKHR swap_chain_t::get()
     {
         return _swap_chain;
     }

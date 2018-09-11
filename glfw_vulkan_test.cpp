@@ -630,14 +630,14 @@ private:
         };        
     }
 
-    void mainLoop() {
+    void mainLoop()
+    {
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
-            drawFrame(logical_device);
+            draw_frame();
         }
-
-        vkDeviceWaitIdle(logical_device.get());
+        logical_device.wait_idle();
     }
 
     void cleanupSwapChain(VkDevice device)
@@ -1467,88 +1467,47 @@ private:
         vkUnmapMemory(device, buffer.memory()->get());
     }
 
-    void drawFrame(my_vulkan::device_t& logical_device)
+    void draw_frame()
+    {
+        auto acquisition_failure = try_draw_frame();
+        if (
+            acquisition_failure == my_vulkan::acquisition_failure_t::out_of_date ||
+            acquisition_failure == my_vulkan::acquisition_failure_t::suboptimal
+        )
+        {
+            recreateSwapChain(logical_device);
+            try_draw_frame();       
+        }
+    }
+
+    boost::optional<my_vulkan::acquisition_failure_t> try_draw_frame()
     {
         auto& sync = frame_sync_points[currentFrame];
         sync.inFlight.wait();
-
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(
-            logical_device.get(),
-            swap_chain.swap_chain(),
-            std::numeric_limits<uint64_t>::max(),
-            sync.imageAvailable.get(),
-            VK_NULL_HANDLE,
-            &imageIndex
+        auto acquisition_result = swap_chain.acquire_next_image(
+            sync.imageAvailable.get()
         );
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR)
-        {
-            recreateSwapChain(logical_device);
-            return;
-        } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            throw std::runtime_error("failed to acquire swap chain image!");
-        }
-
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkSemaphore waitSemaphores[] = {sync.imageAvailable.get()};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
-
-        auto command_buffer_handle = commandBuffers[imageIndex].get();
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &command_buffer_handle;
-
-        VkSemaphore signalSemaphores[] = {sync.renderFinished.get()};
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
-
+        if (acquisition_result.failure)
+            return acquisition_result.failure;
+        uint32_t image_index = *acquisition_result.image_index;
         sync.inFlight.reset();
-
-        updateUniformBuffer(logical_device.get(), imageIndex);
-
-        vk_require(
-            vkQueueSubmit(
-                logical_device.graphics_queue(),
-                1,
-                &submitInfo,
-                sync.inFlight.get()
-            ),
-            "submit draw command"
+        updateUniformBuffer(logical_device.get(), image_index);
+        logical_device.graphics_queue().submit(
+            commandBuffers[image_index].get(),
+            {{
+                sync.imageAvailable.get(),
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+            }},
+            {sync.renderFinished.get()},
+            sync.inFlight.get()
         );
-
-        VkPresentInfoKHR presentInfo = {};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
-
-        VkSwapchainKHR swapChains[] = {swap_chain.swap_chain()};
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains;
-
-        presentInfo.pImageIndices = &imageIndex;
-
-        result = vkQueuePresentKHR(logical_device.present_queue(), &presentInfo);
-        if (
-            result == VK_ERROR_OUT_OF_DATE_KHR ||
-            result == VK_SUBOPTIMAL_KHR ||
-            framebufferResized
-        )
-        {
-            framebufferResized = false;
-            recreateSwapChain(logical_device);
-        }
-        else if (result != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to present swap chain image!");
-        }
-
+        if (auto presentation_failure = logical_device.present_queue().present(
+            {swap_chain.get(), image_index},
+            {sync.renderFinished.get()}
+        ))
+            return presentation_failure;
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        return boost::none;
     }
 
     static VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code)
