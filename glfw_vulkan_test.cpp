@@ -475,7 +475,6 @@ public:
         depth_format
     }
     , depth_image{createDepthImage(
-        physical_device,
         logical_device,
         commandPool,
         depth_format,
@@ -706,7 +705,6 @@ private:
             descriptor_set_layout.get()
         );
         depth_image = createDepthImage(
-            physical_device,
             logical_device,
             commandPool,
             depth_format,
@@ -968,7 +966,6 @@ private:
     }
 
     static my_vulkan::image_t createDepthImage(
-        VkPhysicalDevice physical_device,
         my_vulkan::device_t& logical_device,
         my_vulkan::command_pool_t& command_pool,
         VkFormat format,

@@ -146,7 +146,8 @@ namespace my_vulkan
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
-        vk_require(vkCreateSwapchainKHR(device, &createInfo, nullptr, &_swap_chain),
+        vk_require(
+            vkCreateSwapchainKHR(device, &createInfo, nullptr, &_swap_chain),
             "creating swap chain"
         );
         std::vector<VkImage> images;
@@ -158,6 +159,37 @@ namespace my_vulkan
             _images.push_back(image_t{_device, image, _format, _extent});
     }
     
+    swap_chain_t::swap_chain_t(swap_chain_t&& other) noexcept
+    {
+        *this = std::move(other);
+    }
+
+    swap_chain_t& swap_chain_t::operator=(swap_chain_t&& other) noexcept
+    {
+        cleanup();
+        _swap_chain = other._swap_chain;
+        _format = other._format;
+        _extent = other._extent;
+        _images = std::move(other._images);
+        std::swap(_device, other._device);
+        return *this;
+    }
+
+
+    swap_chain_t::~swap_chain_t()
+    {
+        cleanup();
+    }
+
+    void swap_chain_t::cleanup()
+    {
+        if (_device)
+        {
+            vkDestroySwapchainKHR(_device, _swap_chain, 0);
+            _device = 0;
+        }
+    }
+
     swap_chain_t::acquisition_outcome_t swap_chain_t::acquire_next_image(
         VkSemaphore semaphore,
         boost::optional<uint64_t> timeout

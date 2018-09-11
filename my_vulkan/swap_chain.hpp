@@ -22,6 +22,10 @@ namespace my_vulkan
             queue_family_indices_t queue_indices,
             VkExtent2D actual_extent
         );
+        swap_chain_t(const swap_chain_t&) = delete;
+        swap_chain_t(swap_chain_t&& other) noexcept;
+        swap_chain_t& operator=(const swap_chain_t&) = delete;
+        swap_chain_t& operator=(swap_chain_t&& other) noexcept;
         const std::vector<image_t>& images();
         VkFormat format() const;
         VkExtent2D extent() const;
@@ -39,7 +43,9 @@ namespace my_vulkan
             boost::optional<uint64_t> timeout = boost::none
         );
         VkSwapchainKHR get();
+        ~swap_chain_t();
     private:
+        void cleanup();
         VkDevice _device;
         VkSwapchainKHR _swap_chain;
         std::vector<image_t> _images;
