@@ -37,17 +37,19 @@ add_library(my_vulkan
   my_vulkan/buffer.cpp
   my_vulkan/command_buffer.cpp
   my_vulkan/command_pool.cpp
-  my_vulkan/device.cpp
-  my_vulkan/device_memory.cpp
   my_vulkan/descriptor_pool.cpp
   my_vulkan/descriptor_set.cpp
   my_vulkan/descriptor_set_layout.cpp
+  my_vulkan/device.cpp
+  my_vulkan/device_memory.cpp
+  my_vulkan/fence.cpp
   my_vulkan/image.cpp
   my_vulkan/image_view.cpp
   my_vulkan/instance.cpp
+  my_vulkan/queue.cpp
+  my_vulkan/semaphore.cpp
   my_vulkan/surface.cpp
   my_vulkan/swap_chain.cpp
-  my_vulkan/queue.cpp
   my_vulkan/utils.cpp
 )
 

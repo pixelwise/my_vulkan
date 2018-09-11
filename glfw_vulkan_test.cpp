@@ -9,18 +9,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#include "my_vulkan/utils.hpp"
-#include "my_vulkan/instance.hpp"
-#include "my_vulkan/surface.hpp"
-#include "my_vulkan/device.hpp"
-#include "my_vulkan/swap_chain.hpp"
-#include "my_vulkan/image.hpp"
-#include "my_vulkan/buffer.hpp"
-#include "my_vulkan/command_pool.hpp"
-#include "my_vulkan/command_buffer.hpp"
-#include "my_vulkan/descriptor_pool.hpp"
-#include "my_vulkan/descriptor_set.hpp"
-#include "my_vulkan/descriptor_set_layout.hpp"
+#include "my_vulkan/my_vulkan.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -297,104 +286,6 @@ struct pipeline_t
     VkPipelineLayout layout;
 };
 
-struct fence_t
-{
-    fence_t(
-        VkDevice device,
-        VkFenceCreateFlags flags = VK_FENCE_CREATE_SIGNALED_BIT
-    )
-    : _device{device}
-    {
-        VkFenceCreateInfo fenceInfo = {};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = flags;
-        vk_require(
-            vkCreateFence(device, &fenceInfo, nullptr, &_fence), 
-            "create fence"
-        );
-    }
-    fence_t(const fence_t&) = delete;
-    fence_t& operator=(const fence_t&) = delete;
-    fence_t(fence_t&& other) noexcept
-    : _device{0}
-    {
-        *this = std::move(other);
-    }
-    fence_t& operator=(fence_t&& other) noexcept
-    {
-        cleanup();
-        _fence = other._fence;
-        std::swap(_device, other._device);
-        return *this;
-    }
-    void reset()
-    {
-        vkResetFences(_device, 1, &_fence);        
-    }
-    void wait(
-        uint64_t timeout = std::numeric_limits<uint64_t>::max()
-    )
-    {
-        vkWaitForFences(_device, 1, &_fence, VK_TRUE, timeout);
-    }
-    VkFence get() {return _fence;}
-private:
-    void cleanup()
-    {
-        if (_device)
-        {
-            vkDestroyFence(_device, _fence, 0);
-            _device = 0;
-        }
-    }
-    VkDevice _device;
-    VkFence _fence;
-};
-
-struct semaphore_t
-{
-    semaphore_t(
-        VkDevice device,
-        VkSemaphoreCreateFlags flags = 0
-    )
-    : _device{device}
-    {
-        VkSemaphoreCreateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        info.flags = flags;
-        vk_require(
-            vkCreateSemaphore(device, &info, nullptr, &_semaphore), 
-            "create semaphore"
-        );
-    }
-    semaphore_t(const semaphore_t&) = delete;
-    semaphore_t& operator=(const semaphore_t&) = delete;
-    semaphore_t(semaphore_t&& other) noexcept
-    : _device{0}
-    {
-        *this = std::move(other);
-    }
-    semaphore_t& operator=(semaphore_t&& other) noexcept
-    {
-        cleanup();
-        _semaphore = other._semaphore;
-        std::swap(_device, other._device);
-        return *this;
-    }
-    VkSemaphore get() {return _semaphore;}
-private:
-    void cleanup()
-    {
-        if (_device)
-        {
-            vkDestroySemaphore(_device, _semaphore, 0);
-            _device = 0;
-        }
-    }
-    VkDevice _device;
-    VkSemaphore _semaphore;    
-};
-
 struct frame_sync_points_t
 {
     frame_sync_points_t(VkDevice device)
@@ -402,9 +293,9 @@ struct frame_sync_points_t
     , renderFinished{device}
     , inFlight{device}
     {}
-    semaphore_t imageAvailable;
-    semaphore_t renderFinished;
-    fence_t inFlight;
+    my_vulkan::semaphore_t imageAvailable;
+    my_vulkan::semaphore_t renderFinished;
+    my_vulkan::fence_t inFlight;
 };
 
 class HelloTriangleApplication {
