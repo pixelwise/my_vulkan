@@ -10,6 +10,7 @@ namespace my_vulkan
         config_t config
     )
     : _device{device}
+    , _size{config.size}
     {
         VkMemoryAllocateInfo info{
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -40,6 +41,7 @@ namespace my_vulkan
     {
         cleanup();
         _memory = other._memory;
+        _size = other._size;
         std::swap(_device, other._device);
         return *this;
     }
