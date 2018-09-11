@@ -480,9 +480,14 @@ public:
         depth_format,
         swap_chain.extent()
     )}
+    , texture_image{createTextureImage(
+        physical_device,
+        logical_device,
+        commandPool
+    )}
     {        
-        ;
         depth_view = depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT);
+        texture_view = texture_image.view(VK_IMAGE_ASPECT_COLOR_BIT);
         swapChainImageViews = createImageViews(
             swap_chain.images()
         );
@@ -493,8 +498,7 @@ public:
             render_pass.get(),
             swap_chain.extent()
         );
-
-        textureSampler = createTextureSampler(
+        texture_sampler = createTextureSampler(
             logical_device.get()
         );
         descriptorSetLayout = createDescriptorSetLayout(
@@ -504,17 +508,11 @@ public:
             logical_device,
             swap_chain.images().size()
         );
-        texture_image = createTextureImage(
-            physical_device,
-            logical_device,
-            commandPool
-        );
-        textureImageView = texture_image->view(VK_IMAGE_ASPECT_COLOR_BIT);
         descriptorSets = createDescriptorSets(
             descriptor_pool,
             uniform_buffers,
-            textureImageView.get(),
-            textureSampler,
+            texture_view.get(),
+            texture_sampler,
             descriptorSetLayout,
             static_cast<uint32_t>(swap_chain.images().size())
         );
@@ -579,9 +577,9 @@ private:
     my_vulkan::image_t depth_image;
     my_vulkan::image_view_t depth_view;
 
-    std::unique_ptr<my_vulkan::image_t> texture_image;
-    my_vulkan::image_view_t textureImageView;
-    VkSampler textureSampler;
+    my_vulkan::image_t texture_image;
+    my_vulkan::image_view_t texture_view;
+    VkSampler texture_sampler;
 
     my_vulkan::buffer_t vertex_buffer;
     my_vulkan::buffer_t index_buffer;
@@ -652,7 +650,7 @@ private:
     void cleanup()
     {
         cleanupSwapChain(logical_device.get());
-        vkDestroySampler(logical_device.get(), textureSampler, nullptr);
+        vkDestroySampler(logical_device.get(), texture_sampler, nullptr);
         vkDestroyDescriptorSetLayout(logical_device.get(), descriptorSetLayout, nullptr);
         if (callback)
             DestroyDebugUtilsMessengerEXT(instance.get(), callback, nullptr);
@@ -1048,7 +1046,7 @@ private:
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    static std::unique_ptr<my_vulkan::image_t> createTextureImage(
+    static my_vulkan::image_t createTextureImage(
         VkPhysicalDevice physical_device,
         my_vulkan::device_t& logical_device,
         my_vulkan::command_pool_t& commandPool
@@ -1060,16 +1058,16 @@ private:
             throw std::runtime_error("failed to load texture image!");
         VkDeviceSize imageSize = texWidth * texHeight * 4;
 
-        std::unique_ptr<my_vulkan::image_t> result{new my_vulkan::image_t{
+        my_vulkan::image_t result{
             logical_device,
             {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)},
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        }};
+        };
 
         transitionImageLayout(
             commandPool,
-            *result,
+            result,
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
         );
@@ -1086,7 +1084,7 @@ private:
             logical_device,
             commandPool,
             staging_buffer.get(),
-            result->get(),
+            result.get(),
             static_cast<uint32_t>(texWidth),
             static_cast<uint32_t>(texHeight)
         );
@@ -1098,7 +1096,7 @@ private:
 
         transitionImageLayout(
             commandPool,
-            *result,
+            result,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
@@ -1334,8 +1332,8 @@ private:
     static std::vector<my_vulkan::descriptor_set_t> createDescriptorSets(
         my_vulkan::descriptor_pool_t& descriptor_pool,
         std::vector<my_vulkan::buffer_t>& uniform_buffers,
-        VkImageView textureImageView,
-        VkSampler textureSampler,
+        VkImageView texture_view,
+        VkSampler texture_sampler,
         const VkDescriptorSetLayout& layout,
         uint32_t size
     )
@@ -1352,8 +1350,8 @@ private:
             descriptor_set.update_combined_image_sampler_write(
                 1,
                 {{
-                    textureSampler,
-                    textureImageView,
+                    texture_sampler,
+                    texture_view,
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                 }}
             );
