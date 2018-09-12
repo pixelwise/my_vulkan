@@ -5,8 +5,8 @@
 
 #include <vulkan/vulkan.h>
 
-#include "utils.hpp"
 #include "queue.hpp"
+#include "utils.hpp"
 
 namespace my_vulkan
 {

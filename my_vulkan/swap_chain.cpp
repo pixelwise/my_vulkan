@@ -111,6 +111,7 @@ namespace my_vulkan
         VkSurfaceFormatKHR surfaceFormat = choose_surface_format(support.formats);
         VkPresentModeKHR presentMode = choose_present_mode(support.presentModes);
         _extent = choose_extent(actual_extent, support.capabilities);
+        _format = surfaceFormat.format;
 
         uint32_t imageCount = support.capabilities.minImageCount + 1;
         if (
@@ -124,7 +125,7 @@ namespace my_vulkan
         createInfo.surface = surface;
 
         createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = surfaceFormat.format;
+        createInfo.imageFormat = _format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
         createInfo.imageExtent = _extent;
         createInfo.imageArrayLayers = 1;
@@ -154,7 +155,6 @@ namespace my_vulkan
         vkGetSwapchainImagesKHR(device, _swap_chain, &imageCount, nullptr);
         images.resize(imageCount);
         vkGetSwapchainImagesKHR(device, _swap_chain, &imageCount, images.data());
-        _format = surfaceFormat.format;
         for (auto image : images)
             _images.push_back(image_t{_device, image, _format, _extent});
     }

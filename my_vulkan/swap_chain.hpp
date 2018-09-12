@@ -53,6 +53,11 @@ namespace my_vulkan
         VkExtent2D _extent;
     };
 
+    struct swap_chain_config_t
+    {
+        
+    };
+
     struct swap_chain_support_t
     {
         VkSurfaceCapabilitiesKHR capabilities;

@@ -232,7 +232,6 @@ public:
     }
     , depth_image{createDepthImage(
         logical_device,
-        command_pool,
         depth_format,
         swap_chain.extent()
     )}
@@ -451,7 +450,6 @@ private:
         };
         depth_image = createDepthImage(
             logical_device,
-            command_pool,
             depth_format,
             swap_chain.extent()
         );
@@ -573,7 +571,6 @@ private:
 
     static my_vulkan::image_t createDepthImage(
         my_vulkan::device_t& logical_device,
-        my_vulkan::command_pool_t& command_pool,
         VkFormat format,
         VkExtent2D extent
     )
@@ -583,19 +580,8 @@ private:
             {extent.width, extent.height, 1},
             format,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
         };
-        auto oneshot_scope = command_pool.begin_oneshot();
-        result.transition_layout(
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            oneshot_scope.commands()
-        );
-        result.transition_layout(
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            oneshot_scope.commands()
-        );
-        oneshot_scope.execute_and_wait();
         return result;
     }
 

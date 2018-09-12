@@ -1,4 +1,5 @@
 #include "device.hpp"
+#include "utils.hpp"
 
 namespace my_vulkan
 {

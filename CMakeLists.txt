@@ -54,6 +54,7 @@ add_library(my_vulkan
   my_vulkan/surface.cpp
   my_vulkan/swap_chain.cpp
   my_vulkan/utils.cpp
+  my_vulkan/helpers/standard_swap_chain.cpp
 )
 
 add_executable(${PROJECT_NAME} glfw_vulkan_test.cpp)

@@ -30,7 +30,8 @@ namespace my_vulkan
         VkExtent3D extent,
         VkFormat format,
         VkImageUsageFlags usage,
-        VkImageTiling tiling
+        VkImageTiling tiling,
+        VkImageLayout initial_layout
     )
     {
         VkImageCreateInfo imageInfo = {};
@@ -41,7 +42,7 @@ namespace my_vulkan
         imageInfo.arrayLayers = 1;
         imageInfo.format = format;
         imageInfo.tiling = tiling;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.initialLayout = initial_layout;
         imageInfo.usage = usage;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -58,6 +59,7 @@ namespace my_vulkan
         VkExtent3D extent,
         VkFormat format,
         VkImageUsageFlags usage,
+        VkImageLayout initial_layout,
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties
     )
@@ -67,7 +69,8 @@ namespace my_vulkan
         extent,
         format,
         usage,
-        tiling
+        tiling,
+        initial_layout
     )}
     , _format{format}
     , _extent{extent}
