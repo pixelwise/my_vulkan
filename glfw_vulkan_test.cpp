@@ -96,8 +96,8 @@ struct Vertex {
         return bindingDescription;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
+    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions() {
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions(3);
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -115,6 +115,14 @@ struct Vertex {
         attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
         return attributeDescriptions;
+    }
+
+    static my_vulkan::vertex_layout_t layout()
+    {
+        return {
+            getBindingDescription(),
+            getAttributeDescriptions()
+        };
     }
 };
 
@@ -334,17 +342,17 @@ public:
         validationLayers,
         deviceExtensions
     }
-    , commandPool{
+    , command_pool{
         logical_device.get(),
         *queue_indices.graphics
     }
     , vertex_buffer{createVertexBuffer(
         logical_device,
-        commandPool
+        command_pool
     )}
     , index_buffer{createIndexBuffer(
         logical_device,
-        commandPool
+        command_pool
     )}
     , swap_chain{
         physical_device,
@@ -367,14 +375,14 @@ public:
     }
     , depth_image{createDepthImage(
         logical_device,
-        commandPool,
+        command_pool,
         depth_format,
         swap_chain.extent()
     )}
     , texture_image{createTextureImage(
         physical_device,
         logical_device,
-        commandPool
+        command_pool
     )}
     , descriptor_set_layout{
         logical_device.get(),
@@ -392,51 +400,53 @@ public:
             0
         }}
     }
-    {        
-        depth_view = depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT);
-        texture_view = texture_image.view(VK_IMAGE_ASPECT_COLOR_BIT);
-        swapChainImageViews = createImageViews(
+    , depth_view{depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT)}
+    , texture_view{texture_image.view(VK_IMAGE_ASPECT_COLOR_BIT)}
+    , swap_chain_image_views{createImageViews(
             swap_chain.images()
-        );
-        swapChainFramebuffers = createFramebuffers(
-            logical_device.get(),
-            swapChainImageViews,
-            depth_view,
-            render_pass.get(),
-            swap_chain.extent()
-        );
-        texture_sampler = createTextureSampler(
-            logical_device.get()
-        );
-        uniform_buffers = createUniformBuffers(
-            logical_device,
-            swap_chain.images().size()
-        );
-        descriptorSets = createDescriptorSets(
-            descriptor_pool,
-            uniform_buffers,
-            texture_view.get(),
-            texture_sampler,
-            descriptor_set_layout.get(),
-            static_cast<uint32_t>(swap_chain.images().size())
-        );
-        graphicsPipeline = createGraphicsPipeline(
-            logical_device.get(),
-            swap_chain.extent(),
-            render_pass.get(),
-            descriptor_set_layout.get()
-        );
-        commandBuffers = createCommandBuffers(
-            commandPool,
-            render_pass.get(),
-            swapChainFramebuffers,
-            swap_chain.extent(),
-            vertex_buffer.get(),
-            graphicsPipeline,
-            index_buffer.get(),
-            descriptorSets
-        );
-
+    )}
+    , swap_chain_framebuffers{createFramebuffers(
+        logical_device.get(),
+        swap_chain_image_views,
+        depth_view,
+        render_pass.get(),
+        swap_chain.extent()
+    )}
+    , texture_sampler{createTextureSampler(
+        logical_device.get()
+    )}
+    , uniform_buffers{createUniformBuffers(
+        logical_device,
+        swap_chain.images().size()
+    )}
+    , descriptor_sets{createDescriptorSets(
+        descriptor_pool,
+        uniform_buffers,
+        texture_view.get(),
+        texture_sampler,
+        descriptor_set_layout.get(),
+        static_cast<uint32_t>(swap_chain.images().size())
+    )}
+    , graphics_pipeline{
+        logical_device.get(),
+        swap_chain.extent(),
+        render_pass.get(),
+        descriptor_set_layout.get(),
+        Vertex::layout(),
+        readFile("shaders/26_shader_depth.vert.spv"),
+        readFile("shaders/26_shader_depth.frag.spv")
+    }
+    , command_buffers{createCommandBuffers(
+        command_pool,
+        render_pass.get(),
+        swap_chain_framebuffers,
+        swap_chain.extent(),
+        vertex_buffer.get(),
+        graphics_pipeline,
+        index_buffer.get(),
+        descriptor_sets
+    )}
+    {
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
             frame_sync_points.emplace_back(logical_device.get());
     }
@@ -452,51 +462,38 @@ public:
     }
 
 private:
+
     GLFWwindow* window;
     std::vector<const char*> validationLayers;
     std::vector<const char*> deviceExtensions;
-
     my_vulkan::instance_t instance;
     VkDebugUtilsMessengerEXT callback;
     my_vulkan::surface_t surface;
-
     VkPhysicalDevice physical_device;
     my_vulkan::queue_family_indices_t queue_indices;
     my_vulkan::device_t logical_device;
-
-    my_vulkan::swap_chain_t swap_chain;
-
-    VkFormat depth_format;
-
-    std::vector<my_vulkan::image_view_t> swapChainImageViews;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
-
-    render_pass_t render_pass;
-    my_vulkan::descriptor_set_layout_t descriptor_set_layout;
-    pipeline_t graphicsPipeline;
-
-    my_vulkan::command_pool_t commandPool;
-
-    my_vulkan::image_t depth_image;
-    my_vulkan::image_view_t depth_view;
-
-    my_vulkan::image_t texture_image;
-    my_vulkan::image_view_t texture_view;
-    VkSampler texture_sampler;
-
+    my_vulkan::command_pool_t command_pool;
     my_vulkan::buffer_t vertex_buffer;
-    my_vulkan::buffer_t index_buffer;
-
-    std::vector<my_vulkan::buffer_t> uniform_buffers;
-
+    my_vulkan::buffer_t index_buffer;    
+    my_vulkan::swap_chain_t swap_chain;
     my_vulkan::descriptor_pool_t descriptor_pool;
-    std::vector<my_vulkan::descriptor_set_t> descriptorSets;
-
-    std::vector<my_vulkan::command_buffer_t> commandBuffers;
-
+    VkFormat depth_format;
+    render_pass_t render_pass;
+    my_vulkan::image_t depth_image;
+    my_vulkan::image_t texture_image;
+    my_vulkan::descriptor_set_layout_t descriptor_set_layout;
+    my_vulkan::image_view_t depth_view;
+    my_vulkan::image_view_t texture_view;
+    std::vector<my_vulkan::image_view_t> swap_chain_image_views;
+    std::vector<VkFramebuffer> swap_chain_framebuffers;
+    VkSampler texture_sampler;
+    std::vector<my_vulkan::buffer_t> uniform_buffers;
+    std::vector<my_vulkan::descriptor_set_t> descriptor_sets;
+    my_vulkan::graphics_pipeline_t graphics_pipeline;
+    std::vector<my_vulkan::command_buffer_t> command_buffers;
     std::vector<frame_sync_points_t> frame_sync_points;
-    size_t currentFrame = 0;
 
+    size_t currentFrame = 0;
     bool framebufferResized = false;
 
     static GLFWwindow* initWindow(void* userdata)
@@ -554,10 +551,8 @@ private:
 
     void cleanupSwapChain(VkDevice device)
     {
-        for (auto framebuffer : swapChainFramebuffers)
+        for (auto framebuffer : swap_chain_framebuffers)
             vkDestroyFramebuffer(device, framebuffer, nullptr);
-        vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
-        vkDestroyPipelineLayout(device, graphicsPipeline.layout, nullptr);
     }
 
     void recreateSwapChain(my_vulkan::device_t& logical_device)
@@ -581,7 +576,7 @@ private:
             queue_indices,
             window_extent()
         };
-        swapChainImageViews = createImageViews(
+        swap_chain_image_views = createImageViews(
             swap_chain.images()
         );
         render_pass = render_pass_t{
@@ -589,35 +584,38 @@ private:
             swap_chain.format(),
             depth_format
         };
-        graphicsPipeline = createGraphicsPipeline(
+        graphics_pipeline = my_vulkan::graphics_pipeline_t{
             logical_device.get(),
             swap_chain.extent(),
             render_pass.get(),
-            descriptor_set_layout.get()
-        );
+            descriptor_set_layout.get(),
+            Vertex::layout(),
+            readFile("shaders/26_shader_depth.vert.spv"),
+            readFile("shaders/26_shader_depth.frag.spv")
+        };
         depth_image = createDepthImage(
             logical_device,
-            commandPool,
+            command_pool,
             depth_format,
             swap_chain.extent()
         );
         depth_view = depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT);
-        swapChainFramebuffers = createFramebuffers(
+        swap_chain_framebuffers = createFramebuffers(
             logical_device.get(),
-            swapChainImageViews,
+            swap_chain_image_views,
             depth_view,
             render_pass.get(),
             swap_chain.extent()
         );
-        commandBuffers = createCommandBuffers(
-            commandPool,
+        command_buffers = createCommandBuffers(
+            command_pool,
             render_pass.get(),
-            swapChainFramebuffers,
+            swap_chain_framebuffers,
             swap_chain.extent(),
             vertex_buffer.get(),
-            graphicsPipeline,
+            graphics_pipeline,
             index_buffer.get(),
-            descriptorSets
+            descriptor_sets
         );
     }
 
@@ -683,147 +681,6 @@ private:
         return result;
     }
 
-    static pipeline_t createGraphicsPipeline(
-        VkDevice device,
-        VkExtent2D extent,
-        VkRenderPass render_pass,
-        VkDescriptorSetLayout descriptor_set_layout
-    )
-    {
-        auto vertShaderCode = readFile("shaders/26_shader_depth.vert.spv");
-        auto fragShaderCode = readFile("shaders/26_shader_depth.frag.spv");
-
-        VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
-
-        VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
-        vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertShaderStageInfo.module = vertShaderModule;
-        vertShaderStageInfo.pName = "main";
-
-        VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
-        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragShaderStageInfo.module = fragShaderModule;
-        fragShaderStageInfo.pName = "main";
-
-        VkPipelineShaderStageCreateInfo shaderStages[] = {
-            vertShaderStageInfo,
-            fragShaderStageInfo
-        };
-
-        VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
-        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-        auto bindingDescription = Vertex::getBindingDescription();
-        auto attributeDescriptions = Vertex::getAttributeDescriptions();
-
-        vertexInputInfo.vertexBindingDescriptionCount = 1;
-        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-
-        VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
-        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-        VkViewport viewport = {};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float) extent.width;
-        viewport.height = (float) extent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-
-        VkRect2D scissor = {};
-        scissor.offset = {0, 0};
-        scissor.extent = extent;
-
-        VkPipelineViewportStateCreateInfo viewportState = {};
-        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = 1;
-        viewportState.pViewports = &viewport;
-        viewportState.scissorCount = 1;
-        viewportState.pScissors = &scissor;
-
-        VkPipelineRasterizationStateCreateInfo rasterizer = {};
-        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.depthClampEnable = VK_FALSE;
-        rasterizer.rasterizerDiscardEnable = VK_FALSE;
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-        rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-        rasterizer.depthBiasEnable = VK_FALSE;
-
-        VkPipelineMultisampleStateCreateInfo multisampling = {};
-        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-        VkPipelineDepthStencilStateCreateInfo depthStencil = {};
-        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_TRUE;
-        depthStencil.depthWriteEnable = VK_TRUE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.stencilTestEnable = VK_FALSE;
-
-        VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-        colorBlendAttachment.colorWriteMask =
-            VK_COLOR_COMPONENT_R_BIT |
-            VK_COLOR_COMPONENT_G_BIT |
-            VK_COLOR_COMPONENT_B_BIT |
-            VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment.blendEnable = VK_FALSE;
-
-        VkPipelineColorBlendStateCreateInfo colorBlending = {};
-        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlending.logicOpEnable = VK_FALSE;
-        colorBlending.logicOp = VK_LOGIC_OP_COPY;
-        colorBlending.attachmentCount = 1;
-        colorBlending.pAttachments = &colorBlendAttachment;
-        colorBlending.blendConstants[0] = 0.0f;
-        colorBlending.blendConstants[1] = 0.0f;
-        colorBlending.blendConstants[2] = 0.0f;
-        colorBlending.blendConstants[3] = 0.0f;
-
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout;
-
-        pipeline_t result;
-        if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &result.layout) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create pipeline layout!");
-        }
-
-        VkGraphicsPipelineCreateInfo pipelineInfo = {};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 2;
-        pipelineInfo.pStages = shaderStages;
-        pipelineInfo.pVertexInputState = &vertexInputInfo;
-        pipelineInfo.pInputAssemblyState = &inputAssembly;
-        pipelineInfo.pViewportState = &viewportState;
-        pipelineInfo.pRasterizationState = &rasterizer;
-        pipelineInfo.pMultisampleState = &multisampling;
-        pipelineInfo.pDepthStencilState = &depthStencil;
-        pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.layout = result.layout;
-        pipelineInfo.renderPass = render_pass;
-        pipelineInfo.subpass = 0;
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-        if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &result.pipeline) != VK_SUCCESS)
-            throw std::runtime_error("failed to create graphics pipeline!");
-
-        vkDestroyShaderModule(device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(device, vertShaderModule, nullptr);
-        return result;
-    }
-
     static std::vector<VkFramebuffer> createFramebuffers(
         VkDevice device,
         const std::vector<my_vulkan::image_view_t>& image_views,
@@ -837,10 +694,10 @@ private:
 
         for (size_t i = 0; i < image_views.size(); i++)
         {
-            std::array<VkImageView, 2> attachments = {
+            std::array<VkImageView, 2> attachments = {{
                 image_views[i].get(),
                 depth_view.get()
-            };
+            }};
             VkFramebufferCreateInfo framebufferInfo = {};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebufferInfo.renderPass = renderPass;
@@ -1124,16 +981,16 @@ private:
     static std::vector<my_vulkan::command_buffer_t> createCommandBuffers(
         my_vulkan::command_pool_t& command_pool,
         VkRenderPass renderPass,
-        std::vector<VkFramebuffer>& swapChainFramebuffers,
+        std::vector<VkFramebuffer>& swap_chain_framebuffers,
         VkExtent2D extent, // swap_chain.extent
         VkBuffer vertex_buffer, // vertex_buffer.buffer
-        pipeline_t& graphicsPipeline,
+        my_vulkan::graphics_pipeline_t& graphics_pipeline,
         VkBuffer index_buffer, // index_buffer.buffer
-        std::vector<my_vulkan::descriptor_set_t>& descriptorSets
+        std::vector<my_vulkan::descriptor_set_t>& descriptor_sets
     )
     {
         std::vector<my_vulkan::command_buffer_t> command_buffers;
-        for (size_t i = 0; i < swapChainFramebuffers.size(); ++i)
+        for (size_t i = 0; i < swap_chain_framebuffers.size(); ++i)
         {
             auto command_buffer = command_pool.make_buffer();
             auto command_scope = command_buffer.begin(
@@ -1141,16 +998,16 @@ private:
             );
             command_scope.begin_render_pass(
                 renderPass, 
-                swapChainFramebuffers[i],
+                swap_chain_framebuffers[i],
                 {{0, 0}, extent},
                 {
-                    {.color = {0.0f, 0.0f, 0.0f, 1.0f}},
+                    {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
                     {.depthStencil = {1.0f, 0}},
                 }
             );
             command_scope.bind_pipeline(
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                graphicsPipeline.pipeline
+                graphics_pipeline.get()
             );
             command_scope.bind_vertex_buffers(
                 {{vertex_buffer, 0}}
@@ -1161,8 +1018,8 @@ private:
             );
             command_scope.bind_descriptor_set(
                 VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                graphicsPipeline.layout,
-                {descriptorSets[i].get()}
+                graphics_pipeline.layout(),
+                {descriptor_sets[i].get()}
             );
             command_scope.draw_indexed(
                 {0, static_cast<uint32_t>(indices.size())}
@@ -1234,7 +1091,7 @@ private:
         sync.inFlight.reset();
         updateUniformBuffer(logical_device.get(), image_index);
         logical_device.graphics_queue().submit(
-            commandBuffers[image_index].get(),
+            command_buffers[image_index].get(),
             {{
                 sync.imageAvailable.get(),
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
@@ -1249,21 +1106,6 @@ private:
             return presentation_failure;
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
         return boost::none;
-    }
-
-    static VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code)
-    {
-        VkShaderModuleCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-        VkShaderModule shaderModule;
-        if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create shader module!");
-        }
-
-        return shaderModule;
     }
 
     static bool isDeviceSuitable(

@@ -1,7 +1,7 @@
 project(vulkanHelloWorld)
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11  " )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall" )
 
 find_package(Vulkan REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
@@ -43,11 +43,13 @@ add_library(my_vulkan
   my_vulkan/device.cpp
   my_vulkan/device_memory.cpp
   my_vulkan/fence.cpp
+  my_vulkan/graphics_pipeline.cpp
   my_vulkan/image.cpp
   my_vulkan/image_view.cpp
   my_vulkan/instance.cpp
   my_vulkan/queue.cpp
   my_vulkan/semaphore.cpp
+  my_vulkan/shader_module.cpp
   my_vulkan/surface.cpp
   my_vulkan/swap_chain.cpp
   my_vulkan/utils.cpp
