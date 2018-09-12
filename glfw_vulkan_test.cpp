@@ -49,7 +49,9 @@ VkResult CreateDebugUtilsMessengerEXT(
     VkDebugUtilsMessengerEXT* pCallback
 )
 {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    auto func =
+        (PFN_vkCreateDebugUtilsMessengerEXT) 
+        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pCallback);
     } else {
@@ -63,7 +65,9 @@ void DestroyDebugUtilsMessengerEXT(
     const VkAllocationCallbacks* pAllocator
 )
 {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    auto func =
+        (PFN_vkDestroyDebugUtilsMessengerEXT)
+        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
         func(instance, callback, pAllocator);
     }
@@ -237,9 +241,8 @@ public:
         logical_device,
         command_pool
     )}
-    , descriptor_set_layout{
-        logical_device.get(),
-        {{
+    , uniform_layout{
+        {
             0,
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             1,
@@ -251,12 +254,21 @@ public:
             1,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             0
-        }}
+        }
+    }
+    , graphics_pipeline{
+        logical_device.get(),
+        swap_chain.extent(),
+        render_pass.get(),
+        uniform_layout,
+        Vertex::layout(),
+        readFile("shaders/26_shader_depth.vert.spv"),
+        readFile("shaders/26_shader_depth.frag.spv")
     }
     , depth_view{depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT)}
     , texture_view{texture_image.view(VK_IMAGE_ASPECT_COLOR_BIT)}
     , swap_chain_image_views{createImageViews(
-            swap_chain.images()
+        swap_chain.images()
     )}
     , swap_chain_framebuffers{createFramebuffers(
         logical_device.get(),
@@ -277,18 +289,9 @@ public:
         uniform_buffers,
         texture_view.get(),
         texture_sampler,
-        descriptor_set_layout.get(),
+        graphics_pipeline.uniform_layout(),
         static_cast<uint32_t>(swap_chain.images().size())
     )}
-    , graphics_pipeline{
-        logical_device.get(),
-        swap_chain.extent(),
-        render_pass.get(),
-        descriptor_set_layout.get(),
-        Vertex::layout(),
-        readFile("shaders/26_shader_depth.vert.spv"),
-        readFile("shaders/26_shader_depth.frag.spv")
-    }
     , command_buffers{createCommandBuffers(
         command_pool,
         render_pass.get(),
@@ -334,7 +337,8 @@ private:
     my_vulkan::render_pass_t render_pass;
     my_vulkan::image_t depth_image;
     my_vulkan::image_t texture_image;
-    my_vulkan::descriptor_set_layout_t descriptor_set_layout;
+    std::vector<VkDescriptorSetLayoutBinding> uniform_layout;
+    my_vulkan::graphics_pipeline_t graphics_pipeline;
     my_vulkan::image_view_t depth_view;
     my_vulkan::image_view_t texture_view;
     std::vector<my_vulkan::image_view_t> swap_chain_image_views;
@@ -342,7 +346,6 @@ private:
     VkSampler texture_sampler;
     std::vector<my_vulkan::buffer_t> uniform_buffers;
     std::vector<my_vulkan::descriptor_set_t> descriptor_sets;
-    my_vulkan::graphics_pipeline_t graphics_pipeline;
     std::vector<my_vulkan::command_buffer_t> command_buffers;
     std::vector<frame_sync_points_t> frame_sync_points;
 
@@ -441,7 +444,7 @@ private:
             logical_device.get(),
             swap_chain.extent(),
             render_pass.get(),
-            descriptor_set_layout.get(),
+            uniform_layout,
             Vertex::layout(),
             readFile("shaders/26_shader_depth.vert.spv"),
             readFile("shaders/26_shader_depth.frag.spv")
@@ -560,8 +563,10 @@ private:
             framebufferInfo.height = extent.height;
             framebufferInfo.layers = 1;
 
-            if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &result[i]) != VK_SUCCESS)
-                throw std::runtime_error("failed to create framebuffer!");
+            my_vulkan::vk_require(
+                vkCreateFramebuffer(device, &framebufferInfo, nullptr, &result[i]),
+                "creating framebuffer"
+            );
         }
         return result;
     }
@@ -619,9 +624,18 @@ private:
         {
             VkFormatProperties props;
             vkGetPhysicalDeviceFormatProperties(physical_device, format, &props);
-            if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+            if (
+                tiling == VK_IMAGE_TILING_LINEAR &&
+                (props.linearTilingFeatures & features) == features
+            ) 
+            {
                 return format;
-            } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+            }
+            else if (
+                tiling == VK_IMAGE_TILING_OPTIMAL &&
+                (props.optimalTilingFeatures & features) == features
+            )
+            {
                 return format;
             }
         }
@@ -643,7 +657,13 @@ private:
     )
     {
         int texWidth, texHeight, texChannels;
-        stbi_uc* pixels = stbi_load("../texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        stbi_uc* pixels = stbi_load(
+            "../texture.jpg",
+            &texWidth,
+            &texHeight,
+            &texChannels,
+            STBI_rgb_alpha
+        );
         if (!pixels)
             throw std::runtime_error("failed to load texture image!");
         VkDeviceSize imageSize = texWidth * texHeight * 4;

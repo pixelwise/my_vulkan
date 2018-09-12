@@ -11,17 +11,19 @@ namespace my_vulkan
         VkDevice device,
         VkExtent2D extent,
         VkRenderPass render_pass,
-        VkDescriptorSetLayout uniform_layout,
+        const std::vector<VkDescriptorSetLayoutBinding>& uniform_layout,
         vertex_layout_t vertex_layout,
         const std::vector<char>& vertex_shader,
         const std::vector<char>& fragment_shader        
     )
     : _device{device}
+    , _uniform_layout{_device, uniform_layout}
     {
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &uniform_layout;
+        auto uniform_layout_handle = _uniform_layout.get();
+        pipelineLayoutInfo.pSetLayouts = &uniform_layout_handle;
 
         vk_require(
             vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &_layout),
@@ -163,9 +165,12 @@ namespace my_vulkan
     }
 
     graphics_pipeline_t::graphics_pipeline_t(graphics_pipeline_t&& other) noexcept
-    : _device{0}
+    : _device{other._device}
+    , _uniform_layout{std::move(other._uniform_layout)}
     {
-        *this = std::move(other);
+        _pipeline = other._pipeline;
+        _layout = other._layout;
+        other._device = 0;        
     }
 
     graphics_pipeline_t& graphics_pipeline_t::operator=(
@@ -208,5 +213,10 @@ namespace my_vulkan
     VkPipelineLayout graphics_pipeline_t::layout()
     {
         return _layout;
+    }
+
+    VkDescriptorSetLayout graphics_pipeline_t::uniform_layout()
+    {
+        return _uniform_layout.get();
     }
 }

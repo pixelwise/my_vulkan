@@ -9,7 +9,7 @@ namespace my_vulkan
     {
         descriptor_set_layout_t(
             VkDevice device,
-            std::vector<VkDescriptorSetLayoutBinding> bindings
+            const std::vector<VkDescriptorSetLayoutBinding>& bindings
         );
         descriptor_set_layout_t(const descriptor_set_layout_t&) = delete;
         descriptor_set_layout_t(descriptor_set_layout_t&& other) noexcept;
