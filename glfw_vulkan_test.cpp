@@ -28,19 +28,6 @@ const int HEIGHT = 600;
 
 const int MAX_FRAMES_IN_FLIGHT = 3;
 
-// so...
-// need like 1 swap chain and stuff
-// and then per renderer one graphics pipeline i guess
-// and fill the command buffer with draw commands and stuff...
-// so those are my main top-level primitives
-// - swap chain
-// - graphics pipeline
-// -- command buffer
-// see also: 
-// https://stackoverflow.com/questions/47098748/draw-multiple-objects-with-their-textures-in-vulkan?rq=1
-
-using my_vulkan::vk_require;
-
 std::vector<const char*> getRequiredExtensions(bool enableValidationLayers)
 {
     uint32_t glfwExtensionCount = 0;
@@ -149,150 +136,16 @@ const std::vector<uint16_t> indices = {
     4, 5, 6, 6, 7, 4
 };
 
-uint32_t findMemoryType(
-    VkPhysicalDevice physical_device,
-    uint32_t typeFilter,
-    VkMemoryPropertyFlags properties
-)
-{
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physical_device, &memProperties);
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-    {
-        if (
-            (typeFilter & (1 << i)) &&
-            (memProperties.memoryTypes[i].propertyFlags & properties) == properties
-        )
-            return i;
-    }
-    throw std::runtime_error("failed to find suitable memory type!");
-}
-
 struct texture_sampler_t
 {
 private:
 };
 
-struct render_pass_t
+struct framebuffer_t
 {
-    render_pass_t(
-        VkDevice device,
-        VkFormat image_format,
-        VkFormat depth_format
-    )
-    {
-        VkAttachmentDescription colorAttachment = {};
-        colorAttachment.format = image_format;
-        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-        VkAttachmentDescription depthAttachment = {};
-        depthAttachment.format = depth_format;
-        depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-        VkAttachmentReference colorAttachmentRef = {};
-        colorAttachmentRef.attachment = 0;
-        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkAttachmentReference depthAttachmentRef = {};
-        depthAttachmentRef.attachment = 1;
-        depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-        VkSubpassDescription subpass = {};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &colorAttachmentRef;
-        subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-        VkSubpassDependency dependency = {};
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.dstSubpass = 0;
-        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.srcAccessMask = 0;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.dstAccessMask =
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        std::array<VkAttachmentDescription, 2> attachments{{
-            colorAttachment,
-            depthAttachment
-        }};
-        VkRenderPassCreateInfo renderPassInfo = {};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        renderPassInfo.pAttachments = attachments.data();
-        renderPassInfo.subpassCount = 1;
-        renderPassInfo.pSubpasses = &subpass;
-        renderPassInfo.dependencyCount = 1;
-        renderPassInfo.pDependencies = &dependency;
-        vk_require(
-            vkCreateRenderPass(device, &renderPassInfo, nullptr, &_render_pass),
-            "creating render pass"
-        );
-    }
-    render_pass_t(render_pass_t&& other)
-    : _device{0}
-    {
-        *this = std::move(other);
-    }
-    render_pass_t(const render_pass_t&) = delete;
-    render_pass_t& operator=(render_pass_t&& other)
-    {
-        cleanup();
-        _render_pass = other._render_pass;
-        std::swap(_device, other._device);
-        return *this;
-    }
-    render_pass_t& operator=(const render_pass_t&) = delete;
-    VkRenderPass get()
-    {
-        return _render_pass;
-    }
 private:
-    void cleanup()
-    {
-        if (_device)
-        {
-            vkDestroyRenderPass(_device, _render_pass, 0);
-            _device = 0;
-        }
-    }
-    VkDevice _device;
-    VkRenderPass _render_pass;
 };
 
-struct render_pipeline_t
-{
-    render_pipeline_t(
-        VkPhysicalDevice physical_device,
-        VkDevice logical_device,
-        VkFormat image_format,
-        VkFormat depth_format
-    )
-    : _render_pass{logical_device, image_format, depth_format}
-    {
-
-    }
-private:
-    render_pass_t _render_pass;
-};
-
-struct pipeline_t
-{
-    VkPipeline pipeline;
-    VkPipelineLayout layout;
-};
 
 struct frame_sync_points_t
 {
@@ -478,7 +331,7 @@ private:
     my_vulkan::swap_chain_t swap_chain;
     my_vulkan::descriptor_pool_t descriptor_pool;
     VkFormat depth_format;
-    render_pass_t render_pass;
+    my_vulkan::render_pass_t render_pass;
     my_vulkan::image_t depth_image;
     my_vulkan::image_t texture_image;
     my_vulkan::descriptor_set_layout_t descriptor_set_layout;
@@ -579,7 +432,7 @@ private:
         swap_chain_image_views = createImageViews(
             swap_chain.images()
         );
-        render_pass = render_pass_t{
+        render_pass = my_vulkan::render_pass_t{
             logical_device.get(),
             swap_chain.format(),
             depth_format
@@ -633,7 +486,7 @@ private:
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = debugCallback;
         VkDebugUtilsMessengerEXT callback;
-        vk_require(
+        my_vulkan::vk_require(
             CreateDebugUtilsMessengerEXT(
                 instance,
                 &createInfo, 

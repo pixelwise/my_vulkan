@@ -10,6 +10,8 @@
 #include "fence.hpp"
 #include "graphics_pipeline.hpp"
 #include "image.hpp"
+#include "queue.hpp"
+#include "render_pass.hpp"
 #include "instance.hpp"
 #include "semaphore.hpp"
 #include "shader_module.hpp"

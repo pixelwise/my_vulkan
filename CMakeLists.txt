@@ -48,6 +48,7 @@ add_library(my_vulkan
   my_vulkan/image_view.cpp
   my_vulkan/instance.cpp
   my_vulkan/queue.cpp
+  my_vulkan/render_pass.cpp
   my_vulkan/semaphore.cpp
   my_vulkan/shader_module.cpp
   my_vulkan/surface.cpp
