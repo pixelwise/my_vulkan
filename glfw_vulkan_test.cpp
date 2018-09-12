@@ -268,8 +268,7 @@ public:
         uniform_buffers,
         texture_view.get(),
         texture_sampler,
-        graphics_pipeline.uniform_layout(),
-        static_cast<uint32_t>(swap_chain.depth())
+        graphics_pipeline.uniform_layout()
     )}
     , command_buffers{createCommandBuffers(
         command_pool,
@@ -647,26 +646,19 @@ private:
     )
     {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
         my_vulkan::buffer_t staging_buffer{
             logical_device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         };
-
-        void* data;
-        vkMapMemory(logical_device.get(), staging_buffer.memory()->get(), 0, bufferSize, 0, &data);
-        memcpy(data, vertices.data(), (size_t) bufferSize);
-        vkUnmapMemory(logical_device.get(), staging_buffer.memory()->get());
-
+        staging_buffer.memory()->set_data(vertices);
         my_vulkan::buffer_t result{
             logical_device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         };
-
         copyBuffer(command_pool, staging_buffer.get(), result.get(), bufferSize);
         return result;
     }
@@ -677,26 +669,19 @@ private:
     )
     {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
         my_vulkan::buffer_t staging_buffer{
             logical_device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         };
-
-        void* data;
-        vkMapMemory(logical_device.get(), staging_buffer.memory()->get(), 0, bufferSize, 0, &data);
-        memcpy(data, indices.data(), (size_t) bufferSize);
-        vkUnmapMemory(logical_device.get(), staging_buffer.memory()->get());
-
+        staging_buffer.memory()->set_data(indices);
         my_vulkan::buffer_t result{
             logical_device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         };
-
         copyBuffer(command_pool, staging_buffer.get(), result.get(), bufferSize);
         return result;
     }
@@ -724,12 +709,11 @@ private:
         std::vector<my_vulkan::buffer_t>& uniform_buffers,
         VkImageView texture_view,
         VkSampler texture_sampler,
-        const VkDescriptorSetLayout& layout,
-        uint32_t size
+        const VkDescriptorSetLayout& layout
     )
     {
         std::vector<my_vulkan::descriptor_set_t> result;
-        for (size_t i = 0; i < size; i++)
+        for (size_t i = 0; i < uniform_buffers.size(); i++)
         {
             auto descriptor_set = descriptor_pool.make_descriptor_set(layout);
             descriptor_set.update_buffer_write(
@@ -830,7 +814,6 @@ private:
         float time = std::chrono::duration<float, std::chrono::seconds::period>(
             currentTime - startTime
         ).count();
-
         UniformBufferObject ubo = {};
         ubo.model = glm::rotate(
             glm::mat4(1.0f),
@@ -849,12 +832,7 @@ private:
             10.0f
         );
         ubo.proj[1][1] *= -1;
-
-        void* data;
-        auto& buffer = uniform_buffers[currentImage];
-        vkMapMemory(device, buffer.memory()->get(), 0, sizeof(ubo), 0, &data);
-        memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(device, buffer.memory()->get());
+        uniform_buffers[currentImage].memory()->set_data(&ubo, sizeof(ubo));
     }
 
     void draw_frame()
