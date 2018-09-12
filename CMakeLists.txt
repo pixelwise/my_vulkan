@@ -43,6 +43,7 @@ add_library(my_vulkan
   my_vulkan/device.cpp
   my_vulkan/device_memory.cpp
   my_vulkan/fence.cpp
+  my_vulkan/framebuffer.cpp
   my_vulkan/graphics_pipeline.cpp
   my_vulkan/image.cpp
   my_vulkan/image_view.cpp

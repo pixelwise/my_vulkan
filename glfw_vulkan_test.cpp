@@ -10,6 +10,7 @@
 #include "stb_image.h"
 
 #include "my_vulkan/my_vulkan.hpp"
+#include "my_vulkan/helpers/standard_swap_chain.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -211,30 +212,20 @@ public:
         logical_device,
         command_pool
     )}
-    , swap_chain{
-        physical_device,
-        logical_device.get(),
-        surface.get(),
-        queue_indices,
-        window_extent()
-    }
-    , descriptor_pool{
-        logical_device.get(),
-        swap_chain.images().size()
-    }
     , depth_format{
         findDepthFormat(physical_device)
     }
-    , render_pass{
-        logical_device.get(),
-        swap_chain.format(),
+    , swap_chain{
+        logical_device,
+        surface.get(),
+        queue_indices,
+        window_extent(),
         depth_format
     }
-    , depth_image{createDepthImage(
-        logical_device,
-        depth_format,
-        swap_chain.extent()
-    )}
+    , descriptor_pool{
+        logical_device.get(),
+        swap_chain.depth()
+    }
     , texture_image{createTextureImage(
         physical_device,
         logical_device,
@@ -258,24 +249,13 @@ public:
     , graphics_pipeline{
         logical_device.get(),
         swap_chain.extent(),
-        render_pass.get(),
+        swap_chain.render_pass(),
         uniform_layout,
         Vertex::layout(),
         readFile("shaders/26_shader_depth.vert.spv"),
         readFile("shaders/26_shader_depth.frag.spv")
     }
-    , depth_view{depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT)}
     , texture_view{texture_image.view(VK_IMAGE_ASPECT_COLOR_BIT)}
-    , swap_chain_image_views{createImageViews(
-        swap_chain.images()
-    )}
-    , swap_chain_framebuffers{createFramebuffers(
-        logical_device.get(),
-        swap_chain_image_views,
-        depth_view,
-        render_pass.get(),
-        swap_chain.extent()
-    )}
     , texture_sampler{createTextureSampler(
         logical_device.get()
     )}
@@ -289,12 +269,12 @@ public:
         texture_view.get(),
         texture_sampler,
         graphics_pipeline.uniform_layout(),
-        static_cast<uint32_t>(swap_chain.images().size())
+        static_cast<uint32_t>(swap_chain.depth())
     )}
     , command_buffers{createCommandBuffers(
         command_pool,
-        render_pass.get(),
-        swap_chain_framebuffers,
+        swap_chain.render_pass(),
+        swap_chain.framebuffers(),
         swap_chain.extent(),
         vertex_buffer.get(),
         graphics_pipeline,
@@ -330,18 +310,15 @@ private:
     my_vulkan::command_pool_t command_pool;
     my_vulkan::buffer_t vertex_buffer;
     my_vulkan::buffer_t index_buffer;    
-    my_vulkan::swap_chain_t swap_chain;
-    my_vulkan::descriptor_pool_t descriptor_pool;
     VkFormat depth_format;
-    my_vulkan::render_pass_t render_pass;
-    my_vulkan::image_t depth_image;
+    
+    my_vulkan::helpers::standard_swap_chain_t swap_chain;
+
+    my_vulkan::descriptor_pool_t descriptor_pool;
     my_vulkan::image_t texture_image;
     std::vector<VkDescriptorSetLayoutBinding> uniform_layout;
     my_vulkan::graphics_pipeline_t graphics_pipeline;
-    my_vulkan::image_view_t depth_view;
     my_vulkan::image_view_t texture_view;
-    std::vector<my_vulkan::image_view_t> swap_chain_image_views;
-    std::vector<VkFramebuffer> swap_chain_framebuffers;
     VkSampler texture_sampler;
     std::vector<my_vulkan::buffer_t> uniform_buffers;
     std::vector<my_vulkan::descriptor_set_t> descriptor_sets;
@@ -396,18 +373,11 @@ private:
 
     void cleanup()
     {
-        cleanupSwapChain(logical_device.get());
         vkDestroySampler(logical_device.get(), texture_sampler, nullptr);
         if (callback)
             DestroyDebugUtilsMessengerEXT(instance.get(), callback, nullptr);
         glfwDestroyWindow(window);
         glfwTerminate();
-    }
-
-    void cleanupSwapChain(VkDevice device)
-    {
-        for (auto framebuffer : swap_chain_framebuffers)
-            vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
 
     void recreateSwapChain(my_vulkan::device_t& logical_device)
@@ -418,53 +388,27 @@ private:
             glfwGetFramebufferSize(window, &width, &height);
             glfwWaitEvents();
         }
-
-        vkDeviceWaitIdle(logical_device.get());
-
-        cleanupSwapChain(logical_device.get());
-
-        auto depth_format = findDepthFormat(physical_device);
-        swap_chain = my_vulkan::swap_chain_t{
-            physical_device,
-            logical_device.get(),
+        logical_device.wait_idle();
+        swap_chain = my_vulkan::helpers::standard_swap_chain_t{
+            logical_device,
             surface.get(),
             queue_indices,
-            window_extent()
-        };
-        swap_chain_image_views = createImageViews(
-            swap_chain.images()
-        );
-        render_pass = my_vulkan::render_pass_t{
-            logical_device.get(),
-            swap_chain.format(),
+            window_extent(),
             depth_format
         };
         graphics_pipeline = my_vulkan::graphics_pipeline_t{
             logical_device.get(),
             swap_chain.extent(),
-            render_pass.get(),
+            swap_chain.render_pass(),
             uniform_layout,
             Vertex::layout(),
             readFile("shaders/26_shader_depth.vert.spv"),
             readFile("shaders/26_shader_depth.frag.spv")
         };
-        depth_image = createDepthImage(
-            logical_device,
-            depth_format,
-            swap_chain.extent()
-        );
-        depth_view = depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT);
-        swap_chain_framebuffers = createFramebuffers(
-            logical_device.get(),
-            swap_chain_image_views,
-            depth_view,
-            render_pass.get(),
-            swap_chain.extent()
-        );
         command_buffers = createCommandBuffers(
             command_pool,
-            render_pass.get(),
-            swap_chain_framebuffers,
+            swap_chain.render_pass(),
+            swap_chain.framebuffers(),
             swap_chain.extent(),
             vertex_buffer.get(),
             graphics_pipeline,
@@ -566,22 +510,6 @@ private:
                 "creating framebuffer"
             );
         }
-        return result;
-    }
-
-    static my_vulkan::image_t createDepthImage(
-        my_vulkan::device_t& logical_device,
-        VkFormat format,
-        VkExtent2D extent
-    )
-    {
-        my_vulkan::image_t result{
-            logical_device,
-            {extent.width, extent.height, 1},
-            format,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-        };
         return result;
     }
 
@@ -840,7 +768,7 @@ private:
     static std::vector<my_vulkan::command_buffer_t> createCommandBuffers(
         my_vulkan::command_pool_t& command_pool,
         VkRenderPass renderPass,
-        std::vector<VkFramebuffer>& swap_chain_framebuffers,
+        const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent, // swap_chain.extent
         VkBuffer vertex_buffer, // vertex_buffer.buffer
         my_vulkan::graphics_pipeline_t& graphics_pipeline,
@@ -849,7 +777,7 @@ private:
     )
     {
         std::vector<my_vulkan::command_buffer_t> command_buffers;
-        for (size_t i = 0; i < swap_chain_framebuffers.size(); ++i)
+        for (size_t i = 0; i < framebuffers.size(); ++i)
         {
             auto command_buffer = command_pool.make_buffer();
             auto command_scope = command_buffer.begin(
@@ -857,7 +785,7 @@ private:
             );
             command_scope.begin_render_pass(
                 renderPass, 
-                swap_chain_framebuffers[i],
+                framebuffers[i],
                 {{0, 0}, extent},
                 {
                     {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
@@ -887,6 +815,11 @@ private:
             command_buffers.push_back(std::move(command_buffer));
         }
         return command_buffers;
+    }
+
+    static void draw_scene()
+    {
+        
     }
 
     void updateUniformBuffer(VkDevice device, uint32_t currentImage)

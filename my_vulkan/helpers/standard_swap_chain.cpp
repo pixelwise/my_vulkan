@@ -26,7 +26,7 @@ namespace my_vulkan
             VkExtent2D desired_extent,
             VkFormat depth_format
         )
-        : _swap_chain{
+        : swap_chain_t{
             logical_device.physical_device(),
             logical_device.get(),
             surface,
@@ -36,18 +36,18 @@ namespace my_vulkan
         , _depth_image{create_depth_image(
             logical_device,
             depth_format,
-            _swap_chain.extent()
+            extent()
         )}
         , _depth_view{
             _depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT)
         }
         , _render_pass{
             logical_device.get(),
-            _swap_chain.format(),
+            format(),
             depth_format
         }
         {
-            for (auto&& image : _swap_chain.images())
+            for (auto&& image : images())
             {
                 _image_views.emplace_back(image.view(VK_IMAGE_ASPECT_COLOR_BIT));
                 _framebuffers.emplace_back(
@@ -57,9 +57,27 @@ namespace my_vulkan
                         _image_views.back().get(),
                         _depth_view.get()
                     },
-                    _swap_chain.extent()
+                    extent()
                 );
             }
+        }
+
+        size_t standard_swap_chain_t::depth() const
+        {
+            return _framebuffers.size();
+        }
+
+        VkRenderPass standard_swap_chain_t::render_pass()
+        {
+            return _render_pass.get();
+        }
+
+        std::vector<VkFramebuffer> standard_swap_chain_t::framebuffers()
+        {
+            std::vector<VkFramebuffer> result(depth());
+            for (size_t i = 0; i < depth(); ++i)
+                result[i] = _framebuffers[i].get();
+            return result;
         }
     }
 }
