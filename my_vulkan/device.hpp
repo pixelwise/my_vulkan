@@ -10,7 +10,21 @@
 
 namespace my_vulkan
 {
-    struct device_t
+    struct device_reference_t
+    {
+        device_reference_t(
+            VkPhysicalDevice physical_device,
+            VkDevice device
+        );
+        VkDevice get() const;
+        VkPhysicalDevice physical_device() const;
+        void clear();
+    private:
+        VkPhysicalDevice _physical_device;
+        VkDevice _device;
+    };
+
+    struct device_t : public device_reference_t
     {
         device_t(
             VkPhysicalDevice physical_device,
@@ -20,14 +34,10 @@ namespace my_vulkan
         );
         device_t(const device_t&) = delete;
         ~device_t();
-        VkDevice get();
         queue_reference_t graphics_queue();
         queue_reference_t present_queue();
-        VkPhysicalDevice physical_device();
         void wait_idle();
     private:
-        VkPhysicalDevice _physical_device;
-        VkDevice _device;
         VkQueue _graphicsQueue;
         VkQueue _presentQueue;
     };

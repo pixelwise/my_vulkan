@@ -1,6 +1,7 @@
 #include "image.hpp"
 
 #include <stdexcept>
+#include "buffer.hpp"
 #include "utils.hpp"
 
 namespace my_vulkan
@@ -63,9 +64,9 @@ namespace my_vulkan
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties
     )
-    : _device{device.get()}
+    : _device{device}
     , _image{make_image(
-        _device,
+        _device.get(),
         extent,
         format,
         usage,
@@ -76,16 +77,16 @@ namespace my_vulkan
     , _extent{extent}
     , _borrowed{false}
     , _memory{new device_memory_t{
-        _device,
+        _device.get(),
         find_image_memory_config(
-            device.physical_device(),
-            _device,
+            _device.physical_device(),
+            _device.get(),
             _image,
             properties
         )
     }}
     {
-        vkBindImageMemory(_device, _image, _memory->get(), 0);
+        vkBindImageMemory(_device.get(), _image, _memory->get(), 0);
     }
 
     image_t::image_t(
@@ -103,7 +104,7 @@ namespace my_vulkan
         VkFormat format,
         VkExtent3D extent
     )
-    : _device{device}
+    : _device{0, device}
     , _image{image}
     , _format{format}
     , _extent{extent}
@@ -112,7 +113,7 @@ namespace my_vulkan
     }
 
     image_t::image_t(image_t&& other) noexcept
-    : _device{0}
+    : _device{0, 0}
     , _borrowed{false}
     {
         *this = std::move(other);
@@ -149,24 +150,24 @@ namespace my_vulkan
         viewInfo.subresourceRange.layerCount = 1;
         VkImageView image_view;
         vk_require(
-            vkCreateImageView(_device, &viewInfo, nullptr, &image_view),
+            vkCreateImageView(_device.get(), &viewInfo, nullptr, &image_view),
             "creating image view"
         );
         return image_view_t{
-            _device,
+            _device.get(),
             image_view
         };
     }
 
     void image_t::cleanup()
     {
-        if (_device && !_borrowed)
+        if (_device.get() && !_borrowed)
         {
             if (_image)
-                vkDestroyImage(_device, _image, nullptr);
+                vkDestroyImage(_device.get(), _image, nullptr);
             _memory.reset();
         }
-        _device = 0;
+        _device.clear();
     }
 
     VkImage image_t::get()
@@ -305,5 +306,33 @@ namespace my_vulkan
             destinationStage,
             {barrier}
         );        
+    }
+
+    void image_t::load_pixels(command_pool_t& command_pool, const void* pixels)
+    {
+        auto oneshot_scope = command_pool.begin_oneshot();
+        size_t image_size = _extent.width * _extent.height * bytes_per_pixel(format());
+        buffer_t staging_buffer{
+            _device,
+            image_size,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        };
+        staging_buffer.memory()->set_data(pixels, image_size);
+        transition_layout(
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            oneshot_scope.commands()
+        );
+        copy_from(
+            staging_buffer.get(),
+            oneshot_scope.commands()
+        );
+        transition_layout(
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            oneshot_scope.commands()
+        );
+        oneshot_scope.execute_and_wait();
     }
 }

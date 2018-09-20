@@ -58,9 +58,10 @@ namespace my_vulkan
             VkImageLayout newLayout,
             command_buffer_t::scope_t& command_scope
         );
+        void load_pixels(command_pool_t& commands, const void* pixels);
     private:
         void cleanup();
-        VkDevice _device{0};
+        device_reference_t _device;
         VkImage _image;
         VkFormat _format;
         VkExtent3D _extent;

@@ -27,8 +27,6 @@
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
-const int MAX_FRAMES_IN_FLIGHT = 3;
-
 std::vector<const char*> getRequiredExtensions(bool enableValidationLayers)
 {
     uint32_t glfwExtensionCount = 0;
@@ -200,6 +198,17 @@ public:
         validationLayers,
         deviceExtensions
     }
+    , depth_format{
+        findDepthFormat(physical_device)
+    }
+    , swap_chain{new my_vulkan::helpers::standard_swap_chain_t{
+        logical_device,
+        surface.get(),
+        queue_indices,
+        window_extent(),
+        depth_format
+    }}
+
     , command_pool{
         logical_device.get(),
         *queue_indices.graphics
@@ -212,22 +221,11 @@ public:
         logical_device,
         command_pool
     )}
-    , depth_format{
-        findDepthFormat(physical_device)
-    }
-    , swap_chain{
-        logical_device,
-        surface.get(),
-        queue_indices,
-        window_extent(),
-        depth_format
-    }
     , descriptor_pool{
         logical_device.get(),
-        swap_chain.depth()
+        swap_chain->depth()
     }
     , texture_image{createTextureImage(
-        physical_device,
         logical_device,
         command_pool
     )}
@@ -248,8 +246,8 @@ public:
     }
     , graphics_pipeline{
         logical_device.get(),
-        swap_chain.extent(),
-        swap_chain.render_pass(),
+        swap_chain->extent(),
+        swap_chain->render_pass(),
         uniform_layout,
         Vertex::layout(),
         readFile("shaders/26_shader_depth.vert.spv"),
@@ -261,7 +259,7 @@ public:
     )}
     , uniform_buffers{createUniformBuffers(
         logical_device,
-        swap_chain.images().size()
+        swap_chain->images().size()
     )}
     , descriptor_sets{createDescriptorSets(
         descriptor_pool,
@@ -270,19 +268,7 @@ public:
         texture_sampler,
         graphics_pipeline.uniform_layout()
     )}
-    , command_buffers{createCommandBuffers(
-        command_pool,
-        swap_chain.render_pass(),
-        swap_chain.framebuffers(),
-        swap_chain.extent(),
-        vertex_buffer.get(),
-        graphics_pipeline,
-        index_buffer.get(),
-        descriptor_sets
-    )}
     {
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-            frame_sync_points.emplace_back(logical_device.get());
     }
     
     void run()
@@ -300,19 +286,20 @@ private:
     GLFWwindow* window;
     std::vector<const char*> validationLayers;
     std::vector<const char*> deviceExtensions;
+    
     my_vulkan::instance_t instance;
     VkDebugUtilsMessengerEXT callback;
     my_vulkan::surface_t surface;
     VkPhysicalDevice physical_device;
     my_vulkan::queue_family_indices_t queue_indices;
     my_vulkan::device_t logical_device;
+    
+    VkFormat depth_format;
+    std::unique_ptr<my_vulkan::helpers::standard_swap_chain_t> swap_chain;
+
     my_vulkan::command_pool_t command_pool;
     my_vulkan::buffer_t vertex_buffer;
     my_vulkan::buffer_t index_buffer;    
-    VkFormat depth_format;
-    
-    my_vulkan::helpers::standard_swap_chain_t swap_chain;
-
     my_vulkan::descriptor_pool_t descriptor_pool;
     my_vulkan::image_t texture_image;
     std::vector<VkDescriptorSetLayoutBinding> uniform_layout;
@@ -321,10 +308,7 @@ private:
     VkSampler texture_sampler;
     std::vector<my_vulkan::buffer_t> uniform_buffers;
     std::vector<my_vulkan::descriptor_set_t> descriptor_sets;
-    std::vector<my_vulkan::command_buffer_t> command_buffers;
-    std::vector<frame_sync_points_t> frame_sync_points;
 
-    size_t currentFrame = 0;
     bool framebufferResized = false;
 
     static GLFWwindow* initWindow(void* userdata)
@@ -388,32 +372,22 @@ private:
             glfwWaitEvents();
         }
         logical_device.wait_idle();
-        swap_chain = my_vulkan::helpers::standard_swap_chain_t{
+        swap_chain.reset(new my_vulkan::helpers::standard_swap_chain_t{
             logical_device,
             surface.get(),
             queue_indices,
             window_extent(),
             depth_format
-        };
+        });
         graphics_pipeline = my_vulkan::graphics_pipeline_t{
             logical_device.get(),
-            swap_chain.extent(),
-            swap_chain.render_pass(),
+            swap_chain->extent(),
+            swap_chain->render_pass(),
             uniform_layout,
             Vertex::layout(),
             readFile("shaders/26_shader_depth.vert.spv"),
             readFile("shaders/26_shader_depth.frag.spv")
         };
-        command_buffers = createCommandBuffers(
-            command_pool,
-            swap_chain.render_pass(),
-            swap_chain.framebuffers(),
-            swap_chain.extent(),
-            vertex_buffer.get(),
-            graphics_pipeline,
-            index_buffer.get(),
-            descriptor_sets
-        );
     }
 
     static VkDebugUtilsMessengerEXT setupDebugCallback(VkInstance instance)
@@ -468,50 +442,6 @@ private:
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 
-    static std::vector<my_vulkan::image_view_t> createImageViews(
-        const std::vector<my_vulkan::image_t>& images
-    )
-    {
-        std::vector<my_vulkan::image_view_t> result;
-        for (uint32_t i = 0; i < images.size(); i++)
-            result.push_back(images[i].view(VK_IMAGE_ASPECT_COLOR_BIT));
-        return result;
-    }
-
-    static std::vector<VkFramebuffer> createFramebuffers(
-        VkDevice device,
-        const std::vector<my_vulkan::image_view_t>& image_views,
-        my_vulkan::image_view_t& depth_view,
-        VkRenderPass renderPass,
-        VkExtent2D extent
-    )
-    {
-        std::vector<VkFramebuffer> result;
-        result.resize(image_views.size());
-
-        for (size_t i = 0; i < image_views.size(); i++)
-        {
-            std::array<VkImageView, 2> attachments = {{
-                image_views[i].get(),
-                depth_view.get()
-            }};
-            VkFramebufferCreateInfo framebufferInfo = {};
-            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            framebufferInfo.renderPass = renderPass;
-            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = extent.width;
-            framebufferInfo.height = extent.height;
-            framebufferInfo.layers = 1;
-
-            my_vulkan::vk_require(
-                vkCreateFramebuffer(device, &framebufferInfo, nullptr, &result[i]),
-                "creating framebuffer"
-            );
-        }
-        return result;
-    }
-
     static VkFormat findDepthFormat(VkPhysicalDevice physical_device)
     {
         return findSupportedFormat(
@@ -564,7 +494,6 @@ private:
     }
 
     static my_vulkan::image_t createTextureImage(
-        VkPhysicalDevice physical_device,
         my_vulkan::device_t& logical_device,
         my_vulkan::command_pool_t& command_pool
     )
@@ -579,42 +508,13 @@ private:
         );
         if (!pixels)
             throw std::runtime_error("failed to load texture image!");
-        VkDeviceSize imageSize = texWidth * texHeight * 4;
-
         my_vulkan::image_t result{
             logical_device,
             {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
             VK_FORMAT_R8G8B8A8_UNORM
         };
-
-        auto oneshot_scope = command_pool.begin_oneshot();
-        result.transition_layout(
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            oneshot_scope.commands()
-        );
-
-        my_vulkan::buffer_t staging_buffer{
-            logical_device,
-            imageSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        };
-        staging_buffer.memory()->set_data(pixels, imageSize);
-        result.copy_from(
-            staging_buffer.get(),
-            oneshot_scope.commands()
-        );
-
+        result.load_pixels(command_pool, pixels);
         stbi_image_free(pixels);
-
-        result.transition_layout(
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            oneshot_scope.commands()
-        );
-        
-        oneshot_scope.execute_and_wait();
         return result;
     }
 
@@ -741,69 +641,38 @@ private:
         VkDeviceSize size
     ) 
     {
-        auto command_buffer = command_pool.make_buffer();
-        command_buffer.begin(
-            VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-        ).copy(srcBuffer, dstBuffer, {{0, 0, size}});
-        command_pool.queue().submit(command_buffer.get());
-        command_pool.queue().wait_idle();
+        auto oneshot_scope = command_pool.begin_oneshot();
+        oneshot_scope.commands().copy(srcBuffer, dstBuffer, {{0, 0, size}});
+        oneshot_scope.execute_and_wait();
     }
 
-    static std::vector<my_vulkan::command_buffer_t> createCommandBuffers(
-        my_vulkan::command_pool_t& command_pool,
-        VkRenderPass renderPass,
-        const std::vector<VkFramebuffer>& framebuffers,
-        VkExtent2D extent, // swap_chain.extent
+    static void draw_commands(
+        my_vulkan::command_buffer_t::scope_t& command_scope,
         VkBuffer vertex_buffer, // vertex_buffer.buffer
         my_vulkan::graphics_pipeline_t& graphics_pipeline,
         VkBuffer index_buffer, // index_buffer.buffer
-        std::vector<my_vulkan::descriptor_set_t>& descriptor_sets
+        my_vulkan::descriptor_set_t& descriptor_set
     )
     {
-        std::vector<my_vulkan::command_buffer_t> command_buffers;
-        for (size_t i = 0; i < framebuffers.size(); ++i)
-        {
-            auto command_buffer = command_pool.make_buffer();
-            auto command_scope = command_buffer.begin(
-                VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
-            );
-            command_scope.begin_render_pass(
-                renderPass, 
-                framebuffers[i],
-                {{0, 0}, extent},
-                {
-                    {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
-                    {.depthStencil = {1.0f, 0}},
-                }
-            );
-            command_scope.bind_pipeline(
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                graphics_pipeline.get()
-            );
-            command_scope.bind_vertex_buffers(
-                {{vertex_buffer, 0}}
-            );
-            command_scope.bind_index_buffer(
-                index_buffer,
-                VK_INDEX_TYPE_UINT16
-            );
-            command_scope.bind_descriptor_set(
-                VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                graphics_pipeline.layout(),
-                {descriptor_sets[i].get()}
-            );
-            command_scope.draw_indexed(
-                {0, static_cast<uint32_t>(indices.size())}
-            );
-            command_scope.end();
-            command_buffers.push_back(std::move(command_buffer));
-        }
-        return command_buffers;
-    }
-
-    static void draw_scene()
-    {
-        
+        command_scope.bind_pipeline(
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            graphics_pipeline.get()
+        );
+        command_scope.bind_vertex_buffers(
+            {{vertex_buffer, 0}}
+        );
+        command_scope.bind_index_buffer(
+            index_buffer,
+            VK_INDEX_TYPE_UINT16
+        );
+        command_scope.bind_descriptor_set(
+            VK_PIPELINE_BIND_POINT_GRAPHICS, 
+            graphics_pipeline.layout(),
+            {descriptor_set.get()}
+        );
+        command_scope.draw_indexed(
+            {0, static_cast<uint32_t>(indices.size())}
+        );
     }
 
     void updateUniformBuffer(VkDevice device, uint32_t currentImage)
@@ -827,7 +696,7 @@ private:
         );
         ubo.proj = glm::perspective(
             glm::radians(45.0f),
-            swap_chain.extent().width / (float) swap_chain.extent().height,
+            swap_chain->extent().width / (float) swap_chain->extent().height,
             0.1f,
             10.0f
         );
@@ -850,32 +719,25 @@ private:
 
     boost::optional<my_vulkan::acquisition_failure_t> try_draw_frame()
     {
-        auto& sync = frame_sync_points[currentFrame];
-        sync.inFlight.wait();
-        auto acquisition_result = swap_chain.acquire_next_image(
-            sync.imageAvailable.get()
+        auto outcome = swap_chain->acquire(
+            {{0, 0}, swap_chain->extent()},
+            {
+                {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
+                {.depthStencil = {1.0f, 0}},
+            }
         );
-        if (acquisition_result.failure)
-            return acquisition_result.failure;
-        uint32_t image_index = *acquisition_result.image_index;
-        sync.inFlight.reset();
-        updateUniformBuffer(logical_device.get(), image_index);
-        logical_device.graphics_queue().submit(
-            command_buffers[image_index].get(),
-            {{
-                sync.imageAvailable.get(),
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-            }},
-            {sync.renderFinished.get()},
-            sync.inFlight.get()
+        if (outcome.failure)
+            return outcome.failure;
+        auto& working_set = *outcome.working_set;
+        updateUniformBuffer(logical_device.get(), working_set.phase());
+        draw_commands(
+            working_set.commands(),
+            vertex_buffer.get(),
+            graphics_pipeline,
+            index_buffer.get(),
+            descriptor_sets[working_set.phase()]
         );
-        if (auto presentation_failure = logical_device.present_queue().present(
-            {swap_chain.get(), image_index},
-            {sync.renderFinished.get()}
-        ))
-            return presentation_failure;
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-        return boost::none;
+        return working_set.finish();
     }
 
     static bool isDeviceSuitable(
