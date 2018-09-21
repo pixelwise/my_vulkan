@@ -246,6 +246,11 @@ namespace my_vulkan
         return result;
     }
 
+    VkDevice swap_chain_t::device()
+    {
+        return _device;
+    }
+
     VkSwapchainKHR swap_chain_t::get()
     {
         return _swap_chain;

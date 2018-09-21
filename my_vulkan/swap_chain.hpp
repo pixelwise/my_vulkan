@@ -44,6 +44,7 @@ namespace my_vulkan
         );
         VkSwapchainKHR get();
         ~swap_chain_t();
+        VkDevice device();
     private:
         void cleanup();
         VkDevice _device;

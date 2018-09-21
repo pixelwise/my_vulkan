@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include "device.hpp"
 #include "device_memory.hpp"
+#include "command_pool.hpp"
 
 namespace my_vulkan
 {
@@ -20,10 +21,12 @@ namespace my_vulkan
         buffer_t& operator=(buffer_t&& other) noexcept;
         device_memory_t* memory();
         VkBuffer get();
+        void load_data(command_pool_t& command_pool, const void* data);
         ~buffer_t();
     private:
         void cleanup();
-        VkDevice _device;
+        device_reference_t _device;
+        VkDeviceSize _size;
         VkBuffer _buffer;
         std::unique_ptr<device_memory_t> _memory;
     };

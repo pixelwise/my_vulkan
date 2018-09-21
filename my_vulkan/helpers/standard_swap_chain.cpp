@@ -164,6 +164,11 @@ namespace my_vulkan
             return _render_pass.get();
         }
 
+        command_pool_t& standard_swap_chain_t::command_pool()
+        {
+            return _command_pool;
+        }
+
         std::vector<VkFramebuffer> standard_swap_chain_t::framebuffers()
         {
             std::vector<VkFramebuffer> result(depth());

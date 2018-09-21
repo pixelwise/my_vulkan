@@ -209,25 +209,17 @@ public:
         depth_format
     }}
 
-    , command_pool{
-        logical_device.get(),
-        *queue_indices.graphics
-    }
     , vertex_buffer{createVertexBuffer(
         logical_device,
-        command_pool
+        swap_chain->command_pool()
     )}
     , index_buffer{createIndexBuffer(
         logical_device,
-        command_pool
+        swap_chain->command_pool()
     )}
-    , descriptor_pool{
-        logical_device.get(),
-        swap_chain->depth()
-    }
     , texture_image{createTextureImage(
         logical_device,
-        command_pool
+        swap_chain->command_pool()
     )}
     , uniform_layout{
         {
@@ -259,8 +251,12 @@ public:
     )}
     , uniform_buffers{createUniformBuffers(
         logical_device,
-        swap_chain->images().size()
+        swap_chain->depth()
     )}
+    , descriptor_pool{
+        logical_device.get(),
+        swap_chain->depth()
+    }
     , descriptor_sets{createDescriptorSets(
         descriptor_pool,
         uniform_buffers,
@@ -297,16 +293,15 @@ private:
     VkFormat depth_format;
     std::unique_ptr<my_vulkan::helpers::standard_swap_chain_t> swap_chain;
 
-    my_vulkan::command_pool_t command_pool;
     my_vulkan::buffer_t vertex_buffer;
     my_vulkan::buffer_t index_buffer;    
-    my_vulkan::descriptor_pool_t descriptor_pool;
     my_vulkan::image_t texture_image;
     std::vector<VkDescriptorSetLayoutBinding> uniform_layout;
     my_vulkan::graphics_pipeline_t graphics_pipeline;
     my_vulkan::image_view_t texture_view;
     VkSampler texture_sampler;
     std::vector<my_vulkan::buffer_t> uniform_buffers;
+    my_vulkan::descriptor_pool_t descriptor_pool;
     std::vector<my_vulkan::descriptor_set_t> descriptor_sets;
 
     bool framebufferResized = false;
@@ -545,21 +540,13 @@ private:
         my_vulkan::command_pool_t& command_pool
     )
     {
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-        my_vulkan::buffer_t staging_buffer{
-            logical_device,
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        };
-        staging_buffer.memory()->set_data(vertices);
         my_vulkan::buffer_t result{
             logical_device,
-            bufferSize,
+            sizeof(vertices[0]) * vertices.size(),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         };
-        copyBuffer(command_pool, staging_buffer.get(), result.get(), bufferSize);
+        result.load_data(command_pool, vertices.data());
         return result;
     }
 
@@ -568,21 +555,13 @@ private:
         my_vulkan::command_pool_t& command_pool
     )
     {
-        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-        my_vulkan::buffer_t staging_buffer{
-            logical_device,
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        };
-        staging_buffer.memory()->set_data(indices);
         my_vulkan::buffer_t result{
             logical_device,
-            bufferSize,
+            sizeof(indices[0]) * indices.size(),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         };
-        copyBuffer(command_pool, staging_buffer.get(), result.get(), bufferSize);
+        result.load_data(command_pool, indices.data());
         return result;
     }
 
@@ -632,18 +611,6 @@ private:
             result.push_back(std::move(descriptor_set));
         }
         return result;
-    }
-
-    static void copyBuffer(
-        my_vulkan::command_pool_t& command_pool,
-        VkBuffer srcBuffer,
-        VkBuffer dstBuffer,
-        VkDeviceSize size
-    ) 
-    {
-        auto oneshot_scope = command_pool.begin_oneshot();
-        oneshot_scope.commands().copy(srcBuffer, dstBuffer, {{0, 0, size}});
-        oneshot_scope.execute_and_wait();
     }
 
     static void draw_commands(

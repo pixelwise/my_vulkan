@@ -1,4 +1,4 @@
-project(vulkanHelloWorld)
+project(my_vulkan)
 cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall" )
@@ -58,9 +58,9 @@ add_library(my_vulkan
   my_vulkan/helpers/standard_swap_chain.cpp
 )
 
-add_executable(${PROJECT_NAME} glfw_vulkan_test.cpp)
+add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
 target_link_libraries (
-  ${PROJECT_NAME}
+  glfw_vulkan_test
   ${Vulkan_LIBRARIES}
   glfw
   my_vulkan

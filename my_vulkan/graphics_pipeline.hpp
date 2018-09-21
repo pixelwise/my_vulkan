@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include "descriptor_set_layout.hpp"
+#include "swap_chain.hpp"
 
 namespace my_vulkan
 {

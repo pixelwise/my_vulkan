@@ -73,6 +73,7 @@ namespace my_vulkan
                 VkRect2D rect,
                 std::vector<VkClearValue> clear_values
             );
+            command_pool_t& command_pool();
         private:
             queue_reference_t _graphics_queue;
             queue_reference_t _present_queue;
