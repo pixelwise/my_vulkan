@@ -63,8 +63,7 @@ namespace my_vulkan
                 device_t& logical_device,
                 VkSurfaceKHR surface,
                 queue_family_indices_t queue_indices,
-                VkExtent2D desired_extent,
-                VkFormat depth_format
+                VkExtent2D desired_extent
             );
             VkRenderPass render_pass();
             size_t depth() const;

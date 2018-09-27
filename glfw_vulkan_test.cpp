@@ -115,7 +115,7 @@ public:
     , validationLayers{
         //"VK_LAYER_LUNARG_standard_validation"        
     }
-    , deviceExtensions{
+    , deviceExtensions{ 
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     }
     , instance{
@@ -139,15 +139,11 @@ public:
         validationLayers,
         deviceExtensions
     }
-    , depth_format{
-        my_vulkan::find_depth_format(physical_device)
-    }
     , swap_chain{new my_vulkan::helpers::standard_swap_chain_t{
         logical_device,
         surface.get(),
         queue_indices,
-        window_extent(),
-        depth_format
+        window_extent()
     }}
 
     , vertex_buffer{createVertexBuffer(
@@ -230,7 +226,6 @@ private:
     my_vulkan::queue_family_indices_t queue_indices;
     my_vulkan::device_t logical_device;
     
-    VkFormat depth_format;
     std::unique_ptr<my_vulkan::helpers::standard_swap_chain_t> swap_chain;
 
     my_vulkan::buffer_t vertex_buffer;
@@ -308,8 +303,7 @@ private:
             logical_device,
             surface.get(),
             queue_indices,
-            window_extent(),
-            depth_format
+            window_extent()
         });
         graphics_pipeline = my_vulkan::graphics_pipeline_t{
             logical_device.get(),

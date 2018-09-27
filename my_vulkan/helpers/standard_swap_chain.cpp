@@ -23,8 +23,7 @@ namespace my_vulkan
             device_t& logical_device,
             VkSurfaceKHR surface,
             queue_family_indices_t queue_indices,
-            VkExtent2D desired_extent,
-            VkFormat depth_format
+            VkExtent2D desired_extent
         )
         : swap_chain_t{
             logical_device.physical_device(),
@@ -37,7 +36,7 @@ namespace my_vulkan
         , _present_queue{logical_device.present_queue()}
         , _depth_image{create_depth_image(
             logical_device,
-            depth_format,
+            find_depth_format(logical_device.physical_device()),
             extent()
         )}
         , _depth_view{
@@ -46,7 +45,7 @@ namespace my_vulkan
         , _render_pass{
             logical_device.get(),
             format(),
-            depth_format
+            _depth_image.format()
         }
         , _command_pool{logical_device.get(), *queue_indices.graphics}
         {
