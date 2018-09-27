@@ -13,8 +13,8 @@ namespace my_vulkan
         VkRenderPass render_pass,
         const std::vector<VkDescriptorSetLayoutBinding>& uniform_layout,
         vertex_layout_t vertex_layout,
-        const std::vector<char>& vertex_shader,
-        const std::vector<char>& fragment_shader        
+        const std::vector<uint8_t>& vertex_shader,
+        const std::vector<uint8_t>& fragment_shader        
     )
     : _device{device}
     , _uniform_layout{_device, uniform_layout}
