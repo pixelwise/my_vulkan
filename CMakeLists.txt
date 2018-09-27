@@ -66,3 +66,4 @@ target_link_libraries (
   glfw
   my_vulkan
 )
+add_dependencies(glfw_vulkan_test Shaders)

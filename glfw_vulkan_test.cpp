@@ -323,7 +323,7 @@ private:
     {
         int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(
-            "../texture.jpg",
+            "texture.jpg",
             &texWidth,
             &texHeight,
             &texChannels,
