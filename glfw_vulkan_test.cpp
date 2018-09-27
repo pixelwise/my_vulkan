@@ -41,37 +41,6 @@ std::vector<const char*> getRequiredExtensions(bool enableValidationLayers)
     return extensions;
 }
 
-VkResult CreateDebugUtilsMessengerEXT(
-    VkInstance instance,
-    const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-    const VkAllocationCallbacks* pAllocator,
-    VkDebugUtilsMessengerEXT* pCallback
-)
-{
-    auto func =
-        (PFN_vkCreateDebugUtilsMessengerEXT) 
-        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        return func(instance, pCreateInfo, pAllocator, pCallback);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void DestroyDebugUtilsMessengerEXT(
-    VkInstance instance,
-    VkDebugUtilsMessengerEXT callback,
-    const VkAllocationCallbacks* pAllocator
-)
-{
-    auto func =
-        (PFN_vkDestroyDebugUtilsMessengerEXT)
-        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        func(instance, callback, pAllocator);
-    }
-}
-
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;
@@ -144,24 +113,6 @@ struct texture_sampler_t
 private:
 };
 
-struct framebuffer_t
-{
-private:
-};
-
-
-struct frame_sync_points_t
-{
-    frame_sync_points_t(VkDevice device)
-    : imageAvailable{device}
-    , renderFinished{device}
-    , inFlight{device}
-    {}
-    my_vulkan::semaphore_t imageAvailable;
-    my_vulkan::semaphore_t renderFinished;
-    my_vulkan::fence_t inFlight;
-};
-
 class HelloTriangleApplication {
 public:
     HelloTriangleApplication()
@@ -177,18 +128,13 @@ public:
         getRequiredExtensions(!validationLayers.empty()),
         validationLayers
     }
-    , callback{
-        validationLayers.empty() ?
-            0 :
-            setupDebugCallback(instance.get())
-    }
     , surface{instance.get(), window}
     , physical_device{pickPhysicalDevice(
         instance.get(),
         surface.get(),
         deviceExtensions
     )}
-    , queue_indices{my_vulkan::findQueueFamilies(
+    , queue_indices{my_vulkan::find_queue_families(
         physical_device,
         surface.get()
     )}
@@ -199,7 +145,7 @@ public:
         deviceExtensions
     }
     , depth_format{
-        findDepthFormat(physical_device)
+        my_vulkan::find_depth_format(physical_device)
     }
     , swap_chain{new my_vulkan::helpers::standard_swap_chain_t{
         logical_device,
@@ -284,7 +230,6 @@ private:
     std::vector<const char*> deviceExtensions;
     
     my_vulkan::instance_t instance;
-    VkDebugUtilsMessengerEXT callback;
     my_vulkan::surface_t surface;
     VkPhysicalDevice physical_device;
     my_vulkan::queue_family_indices_t queue_indices;
@@ -352,8 +297,6 @@ private:
     void cleanup()
     {
         vkDestroySampler(logical_device.get(), texture_sampler, nullptr);
-        if (callback)
-            DestroyDebugUtilsMessengerEXT(instance.get(), callback, nullptr);
         glfwDestroyWindow(window);
         glfwTerminate();
     }
@@ -383,109 +326,6 @@ private:
             readFile("shaders/26_shader_depth.vert.spv"),
             readFile("shaders/26_shader_depth.frag.spv")
         };
-    }
-
-    static VkDebugUtilsMessengerEXT setupDebugCallback(VkInstance instance)
-    {
-        VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        createInfo.messageSeverity =
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        createInfo.messageType =
-            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        createInfo.pfnUserCallback = debugCallback;
-        VkDebugUtilsMessengerEXT callback;
-        my_vulkan::vk_require(
-            CreateDebugUtilsMessengerEXT(
-                instance,
-                &createInfo, 
-                nullptr,
-                &callback
-            ),
-            "cerating debug messenger"
-        );
-        return callback;
-    }
-
-    static VkPhysicalDevice pickPhysicalDevice(
-        VkInstance instance,
-        VkSurfaceKHR surface,
-        std::vector<const char*> deviceExtensions
-    )
-    {
-        uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-
-        if (deviceCount == 0) {
-            throw std::runtime_error("failed to find GPUs with Vulkan support!");
-        }
-
-        std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-
-        for (const auto& device : devices)
-        {
-            if (isDeviceSuitable(device, surface, deviceExtensions))
-            {
-                return device;
-            }
-        }
-        throw std::runtime_error("failed to find a suitable GPU!");
-    }
-
-    static VkFormat findDepthFormat(VkPhysicalDevice physical_device)
-    {
-        return findSupportedFormat(
-            physical_device,
-            {
-                VK_FORMAT_D32_SFLOAT,
-                VK_FORMAT_D32_SFLOAT_S8_UINT,
-                VK_FORMAT_D24_UNORM_S8_UINT
-            },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-        );
-    }
-
-    static VkFormat findSupportedFormat(
-        VkPhysicalDevice physical_device,
-        const std::vector<VkFormat>& candidates,
-        VkImageTiling tiling,
-        VkFormatFeatureFlags features
-    )
-    {
-        for (VkFormat format : candidates)
-        {
-            VkFormatProperties props;
-            vkGetPhysicalDeviceFormatProperties(physical_device, format, &props);
-            if (
-                tiling == VK_IMAGE_TILING_LINEAR &&
-                (props.linearTilingFeatures & features) == features
-            ) 
-            {
-                return format;
-            }
-            else if (
-                tiling == VK_IMAGE_TILING_OPTIMAL &&
-                (props.optimalTilingFeatures & features) == features
-            )
-            {
-                return format;
-            }
-        }
-
-        throw std::runtime_error("failed to find supported format!");
-    }
-
-    static bool hasStencilComponent(VkFormat format)
-    {
-        return
-            format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
-            format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
     static my_vulkan::image_t createTextureImage(
@@ -519,9 +359,9 @@ private:
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         samplerInfo.magFilter = VK_FILTER_LINEAR;
         samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.maxAnisotropy = 16;
         samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
@@ -707,13 +547,39 @@ private:
         return working_set.finish();
     }
 
+    static VkPhysicalDevice pickPhysicalDevice(
+        VkInstance instance,
+        VkSurfaceKHR surface,
+        std::vector<const char*> deviceExtensions
+    )
+    {
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+        if (deviceCount == 0) {
+            throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        for (const auto& device : devices)
+        {
+            if (isDeviceSuitable(device, surface, deviceExtensions))
+            {
+                return device;
+            }
+        }
+        throw std::runtime_error("failed to find a suitable GPU!");
+    }
+
     static bool isDeviceSuitable(
         VkPhysicalDevice device,
         VkSurfaceKHR surface,
         std::vector<const char*> deviceExtensions
     )
     {
-        auto indices = my_vulkan::findQueueFamilies(device, surface);
+        auto indices = my_vulkan::find_queue_families(device, surface);
         if (!indices.isComplete())
             return false;
         if (checkDeviceExtensionSupport(device, deviceExtensions))
@@ -771,17 +637,6 @@ private:
         file.close();
 
         return buffer;
-    }
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
-        void* pUserData)
-    {
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-        return VK_FALSE;
     }
 };
 

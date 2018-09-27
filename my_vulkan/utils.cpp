@@ -28,7 +28,7 @@ namespace my_vulkan
         return {index_set.begin(), index_set.end()};
     }
 
-    queue_family_indices_t findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+    queue_family_indices_t find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface)
     {
         queue_family_indices_t indices;
 
@@ -348,4 +348,47 @@ namespace my_vulkan
         }
         return 0;
     }
-}
+
+    VkFormat find_depth_format(VkPhysicalDevice physical_device)
+    {
+        return find_supported_format(
+            physical_device,
+            {
+                VK_FORMAT_D32_SFLOAT,
+                VK_FORMAT_D32_SFLOAT_S8_UINT,
+                VK_FORMAT_D24_UNORM_S8_UINT
+            },
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+        );
+    }
+
+    VkFormat find_supported_format(
+        VkPhysicalDevice physical_device,
+        const std::vector<VkFormat>& candidates,
+        VkImageTiling tiling,
+        VkFormatFeatureFlags features
+    )
+    {
+        for (VkFormat format : candidates)
+        {
+            VkFormatProperties props;
+            vkGetPhysicalDeviceFormatProperties(physical_device, format, &props);
+            if (
+                tiling == VK_IMAGE_TILING_LINEAR &&
+                (props.linearTilingFeatures & features) == features
+            ) 
+            {
+                return format;
+            }
+            else if (
+                tiling == VK_IMAGE_TILING_OPTIMAL &&
+                (props.optimalTilingFeatures & features) == features
+            )
+            {
+                return format;
+            }
+        }
+
+        throw std::runtime_error("failed to find supported format!");
+    }}

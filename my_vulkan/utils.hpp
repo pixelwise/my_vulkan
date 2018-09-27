@@ -20,7 +20,7 @@ namespace my_vulkan
         bool isComplete() const;
         std::vector<uint32_t> unique_indices() const;
     };
-    queue_family_indices_t findQueueFamilies(
+    queue_family_indices_t find_queue_families(
         VkPhysicalDevice device,
         VkSurfaceKHR surface
     );
@@ -35,5 +35,12 @@ namespace my_vulkan
     };
     bool has_stencil_component(VkFormat format);
     size_t bytes_per_pixel(VkFormat format);
+    VkFormat find_depth_format(VkPhysicalDevice physical_device);
+    VkFormat find_supported_format(
+        VkPhysicalDevice physical_device,
+        const std::vector<VkFormat>& candidates,
+        VkImageTiling tiling,
+        VkFormatFeatureFlags features
+    );
 }
 
