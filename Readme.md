@@ -9,6 +9,4 @@ In the helpers directory i start gathering larger composites and utils. Right no
 License
 -------
 
-The code listings in this repository is licensed as [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
-By contributing to that directory, you agree to license your contributions to
-the public under that same public domain-like license.
+The code in this repository is licensed as [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/). By contributing you agree to license your contributions to the public under that same public domain-like license.
