@@ -116,7 +116,7 @@ public:
         //"VK_LAYER_LUNARG_standard_validation"        
     }
     , deviceExtensions{
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
     }
     , instance{
         "test",
@@ -124,7 +124,7 @@ public:
         validationLayers
     }
     , surface{instance.get(), window}
-    , physical_device{pickPhysicalDevice(
+    , physical_device{my_vulkan::pick_physical_device(
         instance.get(),
         surface.get(),
         deviceExtensions
@@ -519,79 +519,6 @@ private:
         return working_set.finish();
     }
 
-    static VkPhysicalDevice pickPhysicalDevice(
-        VkInstance instance,
-        VkSurfaceKHR surface,
-        std::vector<const char*> deviceExtensions
-    )
-    {
-        uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-
-        if (deviceCount == 0) {
-            throw std::runtime_error("failed to find GPUs with Vulkan support!");
-        }
-
-        std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-
-        for (const auto& device : devices)
-        {
-            if (isDeviceSuitable(device, surface, deviceExtensions))
-            {
-                return device;
-            }
-        }
-        throw std::runtime_error("failed to find a suitable GPU!");
-    }
-
-    static bool isDeviceSuitable(
-        VkPhysicalDevice device,
-        VkSurfaceKHR surface,
-        std::vector<const char*> deviceExtensions
-    )
-    {
-        auto indices = my_vulkan::find_queue_families(device, surface);
-        if (!indices.isComplete())
-            return false;
-        if (checkDeviceExtensionSupport(device, deviceExtensions))
-        {
-            auto swapChainSupport = my_vulkan::query_swap_chain_support(device, surface);
-            if (swapChainSupport.formats.empty() || swapChainSupport.presentModes.empty())
-                return false;
-        }
-        VkPhysicalDeviceFeatures supportedFeatures;
-        vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-        return supportedFeatures.samplerAnisotropy;
-    }
-
-    static bool checkDeviceExtensionSupport(
-        VkPhysicalDevice device,
-        std::vector<const char*> deviceExtensions
-    )
-    {
-        uint32_t extensionCount;
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-        vkEnumerateDeviceExtensionProperties(
-            device,
-            nullptr,
-            &extensionCount,
-            availableExtensions.data()
-        );
-
-        std::set<std::string> requiredExtensions(
-            deviceExtensions.begin(),
-            deviceExtensions.end()
-        );
-
-        for (const auto& extension : availableExtensions) {
-            requiredExtensions.erase(extension.extensionName);
-        }
-
-        return requiredExtensions.empty();
-    }
 
     static std::vector<char> readFile(const std::string& filename) {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);

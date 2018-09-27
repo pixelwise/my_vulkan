@@ -391,4 +391,133 @@ namespace my_vulkan
         }
 
         throw std::runtime_error("failed to find supported format!");
-    }}
+    }
+
+    static bool isDeviceSuitable(
+        VkPhysicalDevice device,
+        VkSurfaceKHR surface,
+        std::vector<const char*> deviceExtensions
+    );
+
+    static bool checkDeviceExtensionSupport(
+        VkPhysicalDevice device,
+        std::vector<const char*> deviceExtensions
+    );
+
+    VkPhysicalDevice pick_physical_device(
+        VkInstance instance,
+        VkSurfaceKHR surface,
+        std::vector<const char*> deviceExtensions
+    )
+    {
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+        if (deviceCount == 0) {
+            throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        for (const auto& device : devices)
+        {
+            if (isDeviceSuitable(device, surface, deviceExtensions))
+            {
+                return device;
+            }
+        }
+        throw std::runtime_error("failed to find a suitable GPU!");
+    }
+
+    static bool isDeviceSuitable(
+        VkPhysicalDevice device,
+        VkSurfaceKHR surface,
+        std::vector<const char*> deviceExtensions
+    )
+    {
+        auto indices = my_vulkan::find_queue_families(device, surface);
+        if (!indices.isComplete())
+            return false;
+        if (checkDeviceExtensionSupport(device, deviceExtensions))
+        {
+            auto swapChainSupport = query_swap_chain_support(device, surface);
+            if (swapChainSupport.formats.empty() || swapChainSupport.presentModes.empty())
+                return false;
+        }
+        VkPhysicalDeviceFeatures supportedFeatures;
+        vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+        return supportedFeatures.samplerAnisotropy;
+    }
+
+    static bool checkDeviceExtensionSupport(
+        VkPhysicalDevice device,
+        std::vector<const char*> deviceExtensions
+    )
+    {
+        uint32_t extensionCount;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(
+            device,
+            nullptr,
+            &extensionCount,
+            availableExtensions.data()
+        );
+
+        std::set<std::string> requiredExtensions(
+            deviceExtensions.begin(),
+            deviceExtensions.end()
+        );
+
+        for (const auto& extension : availableExtensions) {
+            requiredExtensions.erase(extension.extensionName);
+        }
+
+        return requiredExtensions.empty();
+    }
+
+    swap_chain_support_t query_swap_chain_support(
+        VkPhysicalDevice device,
+        VkSurfaceKHR surface
+    )
+    {
+        swap_chain_support_t details;
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+        uint32_t formatCount;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+
+        if (formatCount != 0) {
+            details.formats.resize(formatCount);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(
+                device,
+                surface,
+                &formatCount,
+                details.formats.data()
+            );
+        }
+
+        uint32_t presentModeCount;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(
+            device,
+            surface,
+            &presentModeCount,
+            nullptr
+        );
+
+        if (presentModeCount != 0)
+        {
+            details.presentModes.resize(presentModeCount);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(
+                device,
+                surface,
+                &presentModeCount,
+                details.presentModes.data()
+            );
+        }
+        return details;
+    }
+
+}

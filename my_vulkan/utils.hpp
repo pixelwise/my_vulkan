@@ -42,5 +42,21 @@ namespace my_vulkan
         VkImageTiling tiling,
         VkFormatFeatureFlags features
     );
+    struct swap_chain_support_t
+    {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+    swap_chain_support_t query_swap_chain_support(
+        VkPhysicalDevice device,
+        VkSurfaceKHR surface
+    );
+    VkPhysicalDevice pick_physical_device(
+        VkInstance instance,
+        VkSurfaceKHR surface,
+        std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME}
+    );
+
 }
 

@@ -53,21 +53,4 @@ namespace my_vulkan
         VkFormat _format;
         VkExtent2D _extent;
     };
-
-    struct swap_chain_config_t
-    {
-        
-    };
-
-    struct swap_chain_support_t
-    {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
-
-    swap_chain_support_t query_swap_chain_support(
-        VkPhysicalDevice device,
-        VkSurfaceKHR surface
-    );
 }
