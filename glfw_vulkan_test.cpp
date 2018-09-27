@@ -108,11 +108,6 @@ const std::vector<uint16_t> indices = {
     4, 5, 6, 6, 7, 4
 };
 
-struct texture_sampler_t
-{
-private:
-};
-
 class HelloTriangleApplication {
 public:
     HelloTriangleApplication()
@@ -192,9 +187,9 @@ public:
         readFile("shaders/26_shader_depth.frag.spv")
     }
     , texture_view{texture_image.view(VK_IMAGE_ASPECT_COLOR_BIT)}
-    , texture_sampler{createTextureSampler(
+    , texture_sampler{
         logical_device.get()
-    )}
+    }
     , uniform_buffers{createUniformBuffers(
         logical_device,
         swap_chain->depth()
@@ -207,7 +202,7 @@ public:
         descriptor_pool,
         uniform_buffers,
         texture_view.get(),
-        texture_sampler,
+        texture_sampler.get(),
         graphics_pipeline.uniform_layout()
     )}
     {
@@ -244,7 +239,7 @@ private:
     std::vector<VkDescriptorSetLayoutBinding> uniform_layout;
     my_vulkan::graphics_pipeline_t graphics_pipeline;
     my_vulkan::image_view_t texture_view;
-    VkSampler texture_sampler;
+    my_vulkan::texture_sampler_t texture_sampler;
     std::vector<my_vulkan::buffer_t> uniform_buffers;
     my_vulkan::descriptor_pool_t descriptor_pool;
     std::vector<my_vulkan::descriptor_set_t> descriptor_sets;
@@ -296,7 +291,6 @@ private:
 
     void cleanup()
     {
-        vkDestroySampler(logical_device.get(), texture_sampler, nullptr);
         glfwDestroyWindow(window);
         glfwTerminate();
     }
@@ -350,28 +344,6 @@ private:
         };
         result.load_pixels(command_pool, pixels);
         stbi_image_free(pixels);
-        return result;
-    }
-
-    static VkSampler createTextureSampler(VkDevice device)
-    {
-        VkSamplerCreateInfo samplerInfo = {};
-        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        samplerInfo.anisotropyEnable = VK_TRUE;
-        samplerInfo.maxAnisotropy = 16;
-        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable = VK_FALSE;
-        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        VkSampler result;
-        if (vkCreateSampler(device, &samplerInfo, nullptr, &result) != VK_SUCCESS)
-            throw std::runtime_error("failed to create texture sampler!");
         return result;
     }
 

@@ -50,6 +50,11 @@ namespace my_vulkan
         return *this;
     }
 
+    texture_sampler_t::~texture_sampler_t()
+    {
+        cleanup();
+    }
+
     void texture_sampler_t::cleanup()
     {
         if (_device)
