@@ -1,6 +1,6 @@
 function(compile_shader in_file out_var)
   get_filename_component(file_name ${in_file} NAME)
-  set(shaders_dir "${PROJECT_BINARY_DIR}/shaders/")
+  set(shaders_dir "shaders")
   set(SPIRV "${shaders_dir}/${file_name}.spv")
   add_custom_command(
     OUTPUT ${SPIRV}
