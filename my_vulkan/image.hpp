@@ -13,7 +13,7 @@ namespace my_vulkan
     struct image_t
     {
         image_t(
-            device_t& device,
+            device_reference_t device,
             VkExtent3D extent,
             VkFormat format,
             VkImageUsageFlags usage = 0,

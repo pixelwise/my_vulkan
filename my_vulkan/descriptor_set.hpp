@@ -20,11 +20,17 @@ namespace my_vulkan
             VkImageView view;
             VkImageLayout layout;
         };
+        /*
+            VK_DESCRIPTOR_TYPE_SAMPLER
+        */
         void update_sampler_write(
             uint32_t binding,
             std::vector<VkSampler> samplers,
             uint32_t array_offset = 0
         );
+        /*
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+        */
         void update_combined_image_sampler_write(
             uint32_t binding,
             std::vector<VkDescriptorImageInfo> infos,
