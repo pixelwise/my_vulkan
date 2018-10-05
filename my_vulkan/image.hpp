@@ -25,24 +25,29 @@ namespace my_vulkan
             VkDevice device,
             VkImage image,
             VkFormat format,
-            VkExtent3D extent
+            VkExtent3D extent,
+            VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED
         );
         image_t(
             VkDevice device,
             VkImage image,
             VkFormat format,
-            VkExtent2D extent
+            VkExtent2D extent,
+            VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED
         );
         image_t(const image_t&) = delete;
         image_t(image_t&& other) noexcept;
         image_t& operator=(const image_t&) = delete;
         image_t& operator=(image_t&& other) noexcept;
         ~image_t();
-        image_view_t view(VkImageAspectFlagBits aspect_flags) const;
+        image_view_t view(
+            VkImageAspectFlagBits aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT
+        ) const;
         VkImage get();
         device_memory_t* memory();
         VkFormat format() const;
         VkExtent3D extent() const;
+        VkImageLayout layout() const;
         void copy_from(
             VkBuffer buffer,
             command_buffer_t::scope_t& command_scope,
@@ -65,6 +70,7 @@ namespace my_vulkan
         VkImage _image;
         VkFormat _format;
         VkExtent3D _extent;
+        VkImageLayout _layout;
         bool _borrowed;
         std::unique_ptr<device_memory_t> _memory;
     };

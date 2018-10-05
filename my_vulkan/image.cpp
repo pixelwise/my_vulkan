@@ -75,6 +75,7 @@ namespace my_vulkan
     )}
     , _format{format}
     , _extent{extent}
+    , _layout{initial_layout}
     , _borrowed{false}
     , _memory{new device_memory_t{
         _device.get(),
@@ -93,8 +94,9 @@ namespace my_vulkan
         VkDevice device,
         VkImage image,
         VkFormat format,
-        VkExtent2D extent
-    ) : image_t{device, image, format, {extent.width, extent.height, 1}}
+        VkExtent2D extent,
+        VkImageLayout initial_layout
+    ) : image_t{device, image, format, {extent.width, extent.height, 1}, initial_layout}
     {
     }
 
@@ -102,13 +104,15 @@ namespace my_vulkan
         VkDevice device,
         VkImage image,
         VkFormat format,
-        VkExtent3D extent
+        VkExtent3D extent,
+        VkImageLayout initial_layout
     )
     : _device{0, device}
     , _image{image}
     , _format{format}
     , _extent{extent}
-    , _borrowed{true} 
+    , _layout{initial_layout}
+    , _borrowed{true}
     {
     }
 
@@ -188,6 +192,11 @@ namespace my_vulkan
     VkExtent3D image_t::extent() const
     {
         return _extent;
+    }
+
+    VkImageLayout image_t::layout() const
+    {
+        return _layout;
     }
 
     void image_t::copy_from(
