@@ -9,6 +9,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall" )
 
 find_package(Vulkan REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
+find_package(Boost 1.64 REQUIRED)
 
 if (USE_ASAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -29,7 +30,10 @@ add_custom_target(
     DEPENDS ${SPIRV_BINARY_FILES}
 )
 
-include_directories(${Vulkan_INCLUDE_DIRS})
+include_directories(
+    ${Vulkan_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
+)
 
 add_library(my_vulkan
   my_vulkan/buffer.cpp
