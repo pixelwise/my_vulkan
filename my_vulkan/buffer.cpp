@@ -83,6 +83,11 @@ namespace my_vulkan
         oneshot_scope.execute_and_wait();
     }
 
+    VkDeviceSize buffer_t::size() const
+    {
+        return _size;
+    }
+
     buffer_t::~buffer_t()
     {
         cleanup();

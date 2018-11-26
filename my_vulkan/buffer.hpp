@@ -21,6 +21,7 @@ namespace my_vulkan
         buffer_t& operator=(buffer_t&& other) noexcept;
         device_memory_t* memory();
         VkBuffer get();
+        VkDeviceSize size() const;
         void load_data(command_pool_t& command_pool, const void* data);
         ~buffer_t();
     private:
