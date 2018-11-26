@@ -173,6 +173,20 @@ namespace my_vulkan
         );
     }
 
+    void command_buffer_t::scope_t::draw(
+        index_range_t index_range,
+        index_range_t instance_range
+    )
+    {
+        vkCmdDraw(
+            _command_buffer,
+            index_range.count,
+            instance_range.count,
+            index_range.offset,
+            instance_range.offset
+        );
+    }
+
     void command_buffer_t::scope_t::draw_indexed(
         index_range_t index_range,
         uint32_t vertex_offset,

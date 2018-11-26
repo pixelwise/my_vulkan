@@ -57,6 +57,10 @@ namespace my_vulkan
                 uint32_t vertex_offset = 0,
                 index_range_t instance_range = {0, 1}
             );
+            void draw(
+                index_range_t index_range,
+                index_range_t instance_range = {0, 1}
+            );
             void end_render_pass();
 
             void pipeline_barrier(

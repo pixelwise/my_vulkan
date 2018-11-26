@@ -21,7 +21,8 @@ namespace my_vulkan
             const std::vector<VkDescriptorSetLayoutBinding>& uniform_layout,
             vertex_layout_t vertex_layout,
             const std::vector<uint8_t>& vertex_shader,
-            const std::vector<uint8_t>& fragment_shader        
+            const std::vector<uint8_t>& fragment_shader,
+            VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
         );
         graphics_pipeline_t(const graphics_pipeline_t&) = delete;
         graphics_pipeline_t(graphics_pipeline_t&& other) noexcept;
@@ -29,6 +30,7 @@ namespace my_vulkan
         graphics_pipeline_t& operator=(graphics_pipeline_t&& other) noexcept;
         VkPipeline get();
         VkPipelineLayout layout();
+        VkDevice device();
         VkDescriptorSetLayout uniform_layout();
         ~graphics_pipeline_t();
     private:

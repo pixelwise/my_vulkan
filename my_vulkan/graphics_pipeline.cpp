@@ -14,7 +14,8 @@ namespace my_vulkan
         const std::vector<VkDescriptorSetLayoutBinding>& uniform_layout,
         vertex_layout_t vertex_layout,
         const std::vector<uint8_t>& vertex_shader,
-        const std::vector<uint8_t>& fragment_shader        
+        const std::vector<uint8_t>& fragment_shader,
+        VkPrimitiveTopology topology
     )
     : _device{device}
     , _uniform_layout{_device, uniform_layout}
@@ -113,7 +114,7 @@ namespace my_vulkan
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssembly.topology = topology;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
@@ -218,5 +219,10 @@ namespace my_vulkan
     VkDescriptorSetLayout graphics_pipeline_t::uniform_layout()
     {
         return _uniform_layout.get();
+    }
+
+    VkDevice graphics_pipeline_t::device()
+    {
+        return _device;
     }
 }
