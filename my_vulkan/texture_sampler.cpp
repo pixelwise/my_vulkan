@@ -18,6 +18,8 @@ namespace my_vulkan
         }
         VkSamplerCreateInfo samplerInfo = {};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.pNext = 0;
+        samplerInfo.flags = 0;
         samplerInfo.magFilter = filter;
         samplerInfo.minFilter = filter;
         samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
