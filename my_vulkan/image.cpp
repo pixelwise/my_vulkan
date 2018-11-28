@@ -200,6 +200,27 @@ namespace my_vulkan
         return _layout;
     }
 
+    VkSubresourceLayout image_t::memory_layout(
+        VkImageAspectFlags aspect_flags,
+        uint32_t mipLevel,
+        uint32_t arrayLayer
+    ) const
+    {
+        VkImageSubresource sub_resource{
+            aspect_flags,
+            mipLevel,
+            arrayLayer  
+        };
+        VkSubresourceLayout result;
+        vkGetImageSubresourceLayout(
+            _device.get(),
+            _image,
+            &sub_resource,
+            &result
+        );
+        return result;
+    }
+
     void image_t::copy_from(
         VkBuffer buffer,
         command_pool_t& command_pool,

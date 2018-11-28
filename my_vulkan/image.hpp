@@ -43,6 +43,11 @@ namespace my_vulkan
         image_view_t view(
             VkImageAspectFlagBits aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT
         ) const;
+        VkSubresourceLayout memory_layout(
+            VkImageAspectFlags aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT,
+            uint32_t mipLevel = 0,
+            uint32_t arrayLayer = 0
+        ) const;
         VkImage get();
         device_memory_t* memory();
         VkFormat format() const;
