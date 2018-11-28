@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 
 #include <memory>
+#include <iostream>
 #include <stdexcept>
 
 static VkFormat vertex_format_with_components(float, size_t num_components)
@@ -134,20 +135,7 @@ namespace my_vulkan
         _fragment_shader,
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
     }
-    , _descriptor_pool{
-        output_config.device.get(),
-        output_config.depth
-    }
-    , _pipeline_buffers{
-        materialize(boost::counting_range<size_t>(0, output_config.depth) |
-        boost::adaptors::transformed([&](auto i){
-            return pipeline_buffer_t{
-                _device,
-                _descriptor_pool.get(),
-                _graphics_pipeline.uniform_layout()
-            };
-        }))
-    }
+    , _depth{output_config.depth}
     {
     }
 
@@ -485,6 +473,29 @@ namespace my_vulkan
         num_textures
     >::buffer(size_t phase)
     {
-        return _pipeline_buffers.at(phase);
+        if (phase != _current_phase)
+        {
+            _current_phase = phase;
+            _next_buffer_index = 0;
+        }
+        while (_next_buffer_index >= _pipeline_buffers.size())
+        {
+            _descriptor_pools.emplace_back(
+                _device.get(),
+                _depth
+            );
+             _pipeline_buffers.push_back(
+                materialize(boost::counting_range<size_t>(0, _depth) |
+                boost::adaptors::transformed([&](auto i){
+                    return pipeline_buffer_t{
+                        _device,
+                        _descriptor_pools.back().get(),
+                        _graphics_pipeline.uniform_layout()
+                    };
+                }))
+            );
+            std::cout << "allocated buffer set " << _pipeline_buffers.size() << std::endl;
+       }
+        return _pipeline_buffers.at(_next_buffer_index++).at(phase);
     }
 }

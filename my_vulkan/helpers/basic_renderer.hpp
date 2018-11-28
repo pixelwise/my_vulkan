@@ -85,7 +85,10 @@ namespace my_vulkan
         std::vector<uint8_t> _fragment_shader;
         std::vector<VkDescriptorSetLayoutBinding> _uniform_layout;
         graphics_pipeline_t _graphics_pipeline;
-        descriptor_pool_t _descriptor_pool;
-        std::vector<pipeline_buffer_t> _pipeline_buffers;
+        std::vector<descriptor_pool_t> _descriptor_pools;
+        std::vector<std::vector<pipeline_buffer_t>> _pipeline_buffers;
+        const size_t _depth;
+        size_t _current_phase{0};
+        size_t _next_buffer_index{0};
     };
 }
