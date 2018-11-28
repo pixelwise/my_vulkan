@@ -3,8 +3,6 @@
 #include "utils.hpp"
 #include "shader_module.hpp"
 
-#include <iostream>
-
 namespace my_vulkan
 {
     graphics_pipeline_t::graphics_pipeline_t(
@@ -156,13 +154,6 @@ namespace my_vulkan
         );
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
-
-        std::cout
-            << "created graphics pipeline"
-            << " dev " << _device
-            << " layout " << _layout
-            << " pipeline " << _pipeline
-            << std::endl;
     }
 
     graphics_pipeline_t::graphics_pipeline_t(graphics_pipeline_t&& other) noexcept
@@ -194,12 +185,6 @@ namespace my_vulkan
     {
         if (_device)
         {
-            std::cout
-                << "destroying graphics pipeline "
-                << " dev " << _device
-                << " layout " << _layout
-                << " pipeline " << _pipeline
-                << std::endl;
             vkDestroyPipeline(_device, _pipeline, 0);
             vkDestroyPipelineLayout(_device, _layout, 0);
             _device = 0;

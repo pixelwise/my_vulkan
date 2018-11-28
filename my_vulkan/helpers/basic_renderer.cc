@@ -117,10 +117,12 @@ namespace my_vulkan
         num_textures
     >::basic_renderer_t(
         output_config_t output_config,
-        const std::vector<uint8_t>& vertex_shader,
-        const std::vector<uint8_t>& fragment_shader                
+        std::vector<uint8_t> vertex_shader,
+        std::vector<uint8_t> fragment_shader                
     )
     : _device{output_config.device}
+    , _vertex_shader{std::move(vertex_shader)}
+    , _fragment_shader{std::move(fragment_shader)}
     , _uniform_layout{make_uniform_layout()}
     , _graphics_pipeline{
         output_config.device.get(),
@@ -128,8 +130,8 @@ namespace my_vulkan
         output_config.render_pass,
         _uniform_layout,
         make_vertex_layout(),
-        vertex_shader,
-        fragment_shader,
+        _vertex_shader,
+        _fragment_shader,
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
     }
     , _descriptor_pool{
@@ -159,6 +161,35 @@ namespace my_vulkan
         }))
     }
     {
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
+    void
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::update_render_pipeline(
+        VkExtent2D extent,
+        VkRenderPass render_pass
+    )
+    {
+        _graphics_pipeline = {
+            _device.get(),
+            extent,
+            render_pass,
+            _uniform_layout,
+            make_vertex_layout(),
+            _vertex_shader,
+            _fragment_shader,
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
+        };
     }
 
     template<

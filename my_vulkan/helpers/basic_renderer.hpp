@@ -28,8 +28,8 @@ namespace my_vulkan
         };
         basic_renderer_t(
             output_config_t output_config,
-            const std::vector<uint8_t>& vertex_shader,
-            const std::vector<uint8_t>& fragment_shader                
+            std::vector<uint8_t> vertex_shader,
+            std::vector<uint8_t> fragment_shader                
         );
         void update_vertices(
             size_t phase,
@@ -50,6 +50,10 @@ namespace my_vulkan
             my_vulkan::command_buffer_t::scope_t& command_scope,
             size_t num_vertices
         );
+        void update_render_pipeline(
+            VkExtent2D extent,
+            VkRenderPass render_pass
+        );
         basic_renderer_t(basic_renderer_t&) = delete;
         basic_renderer_t(basic_renderer_t&&) = default;
         basic_renderer_t& operator=(const basic_renderer_t&) = delete;
@@ -67,6 +71,8 @@ namespace my_vulkan
             boost::optional<my_vulkan::buffer_t> vertices;
         };
         my_vulkan::device_reference_t _device;
+        std::vector<uint8_t> _vertex_shader;
+        std::vector<uint8_t> _fragment_shader;
         std::vector<VkDescriptorSetLayoutBinding> _uniform_layout;
         my_vulkan::graphics_pipeline_t _graphics_pipeline;
         my_vulkan::descriptor_pool_t _descriptor_pool;
