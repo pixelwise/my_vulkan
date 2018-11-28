@@ -142,21 +142,9 @@ namespace my_vulkan
         materialize(boost::counting_range<size_t>(0, output_config.depth) |
         boost::adaptors::transformed([&](auto i){
             return pipeline_buffer_t{
-                {
-                    output_config.device,
-                    sizeof(vertex_uniforms_t),
-                    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
-                },
-                {
-                    output_config.device,
-                    sizeof(fragment_uniforms_t),
-                    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
-                },
-                _descriptor_pool.make_descriptor_set(_graphics_pipeline.uniform_layout())
+                _device,
+                _descriptor_pool.get(),
+                _graphics_pipeline.uniform_layout()
             };
         }))
     }
@@ -239,7 +227,7 @@ namespace my_vulkan
         typename vertex_t,
         size_t num_textures
     >
-    my_vulkan::vertex_layout_t
+    vertex_layout_t
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
@@ -297,20 +285,57 @@ namespace my_vulkan
         typename vertex_t,
         size_t num_textures
     >
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::pipeline_buffer_t::pipeline_buffer_t(
+        device_reference_t device,
+        VkDescriptorPool descriptor_pool,
+        VkDescriptorSetLayout layout
+    )
+    : _device{device}
+    , _vertex_uniforms{
+        _device,
+        sizeof(vertex_uniforms_t),
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
+    }
+    , _fragment_uniforms{
+        _device,
+        sizeof(fragment_uniforms_t),
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
+    }
+    , _descriptor_set{
+        _device.get(),
+        descriptor_pool,
+        layout
+    }
+    {   
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
     void
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
         num_textures
-    >::update_vertices(
-        size_t phase,
+    >::pipeline_buffer_t::update_vertices(
         const std::vector<vertex_t>& vertices
     )
     {
-        auto& buffer = _pipeline_buffers[phase];
         size_t data_size = sizeof(vertex_t) * vertices.size();
-        my_vulkan::buffer_t vertex_buffer{
+        buffer_t vertex_buffer{
             _device,
             data_size,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -320,7 +345,7 @@ namespace my_vulkan
             vertices.data(),
             data_size
         );
-        buffer.vertices = std::move(vertex_buffer);
+        _vertices = std::move(vertex_buffer);
     }
 
     template<
@@ -335,30 +360,28 @@ namespace my_vulkan
         fragment_uniforms_t,
         vertex_t,
         num_textures
-    >::update_uniforms(
-        size_t phase,
+    >::pipeline_buffer_t::update_uniforms(
         vertex_uniforms_t vertex_uniforms,
         fragment_uniforms_t fragment_uniforms
     )
     {
-        auto& buffer = _pipeline_buffers[phase];
-        buffer.vertex_uniforms.memory()->set_data(
+        _vertex_uniforms.memory()->set_data(
             &vertex_uniforms,
             sizeof(vertex_uniforms)
         );
-        buffer.descriptor_set.update_buffer_write(
+        _descriptor_set.update_buffer_write(
             0,
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            {{buffer.vertex_uniforms.get(), 0, sizeof(vertex_uniforms_t)}}
+            {{_vertex_uniforms.get(), 0, sizeof(vertex_uniforms_t)}}
         );
-        buffer.fragment_uniforms.memory()->set_data(
+        _fragment_uniforms.memory()->set_data(
             &fragment_uniforms,
             sizeof(fragment_uniforms)
         );
-        buffer.descriptor_set.update_buffer_write(
+        _descriptor_set.update_buffer_write(
             1,
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            {{buffer.fragment_uniforms.get(), 0, sizeof(fragment_uniforms_t)}}
+            {{_fragment_uniforms.get(), 0, sizeof(fragment_uniforms_t)}}
         );
     }
 
@@ -374,16 +397,14 @@ namespace my_vulkan
         fragment_uniforms_t,
         vertex_t,
         num_textures
-    >::update_texture(
-        size_t phase,
+    >::pipeline_buffer_t::update_texture(
         size_t index,
         VkDescriptorImageInfo texture
     )
     {
         if (index >= num_textures)
             throw std::runtime_error{"invalid texture index"};
-        auto& buffer = _pipeline_buffers[phase];
-        buffer.descriptor_set.update_combined_image_sampler_write(
+        _descriptor_set.update_combined_image_sampler_write(
             2 + index,
             {texture}
         );
@@ -401,25 +422,69 @@ namespace my_vulkan
         fragment_uniforms_t,
         vertex_t,
         num_textures
+    >::pipeline_buffer_t::bind(
+        command_buffer_t::scope_t& command_scope,
+        VkPipelineLayout layout
+    )
+    {
+        command_scope.bind_vertex_buffers(
+            {{_vertices->get(), 0}}
+        );            
+        command_scope.bind_descriptor_set(
+            VK_PIPELINE_BIND_POINT_GRAPHICS, 
+            layout,
+            {_descriptor_set.get()}
+        );        
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
+    void
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
     >::execute_draw(
-        size_t phase,
-        my_vulkan::command_buffer_t::scope_t& command_scope,
+        pipeline_buffer_t& buffer,
+        command_buffer_t::scope_t& command_scope,
         size_t num_vertices
     )
     {
-        auto& buffer = _pipeline_buffers[phase];
         command_scope.bind_pipeline(
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             _graphics_pipeline.get()
         );
-        command_scope.bind_vertex_buffers(
-            {{buffer.vertices->get(), 0}}
-        );            
-        command_scope.bind_descriptor_set(
-            VK_PIPELINE_BIND_POINT_GRAPHICS, 
-            _graphics_pipeline.layout(),
-            {buffer.descriptor_set.get()}
+        buffer.bind(
+            command_scope,
+            _graphics_pipeline.layout()
         );
         command_scope.draw({0, uint32_t(num_vertices)});            
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
+    typename basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::pipeline_buffer_t&
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::buffer(size_t phase)
+    {
+        return _pipeline_buffers.at(phase);
     }
 }
