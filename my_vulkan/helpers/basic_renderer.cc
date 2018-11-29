@@ -303,7 +303,17 @@ namespace my_vulkan
         descriptor_pool,
         layout
     }
-    {   
+    {
+        _descriptor_set.update_buffer_write(
+            0,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            {{_vertex_uniforms.get(), 0, sizeof(vertex_uniforms_t)}}
+        );
+        _descriptor_set.update_buffer_write(
+            1,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            {{_fragment_uniforms.get(), 0, sizeof(fragment_uniforms_t)}}
+        );
     }
 
     template<
@@ -357,19 +367,9 @@ namespace my_vulkan
             &vertex_uniforms,
             sizeof(vertex_uniforms)
         );
-        _descriptor_set.update_buffer_write(
-            0,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            {{_vertex_uniforms.get(), 0, sizeof(vertex_uniforms_t)}}
-        );
         _fragment_uniforms.memory()->set_data(
             &fragment_uniforms,
             sizeof(fragment_uniforms)
-        );
-        _descriptor_set.update_buffer_write(
-            1,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            {{_fragment_uniforms.get(), 0, sizeof(fragment_uniforms_t)}}
         );
     }
 
