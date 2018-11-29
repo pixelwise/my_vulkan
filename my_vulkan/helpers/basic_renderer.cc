@@ -1,5 +1,7 @@
 #include "basic_renderer.hpp"
 
+#include "to_std140.hpp"
+
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/counting_range.hpp>
@@ -286,14 +288,14 @@ namespace my_vulkan
     : _device{device}
     , _vertex_uniforms{
         _device,
-        sizeof(vertex_uniforms_t),
+        to_std140(vertex_uniforms_t{}).data.size(),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
     }
     , _fragment_uniforms{
         _device,
-        sizeof(fragment_uniforms_t),
+        to_std140(vertex_uniforms_t{}).data.size(),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
@@ -353,23 +355,25 @@ namespace my_vulkan
         fragment_uniforms_t fragment_uniforms
     )
     {
+        auto vertex_data = to_std140(vertex_uniforms).data;
         _vertex_uniforms.memory()->set_data(
-            &vertex_uniforms,
-            sizeof(vertex_uniforms)
+            vertex_data.data(),
+            vertex_data.size()
         );
         _descriptor_set.update_buffer_write(
             0,
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            {{_vertex_uniforms.get(), 0, sizeof(vertex_uniforms_t)}}
+            {{_vertex_uniforms.get(), 0, vertex_data.size()}}
         );
+        auto fragment_data = to_std140(fragment_uniforms).data;
         _fragment_uniforms.memory()->set_data(
-            &fragment_uniforms,
-            sizeof(fragment_uniforms)
+            fragment_data.data(),
+            fragment_data.size()
         );
         _descriptor_set.update_buffer_write(
             1,
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            {{_fragment_uniforms.get(), 0, sizeof(fragment_uniforms_t)}}
+            {{_fragment_uniforms.get(), 0, fragment_data.size()}}
         );
     }
 
