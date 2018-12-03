@@ -29,7 +29,8 @@ namespace my_vulkan
         basic_renderer_t(
             output_config_t output_config,
             std::vector<uint8_t> vertex_shader,
-            std::vector<uint8_t> fragment_shader                
+            std::vector<uint8_t> fragment_shader,
+            render_settings_t render_settings = {}
         );
         class pipeline_buffer_t
         {

@@ -12,6 +12,17 @@ namespace my_vulkan
         VkVertexInputBindingDescription binding;
         std::vector<VkVertexInputAttributeDescription> attributes;
     };
+    enum class blending_t
+    {
+        none,
+        alpha,
+        add
+    };
+    struct render_settings_t
+    {
+        bool depth_test = false;
+        blending_t blending = blending_t::none;
+    };
     struct graphics_pipeline_t
     {
         graphics_pipeline_t(
@@ -22,7 +33,8 @@ namespace my_vulkan
             vertex_layout_t vertex_layout,
             const std::vector<uint8_t>& vertex_shader,
             const std::vector<uint8_t>& fragment_shader,
-            VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
+            VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            render_settings_t settings = {} 
         );
         graphics_pipeline_t(const graphics_pipeline_t&) = delete;
         graphics_pipeline_t(graphics_pipeline_t&& other) noexcept;

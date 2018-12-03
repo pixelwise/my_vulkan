@@ -121,7 +121,8 @@ namespace my_vulkan
     >::basic_renderer_t(
         output_config_t output_config,
         std::vector<uint8_t> vertex_shader,
-        std::vector<uint8_t> fragment_shader                
+        std::vector<uint8_t> fragment_shader,
+        render_settings_t render_settings               
     )
     : _device{output_config.device}
     , _vertex_shader{std::move(vertex_shader)}
@@ -135,7 +136,8 @@ namespace my_vulkan
         make_vertex_layout(),
         _vertex_shader,
         _fragment_shader,
-        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+        render_settings
     }
     , _depth{output_config.depth}
     {

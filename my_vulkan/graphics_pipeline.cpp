@@ -3,6 +3,8 @@
 #include "utils.hpp"
 #include "shader_module.hpp"
 
+#include <iostream>
+
 namespace my_vulkan
 {
     graphics_pipeline_t::graphics_pipeline_t(
@@ -13,7 +15,8 @@ namespace my_vulkan
         vertex_layout_t vertex_layout,
         const std::vector<uint8_t>& vertex_shader,
         const std::vector<uint8_t>& fragment_shader,
-        VkPrimitiveTopology topology
+        VkPrimitiveTopology topology,
+        render_settings_t settings
     )
     : _device{device}
     , _uniform_layout{_device, uniform_layout}
@@ -65,7 +68,7 @@ namespace my_vulkan
 
         VkPipelineDepthStencilStateCreateInfo depthStencil = {};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_TRUE;
+        depthStencil.depthTestEnable = settings.depth_test ? VK_TRUE : VK_FALSE;
         depthStencil.depthWriteEnable = VK_TRUE;
         depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
@@ -77,7 +80,24 @@ namespace my_vulkan
             VK_COLOR_COMPONENT_G_BIT |
             VK_COLOR_COMPONENT_B_BIT |
             VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment.blendEnable = VK_FALSE;
+        switch(settings.blending)
+        {
+        case blending_t::add:
+            colorBlendAttachment.blendEnable = VK_TRUE;
+            colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+            colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+            colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+            break;
+        case blending_t::alpha:
+            colorBlendAttachment.blendEnable = VK_TRUE;
+            colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+            colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+            colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            break;
+        case blending_t::none:
+            colorBlendAttachment.blendEnable = VK_FALSE;
+            break;
+        }
 
         VkPipelineColorBlendStateCreateInfo colorBlending = {};
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
