@@ -5,6 +5,7 @@
 #include "utils/range_utils.hpp"
 
 #include <boost/fusion/include/for_each.hpp>
+#include <boost/fusion/include/size.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/counting_range.hpp>
 
@@ -188,24 +189,36 @@ namespace my_vulkan
     >::make_uniform_layout()
     {
         std::vector<VkDescriptorSetLayoutBinding> result;
-        result.push_back({
-            0,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            1,
-            VK_SHADER_STAGE_VERTEX_BIT,
-            0
-        });
-        result.push_back({
-            1,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            1,
-            VK_SHADER_STAGE_FRAGMENT_BIT,
-            0
-        });
+        uint32_t next_location = 0;
+        static_assert(
+            boost::fusion::result_of::empty<vertex_uniforms_t>::value ==
+            boost::fusion::result_of::empty<fragment_uniforms_t>::value,
+            "none or both of vertex and fragment uniforms must empty"
+        );
+        if (!boost::fusion::result_of::empty<vertex_uniforms_t>::value)
+        {
+            result.push_back({
+                next_location++,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                1,
+                VK_SHADER_STAGE_VERTEX_BIT,
+                0
+            });
+        }
+        if (!boost::fusion::result_of::empty<fragment_uniforms_t>::value)
+        {
+            result.push_back({
+                next_location++,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                1,
+                VK_SHADER_STAGE_FRAGMENT_BIT,
+                0
+            });
+        }
         for (auto i : boost::counting_range<uint32_t>(0, num_textures))
         {
             result.push_back({
-                i + 2,
+                next_location++,
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 1,
                 VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -360,6 +373,7 @@ namespace my_vulkan
     )
     {
         auto vertex_data = to_std140(vertex_uniforms).data;
+        uint32_t next_location = 0;
         if (!vertex_data.empty())
         {
             _vertex_uniforms.memory()->set_data(
@@ -367,7 +381,7 @@ namespace my_vulkan
                 vertex_data.size()
             );
             _descriptor_set.update_buffer_write(
-                0,
+                next_location++,
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 {{_vertex_uniforms.get(), 0, vertex_data.size()}}
             );            
@@ -380,7 +394,7 @@ namespace my_vulkan
                 fragment_data.size()
             );
             _descriptor_set.update_buffer_write(
-                1,
+                next_location++,
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 {{_fragment_uniforms.get(), 0, fragment_data.size()}}
             );
