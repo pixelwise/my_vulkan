@@ -14,21 +14,21 @@ struct std140_data
     size_t align;
 };
 
-std140_data to_std140(bool v)
+inline std140_data to_std140(bool v)
 {
     std140_bool sv = v;
     auto* p = reinterpret_cast<char*>(&sv);
     return {std::vector<char>(p, p + sizeof(sv)), sizeof(sv)};
 }
 
-std140_data to_std140(int v)
+inline std140_data to_std140(int v)
 {
     std140_int sv = v;
     auto* p = reinterpret_cast<char*>(&sv);
     return {std::vector<char>(p, p + sizeof(sv)), sizeof(sv)};
 }
 
-std140_data to_std140(float v)
+inline std140_data to_std140(float v)
 {
     std140_float sv = v;
     auto* p = reinterpret_cast<char*>(&sv);
@@ -37,7 +37,7 @@ std140_data to_std140(float v)
 
 namespace glm
 {
-    std140_data to_std140(vec2 v)
+    inline std140_data to_std140(vec2 v)
     {
         std140_vector<float, 2> sv;
         for (auto i : boost::counting_range(0, v.length()))
@@ -46,7 +46,7 @@ namespace glm
         return {std::vector<char>(p, p + sizeof(sv)), sv.align};
     }
 
-    std140_data to_std140(vec3 v)
+    inline std140_data to_std140(vec3 v)
     {
         std140_vector<float, 3> sv;
         for (auto i : boost::counting_range(0, v.length()))
@@ -55,7 +55,7 @@ namespace glm
         return {std::vector<char>(p, p + sizeof(sv)), sv.align};
     }
 
-    std140_data to_std140(vec4 v)
+    inline std140_data to_std140(vec4 v)
     {
         std140_vector<float, 4> sv;
         for (auto i : boost::counting_range(0, v.length()))
@@ -64,7 +64,7 @@ namespace glm
         return {std::vector<char>(p, p + sizeof(sv)), sv.align};
     }
 
-    std140_data to_std140(mat3 m)
+    inline std140_data to_std140(mat3 m)
     {
         std140_matrix<float, 3, 3> sm;
         for (auto i : boost::counting_range(0, m.length()))
@@ -74,7 +74,7 @@ namespace glm
         return {std::vector<char>(p, p + sizeof(sm)), sm.align};
     }
 
-    std140_data to_std140(mat4 m)
+    inline std140_data to_std140(mat4 m)
     {
         std140_matrix<float, 4, 4> sm;
         for (auto i : boost::counting_range(0, m.length()))
@@ -86,7 +86,7 @@ namespace glm
 }
 
 template<typename struct_t>
-std140_data to_std140(struct_t the_struct)
+inline std140_data to_std140(struct_t the_struct)
 {
     std::vector<char> result;
     boost::fusion::for_each(

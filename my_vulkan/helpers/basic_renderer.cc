@@ -2,6 +2,8 @@
 
 #include "to_std140.hpp"
 
+#include "utils/range_utils.hpp"
+
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/counting_range.hpp>
@@ -358,25 +360,31 @@ namespace my_vulkan
     )
     {
         auto vertex_data = to_std140(vertex_uniforms).data;
-        _vertex_uniforms.memory()->set_data(
-            vertex_data.data(),
-            vertex_data.size()
-        );
-        _descriptor_set.update_buffer_write(
-            0,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            {{_vertex_uniforms.get(), 0, vertex_data.size()}}
-        );
+        if (!vertex_data.empty())
+        {
+            _vertex_uniforms.memory()->set_data(
+                vertex_data.data(),
+                vertex_data.size()
+            );
+            _descriptor_set.update_buffer_write(
+                0,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                {{_vertex_uniforms.get(), 0, vertex_data.size()}}
+            );            
+        }
         auto fragment_data = to_std140(fragment_uniforms).data;
-        _fragment_uniforms.memory()->set_data(
-            fragment_data.data(),
-            fragment_data.size()
-        );
-        _descriptor_set.update_buffer_write(
-            1,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            {{_fragment_uniforms.get(), 0, fragment_data.size()}}
-        );
+        if (!fragment_data.empty())
+        {
+            _fragment_uniforms.memory()->set_data(
+                fragment_data.data(),
+                fragment_data.size()
+            );
+            _descriptor_set.update_buffer_write(
+                1,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                {{_fragment_uniforms.get(), 0, fragment_data.size()}}
+            );
+        }
     }
 
     template<
