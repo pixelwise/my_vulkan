@@ -8,7 +8,7 @@ include(shaders)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall" )
 
 find_package(Vulkan REQUIRED)
-find_package(glfw3 3.3 REQUIRED)
+find_package(glfw3 3.3)
 find_package(Boost 1.64 REQUIRED)
 
 if (USE_ASAN)
@@ -61,11 +61,13 @@ add_library(my_vulkan
   my_vulkan/helpers/standard_swap_chain.cpp
 )
 
-add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
-target_link_libraries (
-  glfw_vulkan_test
-  ${Vulkan_LIBRARIES}
-  glfw
-  my_vulkan
-)
-add_dependencies(glfw_vulkan_test Shaders)
+if(glfw3_FOUND)
+  add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
+  target_link_libraries (
+    glfw_vulkan_test
+    ${Vulkan_LIBRARIES}
+    glfw
+    my_vulkan
+  )
+  add_dependencies(glfw_vulkan_test Shaders)
+endif(glfw3_FOUND)

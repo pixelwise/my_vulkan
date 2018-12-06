@@ -1,5 +1,6 @@
 #include "instance.hpp"
 #include "utils.hpp"
+#include <cstring>
 
 namespace my_vulkan
 {

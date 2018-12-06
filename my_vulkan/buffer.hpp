@@ -4,6 +4,7 @@
 #include "device.hpp"
 #include "device_memory.hpp"
 #include "command_pool.hpp"
+#include <memory>
 
 namespace my_vulkan
 {

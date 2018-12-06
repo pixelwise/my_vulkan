@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include <boost/optional.hpp>
+#include <vector>
 
 namespace my_vulkan
 {
