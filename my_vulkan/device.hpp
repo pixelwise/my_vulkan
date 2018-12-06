@@ -38,7 +38,7 @@ namespace my_vulkan
         queue_reference_t present_queue();
         void wait_idle();
     private:
-        VkQueue _graphicsQueue;
-        VkQueue _presentQueue;
+        VkQueue _graphicsQueue{0};
+        VkQueue _presentQueue{0};
     };
 }

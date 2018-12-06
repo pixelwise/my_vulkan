@@ -24,7 +24,11 @@ namespace my_vulkan
 
     std::vector<uint32_t> queue_family_indices_t::unique_indices() const
     {
-        auto index_set = std::set<uint32_t>{*graphics, *present};
+        std::set<uint32_t> index_set;
+        if (graphics)
+            index_set.insert(*graphics);
+        if (present)
+            index_set.insert(*present);
         return {index_set.begin(), index_set.end()};
     }
 

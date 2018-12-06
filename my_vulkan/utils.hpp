@@ -15,8 +15,8 @@ namespace my_vulkan
     void vk_require(VkResult result, const char* description);
     struct queue_family_indices_t
     {
-        boost::optional<uint32_t> graphics = -1;
-        boost::optional<uint32_t> present = -1;
+        boost::optional<uint32_t> graphics;
+        boost::optional<uint32_t> present;
         bool isComplete() const;
         std::vector<uint32_t> unique_indices() const;
     };

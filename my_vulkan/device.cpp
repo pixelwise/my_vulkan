@@ -74,8 +74,10 @@ namespace my_vulkan
         make_device(physical_device, queue_indices, validation_layers, device_extensions)
     }
     {
-        vkGetDeviceQueue(get(), *queue_indices.graphics, 0, &_graphicsQueue);
-        vkGetDeviceQueue(get(), *queue_indices.present, 0, &_presentQueue);      
+        if (queue_indices.graphics)
+            vkGetDeviceQueue(get(), *queue_indices.graphics, 0, &_graphicsQueue);
+        if (queue_indices.present)
+            vkGetDeviceQueue(get(), *queue_indices.present, 0, &_presentQueue);      
     }
 
     device_t::~device_t()
