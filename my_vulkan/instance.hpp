@@ -19,6 +19,7 @@ namespace my_vulkan
         instance_t& operator=(const instance_t& other) = delete;
         instance_t& operator=(instance_t&& other) noexcept;
         VkInstance get();
+        std::vector<VkPhysicalDevice> physical_devices();
         ~instance_t();
     private:
         void cleanup();

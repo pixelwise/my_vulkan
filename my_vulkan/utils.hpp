@@ -24,6 +24,9 @@ namespace my_vulkan
         VkPhysicalDevice device,
         VkSurfaceKHR surface
     );
+    boost::optional<uint32_t> find_graphics_queue(
+        VkPhysicalDevice device
+    );
     uint32_t findMemoryType(
         VkPhysicalDevice physical_device,
         uint32_t typeFilter,

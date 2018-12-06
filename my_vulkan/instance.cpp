@@ -69,6 +69,25 @@ namespace my_vulkan
         return *this;
     }
 
+    std::vector<VkPhysicalDevice> instance_t::physical_devices()
+    {
+        uint32_t num_devices = 0;
+        vk_require(
+            vkEnumeratePhysicalDevices(
+                _instance, &num_devices, 0
+            ),
+            "counting physical devices"
+        );
+        std::vector<VkPhysicalDevice> result(num_devices);
+        vk_require(
+            vkEnumeratePhysicalDevices(
+                _instance, &num_devices, result.data()
+            ),
+            "getting physical devices"
+        );
+        return result;
+    }
+
     VkInstance instance_t::get()
     {
         return _instance;
