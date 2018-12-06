@@ -41,10 +41,10 @@ namespace my_vulkan
         image_t& operator=(image_t&& other) noexcept;
         ~image_t();
         image_view_t view(
-            VkImageAspectFlagBits aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT
+            int aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT
         ) const;
         VkSubresourceLayout memory_layout(
-            VkImageAspectFlags aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT,
+            int aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT,
             uint32_t mipLevel = 0,
             uint32_t arrayLayer = 0
         ) const;

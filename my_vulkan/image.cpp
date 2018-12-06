@@ -140,7 +140,7 @@ namespace my_vulkan
         cleanup();
     }
 
-    image_view_t image_t::view(VkImageAspectFlagBits aspect_flags) const
+    image_view_t image_t::view(int aspect_flags) const
     {
         VkImageViewCreateInfo viewInfo = {};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -201,13 +201,13 @@ namespace my_vulkan
     }
 
     VkSubresourceLayout image_t::memory_layout(
-        VkImageAspectFlags aspect_flags,
+        int aspect_flags,
         uint32_t mipLevel,
         uint32_t arrayLayer
     ) const
     {
         VkImageSubresource sub_resource{
-            aspect_flags,
+            VkImageAspectFlagBits(aspect_flags),
             mipLevel,
             arrayLayer  
         };
