@@ -502,10 +502,7 @@ namespace my_vulkan
     >::buffer(size_t phase)
     {
         if (phase != _current_phase)
-        {
-            _current_phase = phase;
-            _next_buffer_index = 0;
-        }
+            begin_phase(phase);
         while (_next_buffer_index >= _pipeline_buffers.size())
         {
             _descriptor_pools.emplace_back(

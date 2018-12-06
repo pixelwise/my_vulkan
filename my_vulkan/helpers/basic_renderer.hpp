@@ -64,6 +64,11 @@ namespace my_vulkan
             descriptor_set_t _descriptor_set;
             boost::optional<buffer_t> _vertices;
         };
+        void begin_phase(size_t phase)
+        {
+            _current_phase = phase;
+            _next_buffer_index = 0;            
+        }
         void execute_draw(
             pipeline_buffer_t& buffer,
             command_buffer_t::scope_t& command_scope,
