@@ -4,6 +4,14 @@
 
 namespace my_vulkan
 {
+    struct rendering_output_config_t
+    {
+        device_reference_t device;
+        VkExtent2D extent;
+        VkRenderPass render_pass;
+        size_t depth;
+    };
+
     template<
         typename in_vertex_uniforms_t,
         typename in_fragment_uniforms_t,
@@ -19,13 +27,7 @@ namespace my_vulkan
         using vertex_uniforms_t = in_vertex_uniforms_t;
         using fragment_uniforms_t = in_fragment_uniforms_t;
         using vertex_t = in_vertex_t;
-        struct output_config_t
-        {
-            device_reference_t device;
-            VkExtent2D extent;
-            VkRenderPass render_pass;
-            size_t depth;
-        };
+        typedef rendering_output_config_t output_config_t;
         basic_renderer_t(
             output_config_t output_config,
             std::vector<uint8_t> vertex_shader,
