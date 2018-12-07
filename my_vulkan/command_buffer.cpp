@@ -309,8 +309,27 @@ namespace my_vulkan
             src,
             dst,
             dst_layout,
-            operations.size(),
+            uint32_t(operations.size()),
             operations.data()
+        );
+    }
+
+    void command_buffer_t::scope_t::copy(
+        VkImage src,
+        VkImageLayout src_layout,
+        VkImage dst,
+        VkImageLayout dst_layout,
+        std::vector<VkImageCopy> operations
+    )
+    {
+        vkCmdCopyImage(
+            _command_buffer,
+            src,
+            src_layout,
+            dst,
+            dst_layout,
+            uint32_t(operations.size()),
+            operations.data()            
         );
     }
 

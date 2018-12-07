@@ -63,6 +63,13 @@ namespace my_vulkan
             command_pool_t& command_pool,
             boost::optional<VkExtent3D> extent = boost::none
         );
+        void copy_from(
+            VkImage image,
+            command_buffer_t::scope_t& command_pool,
+            boost::optional<VkExtent3D> extent = boost::none,
+            int src_aspects = VK_IMAGE_ASPECT_COLOR_BIT,
+            int dst_aspects = VK_IMAGE_ASPECT_COLOR_BIT
+        );
         void transition_layout(
             VkImageLayout oldLayout,
             VkImageLayout newLayout,
