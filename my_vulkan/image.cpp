@@ -261,6 +261,29 @@ namespace my_vulkan
         );
     }
 
+    void image_t::copy_from(
+        VkImage image,
+        command_buffer_t::scope_t& command_scope,
+        boost::optional<VkExtent3D> in_extent,
+        int src_aspects,
+        int dst_aspects
+    )
+    {
+        VkImageCopy region = {};
+        region.srcSubresource.layerCount = 1;
+        region.srcSubresource.aspectMask = src_aspects;
+        region.dstSubresource.layerCount = 1;
+        region.dstSubresource.aspectMask = dst_aspects;
+        region.extent = in_extent.value_or(extent());
+        command_scope.copy(
+            image,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            _image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            {region}
+        );        
+    }
+
     void image_t::transition_layout(
         VkImageLayout oldLayout,
         VkImageLayout newLayout,
@@ -302,7 +325,7 @@ namespace my_vulkan
             barrier.srcAccessMask = 0;
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         }
         else if (
@@ -314,6 +337,16 @@ namespace my_vulkan
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else if (
+            oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
+            newLayout == VK_IMAGE_LAYOUT_GENERAL
+        ) 
+        {
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         }
         else if (
             oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&

@@ -104,6 +104,13 @@ namespace my_vulkan
                 VkImageLayout dst_layout,
                 std::vector<VkBufferImageCopy> operations
             );
+            void copy(
+                VkImage src,
+                VkImageLayout src_layout,
+                VkImage dst,
+                VkImageLayout dst_layout,
+                std::vector<VkImageCopy> operations
+            );
 
             void end();
             ~scope_t();
