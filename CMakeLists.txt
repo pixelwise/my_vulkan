@@ -29,11 +29,6 @@ add_custom_target(
     DEPENDS ${SPIRV_BINARY_FILES}
 )
 
-include_directories(
-    ${Vulkan_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-)
-
 add_library(my_vulkan_offscreen
     my_vulkan/buffer.cpp
     my_vulkan/command_buffer.cpp
@@ -57,6 +52,18 @@ add_library(my_vulkan_offscreen
     my_vulkan/texture_sampler.cpp
     my_vulkan/utils.cpp
     my_vulkan/helpers/standard_swap_chain.cpp
+)
+message("CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(
+    my_vulkan_offscreen
+    INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_include_directories(
+    my_vulkan_offscreen
+    PRIVATE
+    ${Vulkan_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
 )
 
 if(glfw3_FOUND)
@@ -89,6 +96,17 @@ if(glfw3_FOUND)
     target_link_libraries(
         my_vulkan PRIVATE
         glfw
+    )
+    target_include_directories(
+        my_vulkan
+        INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    target_include_directories(
+        my_vulkan
+        PRIVATE
+        ${Vulkan_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}
     )
 endif()
 if(glfw3_FOUND)
