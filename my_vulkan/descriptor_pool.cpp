@@ -2,21 +2,28 @@
 
 #include "utils.hpp"
 
+#include <boost/range/algorithm/remove_if.hpp>
+
 namespace my_vulkan
 {
-    descriptor_pool_t::descriptor_pool_t(VkDevice device, size_t size)
+    descriptor_pool_t::descriptor_pool_t(
+        VkDevice device,
+        std::vector<VkDescriptorPoolSize> pool_sizes,
+        size_t max_num_sets
+    )
     : _device{device}
     {
-        VkDescriptorPoolSize poolSizes[2] = {};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = size;
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = size;
+        auto i_end = boost::remove_if(
+            pool_sizes,
+            [](VkDescriptorPoolSize entry){return entry.descriptorCount == 0;}
+        );
+        pool_sizes.erase(i_end, pool_sizes.end());
         VkDescriptorPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = 2;
-        poolInfo.pPoolSizes = poolSizes;
-        poolInfo.maxSets = size;
+        poolInfo.poolSizeCount = uint32_t(pool_sizes.size());
+        poolInfo.pPoolSizes = pool_sizes.data();
+        poolInfo.maxSets = max_num_sets;
+        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         vk_require(
             vkCreateDescriptorPool(_device, &poolInfo, nullptr, &_descriptor_pool),
             "creating dexcriptor pool"

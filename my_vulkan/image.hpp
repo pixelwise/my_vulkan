@@ -56,6 +56,7 @@ namespace my_vulkan
         void copy_from(
             VkBuffer buffer,
             command_buffer_t::scope_t& command_scope,
+            uint32_t pitch = 0,
             boost::optional<VkExtent3D> extent = boost::none
         );
         void copy_from(

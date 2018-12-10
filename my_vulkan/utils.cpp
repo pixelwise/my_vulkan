@@ -29,6 +29,8 @@ namespace my_vulkan
             index_set.insert(*graphics);
         if (present)
             index_set.insert(*present);
+        if (transfer)
+            index_set.insert(*transfer);
         return {index_set.begin(), index_set.end()};
     }
 
@@ -438,12 +440,27 @@ namespace my_vulkan
         VkPhysicalDevice device
     )
     {
+        return find_queue(device, VK_QUEUE_GRAPHICS_BIT);
+    }
+
+    boost::optional<uint32_t> find_transfer_queue(
+        VkPhysicalDevice device
+    )
+    {
+        return find_queue(device, VK_QUEUE_TRANSFER_BIT);
+    }
+
+    boost::optional<uint32_t> find_queue(
+        VkPhysicalDevice device,
+        VkQueueFlags queue_type
+    )
+    {
         uint32_t num_queues = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &num_queues, 0);
         std::vector<VkQueueFamilyProperties> properties(num_queues);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &num_queues, properties.data());
         for (uint32_t i = 0; i < num_queues; ++i)
-            if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            if (properties[i].queueFlags & queue_type)
                  return i;
         return boost::none;       
     }

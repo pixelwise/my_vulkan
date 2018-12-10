@@ -13,12 +13,25 @@ namespace my_vulkan
         suboptimal
     };
     void vk_require(VkResult result, const char* description);
+    struct queue_request_t
+    {
+        uint32_t index;
+        uint32_t count;
+    };
     struct queue_family_indices_t
     {
         boost::optional<uint32_t> graphics;
         boost::optional<uint32_t> present;
+        boost::optional<uint32_t> transfer;
         bool isComplete() const;
         std::vector<uint32_t> unique_indices() const;
+        std::vector<queue_request_t> request_one_each()
+        {
+            std::vector<queue_request_t> result;
+            for (auto i : unique_indices())
+                result.push_back({i, 1});
+            return result;
+        }
     };
     queue_family_indices_t find_queue_families(
         VkPhysicalDevice device,
@@ -26,6 +39,13 @@ namespace my_vulkan
     );
     boost::optional<uint32_t> find_graphics_queue(
         VkPhysicalDevice device
+    );
+    boost::optional<uint32_t> find_transfer_queue(
+        VkPhysicalDevice device
+    );
+    boost::optional<uint32_t> find_queue(
+        VkPhysicalDevice device,
+        VkQueueFlags queue_type
     );
     uint32_t findMemoryType(
         VkPhysicalDevice physical_device,

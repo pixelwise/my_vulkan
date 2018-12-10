@@ -8,7 +8,11 @@ namespace my_vulkan
 {
     struct descriptor_pool_t
     {
-        descriptor_pool_t(VkDevice device, size_t size);
+        descriptor_pool_t(
+            VkDevice device,
+            std::vector<VkDescriptorPoolSize> pool_sizes,
+            size_t max_num_sets
+        );
         descriptor_pool_t(const descriptor_pool_t&) = delete;
         descriptor_pool_t(descriptor_pool_t&& other) noexcept;
         descriptor_pool_t& operator=(const descriptor_pool_t&) = delete;

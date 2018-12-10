@@ -5,10 +5,16 @@ namespace my_vulkan
 {
     device_reference_t::device_reference_t(
         VkPhysicalDevice physical_device,
-        VkDevice device
+        VkDevice device,
+        queue_family_indices_t queue_indices,
+        VkQueue graphicsQueue,
+        VkQueue presentQueue
     )
     : _physical_device{physical_device}
     , _device{device}
+    , _queue_indices{queue_indices}
+    , _graphicsQueue{graphicsQueue}
+    , _presentQueue{presentQueue}
     {}
 
     VkPhysicalDevice device_reference_t::physical_device() const
@@ -21,6 +27,21 @@ namespace my_vulkan
         return _device;
     }
 
+    queue_family_indices_t device_reference_t::queue_indices()
+    {
+        return _queue_indices;
+    }
+
+    queue_reference_t device_reference_t::graphics_queue()
+    {
+        return _graphicsQueue;
+    }
+
+    queue_reference_t device_reference_t::present_queue()
+    {
+        return _presentQueue;
+    }
+
     void device_reference_t::clear()
     {
         _device = 0;
@@ -28,19 +49,19 @@ namespace my_vulkan
 
     VkDevice make_device(
         VkPhysicalDevice physical_device,
-        queue_family_indices_t queue_indices,
+        std::vector<queue_request_t> queue_requests,
         std::vector<const char*> validation_layers,
         std::vector<const char*> device_extensions        
     )
     {
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         float queuePriority = 1.0f;
-        for (int queueFamily : queue_indices.unique_indices())
+        for (auto queue_request : queue_requests)
         {
             VkDeviceQueueCreateInfo queueCreateInfo = {};
             queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfo.queueFamilyIndex = queueFamily;
-            queueCreateInfo.queueCount = 1;
+            queueCreateInfo.queueFamilyIndex = queue_request.index;
+            queueCreateInfo.queueCount = queue_request.count;
             queueCreateInfo.pQueuePriorities = &queuePriority;
             queueCreateInfos.push_back(queueCreateInfo);
         }
@@ -71,7 +92,13 @@ namespace my_vulkan
     )
     : device_reference_t{
         physical_device,
-        make_device(physical_device, queue_indices, validation_layers, device_extensions)
+        make_device(
+            physical_device,
+            queue_indices.request_one_each(),
+            validation_layers,
+            device_extensions
+        ),
+        queue_indices
     }
     {
         if (queue_indices.graphics)
@@ -84,16 +111,6 @@ namespace my_vulkan
     {
         if (auto device = get())
             vkDestroyDevice(device, 0);
-    }
-
-    queue_reference_t device_t::graphics_queue()
-    {
-        return _graphicsQueue;
-    }
-
-    queue_reference_t device_t::present_queue()
-    {
-        return _presentQueue;
     }
 
     void device_t::wait_idle()

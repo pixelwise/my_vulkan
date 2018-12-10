@@ -312,7 +312,7 @@ namespace my_vulkan
     }
     , _fragment_uniforms{
         _device,
-        to_std140(vertex_uniforms_t{}).data.size(),
+        to_std140(fragment_uniforms_t{}).data.size(),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
@@ -507,6 +507,10 @@ namespace my_vulkan
         {
             _descriptor_pools.emplace_back(
                 _device.get(),
+                std::vector<VkDescriptorPoolSize>{
+                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2},
+                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_textures}
+                },
                 _depth
             );
              _pipeline_buffers.push_back(

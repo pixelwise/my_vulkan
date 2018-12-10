@@ -231,7 +231,7 @@ namespace my_vulkan
         auto command_scope = command_buffer.begin(
             VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
         );
-        copy_from(buffer, command_scope, extent);
+        copy_from(buffer, command_scope, 0, extent);
         command_scope.end();
         command_pool.queue().submit(command_buffer.get());
         command_pool.queue().wait_idle();   
@@ -240,12 +240,13 @@ namespace my_vulkan
     void image_t::copy_from(
         VkBuffer buffer,
         command_buffer_t::scope_t& command_scope,
+        uint32_t pitch,
         boost::optional<VkExtent3D> in_extent
     )
     {
         VkBufferImageCopy region = {};
         region.bufferOffset = 0;
-        region.bufferRowLength = 0;
+        region.bufferRowLength = pitch;
         region.bufferImageHeight = 0;
         region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         region.imageSubresource.mipLevel = 0;
