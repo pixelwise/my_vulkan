@@ -9,6 +9,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define MY_VULKAN_INCLUDE_GLFW
 #include "my_vulkan/my_vulkan.hpp"
 #include "my_vulkan/helpers/standard_swap_chain.hpp"
 
@@ -192,6 +193,10 @@ public:
     )}
     , descriptor_pool{
         logical_device.get(),
+        std::vector<VkDescriptorPoolSize>{
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
+        },
         swap_chain->depth()
     }
     , descriptor_sets{createDescriptorSets(
