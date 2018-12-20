@@ -31,8 +31,8 @@ namespace my_vulkan
             queue_indices,
             desired_extent
         }
-        , _graphics_queue{logical_device.graphics_queue()}
-        , _present_queue{logical_device.present_queue()}
+        , _graphics_queue{&logical_device.graphics_queue()}
+        , _present_queue{&logical_device.present_queue()}
         , _depth_image{create_depth_image(
             logical_device,
             find_depth_format(logical_device.physical_device()),
@@ -46,7 +46,7 @@ namespace my_vulkan
             format(),
             _depth_image.format()
         }
-        , _command_pool{logical_device.get(), *queue_indices.graphics}
+        , _command_pool{logical_device.get(), logical_device.graphics_queue()}
         {
             for (auto&& image : images())
             {
@@ -135,7 +135,7 @@ namespace my_vulkan
             commands().end_render_pass();
             commands().end();
             auto& resources = _parent->_pipeline_resources[phase()];
-            _parent->_graphics_queue.submit(
+            _parent->_graphics_queue->submit(
                 resources.command_buffer.get(),
                 {{
                     _sync->image_available.get(),
@@ -144,7 +144,7 @@ namespace my_vulkan
                 {_sync->render_finished.get()},
                 _sync->in_flight.get()
             );
-            if (auto presentation_failure = _parent->_present_queue.present(
+            if (auto presentation_failure = _parent->_present_queue->present(
                 {_parent->get(), phase()},
                 {_sync->render_finished.get()}
             ))

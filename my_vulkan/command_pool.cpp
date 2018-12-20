@@ -7,7 +7,7 @@ namespace my_vulkan
     command_pool_t::one_time_scope_t::one_time_scope_t(command_pool_t& pool)
     : _buffer{pool.make_buffer()}
     , _scope{_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)}
-    , _queue{pool.queue()}
+    , _queue{&pool.queue()}
     {
     }
 
@@ -19,24 +19,24 @@ namespace my_vulkan
     void command_pool_t::one_time_scope_t::execute_and_wait()
     {
         commands().end();
-        _queue.submit(_buffer.get());
-        _queue.wait_idle();        
+        _queue->submit(_buffer.get());
+        _queue->wait_idle();        
     }
 
     command_pool_t::command_pool_t(
         VkDevice device,
-        uint32_t queueFamilyIndex
+        queue_reference_t& queue
     )
     : _device{device}
+    , _queue{&queue}
     {
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = queueFamilyIndex;
+        poolInfo.queueFamilyIndex = queue.family_index();
         vk_require(
             vkCreateCommandPool(device, &poolInfo, nullptr, &_command_pool),
             "creating command pool"
         );
-        vkGetDeviceQueue(_device, queueFamilyIndex, 0, &_queue);
     }
 
     command_pool_t::command_pool_t(command_pool_t&& other) noexcept
@@ -49,6 +49,7 @@ namespace my_vulkan
     {
         cleanup();
         _command_pool = other._command_pool;
+        _queue = other._queue;
         std::swap(_device, other._device);
         return *this;
     }
@@ -60,9 +61,9 @@ namespace my_vulkan
         return {_device, _command_pool, level};
     }
 
-    queue_reference_t command_pool_t::queue()
+    queue_reference_t& command_pool_t::queue()
     {
-        return _queue;
+        return *_queue;
     }
 
     VkCommandPool command_pool_t::get()

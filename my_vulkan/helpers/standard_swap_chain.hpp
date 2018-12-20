@@ -74,8 +74,8 @@ namespace my_vulkan
             );
             command_pool_t& command_pool();
         private:
-            queue_reference_t _graphics_queue;
-            queue_reference_t _present_queue;
+            queue_reference_t* _graphics_queue;
+            queue_reference_t* _present_queue;
             image_t _depth_image;
             image_view_t _depth_view;
             render_pass_t _render_pass;

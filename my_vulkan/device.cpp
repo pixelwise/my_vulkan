@@ -1,6 +1,8 @@
 #include "device.hpp"
 #include "utils.hpp"
 
+#include <boost/range/algorithm/find.hpp>
+
 namespace my_vulkan
 {
     VkDevice make_device(
@@ -25,10 +27,28 @@ namespace my_vulkan
     )}
     , _queue_indices{queue_indices}
     {
-        if (queue_indices.graphics)
-            vkGetDeviceQueue(get(), *queue_indices.graphics, 0, &_graphicsQueue);
-        if (queue_indices.present)
-            vkGetDeviceQueue(get(), *queue_indices.present, 0, &_presentQueue);      
+        auto unique_queue_indices = _queue_indices.unique_indices();
+        for (auto i : unique_queue_indices)
+        {
+            VkQueue queue;
+            vkGetDeviceQueue(get(), i, 0, &queue);
+            _queues.push_back(queue_reference_t{queue, i});
+        }
+        if (_queue_indices.graphics)
+        {
+            auto index = boost::find(unique_queue_indices, *_queue_indices.graphics);
+            _graphics_queue = &_queues[index - unique_queue_indices.begin()];
+        }
+        if (_queue_indices.present)
+        {
+            auto index = boost::find(unique_queue_indices, *_queue_indices.present);
+            _present_queue = &_queues[index - unique_queue_indices.begin()];
+        }
+        if (_queue_indices.transfer)
+        {
+            auto index = boost::find(unique_queue_indices, *_queue_indices.transfer);
+            _transfer_queue = &_queues[index - unique_queue_indices.begin()];
+        }
     }
 
     VkPhysicalDevice device_t::physical_device() const
@@ -46,14 +66,25 @@ namespace my_vulkan
         return _queue_indices;
     }
 
-    queue_reference_t device_t::graphics_queue()
+    queue_reference_t& device_t::graphics_queue()
     {
-        return _graphicsQueue;
+        if (!_graphics_queue)
+            throw std::runtime_error{"no graphics queue"};
+        return *_graphics_queue;
     }
 
-    queue_reference_t device_t::present_queue()
+    queue_reference_t& device_t::present_queue()
     {
-        return _presentQueue;
+        if (!_present_queue)
+            throw std::runtime_error{"no present queue"};
+        return *_present_queue;
+    }
+
+    queue_reference_t& device_t::transfer_queue()
+    {
+        if (!_transfer_queue)
+            throw std::runtime_error{"no transfer queue"};
+        return *_transfer_queue;
     }
 
     VkDevice make_device(
