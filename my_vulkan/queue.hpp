@@ -37,7 +37,6 @@ namespace my_vulkan
             swapchain_target_t swap_chain_target,
             std::vector<VkSemaphore> semaphores = {}
         );
-        void wait_idle();
         uint32_t family_index();
         queue_reference_t(queue_reference_t&& other) noexcept
         : _queue{other._queue}

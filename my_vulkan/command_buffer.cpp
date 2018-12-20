@@ -43,6 +43,11 @@ namespace my_vulkan
         return _command_buffer;
     }
 
+    VkDevice command_buffer_t::device()
+    {
+        return _device;
+    }
+
     command_buffer_t::scope_t command_buffer_t::begin(VkCommandBufferUsageFlags flags)
     {
         return scope_t{_command_buffer, flags};

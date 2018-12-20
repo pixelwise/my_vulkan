@@ -33,6 +33,7 @@ namespace my_vulkan
         );
         one_time_scope_t begin_oneshot();
         queue_reference_t& queue();
+        VkDevice device();
         ~command_pool_t();
     private:
         void cleanup();

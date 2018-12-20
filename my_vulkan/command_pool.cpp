@@ -1,5 +1,6 @@
 #include "command_pool.hpp"
 #include "utils.hpp"
+#include "fence.hpp"
 #include <utility>
 
 namespace my_vulkan
@@ -19,8 +20,9 @@ namespace my_vulkan
     void command_pool_t::one_time_scope_t::execute_and_wait()
     {
         commands().end();
-        _queue->submit(_buffer.get());
-        _queue->wait_idle();        
+        fence_t fence{_buffer.device()};
+        _queue->submit(_buffer.get(), fence.get());
+        fence.wait();
     }
 
     command_pool_t::command_pool_t(
@@ -64,6 +66,11 @@ namespace my_vulkan
     queue_reference_t& command_pool_t::queue()
     {
         return *_queue;
+    }
+
+    VkDevice command_pool_t::device()
+    {
+        return _device;
     }
 
     VkCommandPool command_pool_t::get()

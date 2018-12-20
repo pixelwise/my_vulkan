@@ -1,8 +1,10 @@
 #include "image.hpp"
 
-#include <stdexcept>
 #include "buffer.hpp"
+#include "fence.hpp"
 #include "utils.hpp"
+
+#include <stdexcept>
 
 namespace my_vulkan
 {
@@ -233,8 +235,9 @@ namespace my_vulkan
         );
         copy_from(buffer, command_scope, 0, extent);
         command_scope.end();
-        command_pool.queue().submit(command_buffer.get());
-        command_pool.queue().wait_idle();   
+        fence_t fence{_device->get()};
+        command_pool.queue().submit(command_buffer.get(), fence.get());
+        fence.wait();
     }
 
     void image_t::copy_from(
