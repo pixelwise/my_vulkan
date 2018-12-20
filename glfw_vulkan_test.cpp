@@ -337,7 +337,7 @@ private:
         if (!pixels)
             throw std::runtime_error("failed to load texture image!");
         my_vulkan::image_t result{
-            logical_device,
+            &logical_device,
             {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
             VK_FORMAT_R8G8B8A8_UNORM
         };
@@ -352,7 +352,7 @@ private:
     )
     {
         my_vulkan::buffer_t result{
-            logical_device,
+            &logical_device,
             sizeof(vertices[0]) * vertices.size(),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
@@ -367,7 +367,7 @@ private:
     )
     {
         my_vulkan::buffer_t result{
-            logical_device,
+            &logical_device,
             sizeof(indices[0]) * indices.size(),
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
@@ -385,7 +385,7 @@ private:
         std::vector<my_vulkan::buffer_t> result;
         for (size_t i = 0; i < n; i++) {
             result.emplace_back(
-                device,
+                &device,
                 bufferSize,
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT

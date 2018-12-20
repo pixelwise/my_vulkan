@@ -56,7 +56,7 @@ namespace my_vulkan
     }
 
     image_t::image_t(
-        device_reference_t device,
+        device_t* device,
         VkExtent3D extent,
         VkFormat format,
         VkImageUsageFlags usage,
@@ -66,7 +66,7 @@ namespace my_vulkan
     )
     : _device{device}
     , _image{make_image(
-        _device.get(),
+        _device->get(),
         extent,
         format,
         usage,
@@ -78,20 +78,20 @@ namespace my_vulkan
     , _layout{initial_layout}
     , _borrowed{false}
     , _memory{new device_memory_t{
-        _device.get(),
+        _device->get(),
         find_image_memory_config(
-            _device.physical_device(),
-            _device.get(),
+            _device->physical_device(),
+            _device->get(),
             _image,
             properties
         )
     }}
     {
-        vkBindImageMemory(_device.get(), _image, _memory->get(), 0);
+        vkBindImageMemory(_device->get(), _image, _memory->get(), 0);
     }
 
     image_t::image_t(
-        VkDevice device,
+        device_t* device,
         VkImage image,
         VkFormat format,
         VkExtent2D extent,
@@ -101,13 +101,13 @@ namespace my_vulkan
     }
 
     image_t::image_t(
-        VkDevice device,
+        device_t* device,
         VkImage image,
         VkFormat format,
         VkExtent3D extent,
         VkImageLayout initial_layout
     )
-    : _device{0, device}
+    : _device{device}
     , _image{image}
     , _format{format}
     , _extent{extent}
@@ -117,7 +117,7 @@ namespace my_vulkan
     }
 
     image_t::image_t(image_t&& other) noexcept
-    : _device{0, 0}
+    : _device{0}
     , _borrowed{false}
     {
         *this = std::move(other);
@@ -155,24 +155,24 @@ namespace my_vulkan
         viewInfo.subresourceRange.layerCount = 1;
         VkImageView image_view;
         vk_require(
-            vkCreateImageView(_device.get(), &viewInfo, nullptr, &image_view),
+            vkCreateImageView(_device->get(), &viewInfo, nullptr, &image_view),
             "creating image view"
         );
         return image_view_t{
-            _device.get(),
+            _device->get(),
             image_view
         };
     }
 
     void image_t::cleanup()
     {
-        if (_device.get() && !_borrowed)
+        if (_device && !_borrowed)
         {
             if (_image)
-                vkDestroyImage(_device.get(), _image, nullptr);
+                vkDestroyImage(_device->get(), _image, nullptr);
             _memory.reset();
         }
-        _device.clear();
+        _device = 0;
     }
 
     VkImage image_t::get()
@@ -213,7 +213,7 @@ namespace my_vulkan
         };
         VkSubresourceLayout result;
         vkGetImageSubresourceLayout(
-            _device.get(),
+            _device->get(),
             _image,
             &sub_resource,
             &result

@@ -10,7 +10,7 @@ namespace my_vulkan
         )
         {
             my_vulkan::image_t result{
-                logical_device,
+                &logical_device,
                 {extent.width, extent.height, 1},
                 format,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -26,8 +26,7 @@ namespace my_vulkan
             VkExtent2D desired_extent
         )
         : swap_chain_t{
-            logical_device.physical_device(),
-            logical_device.get(),
+            &logical_device,
             surface,
             queue_indices,
             desired_extent

@@ -3,48 +3,57 @@
 
 namespace my_vulkan
 {
-    device_reference_t::device_reference_t(
+    VkDevice make_device(
         VkPhysicalDevice physical_device,
-        VkDevice device,
+        std::vector<queue_request_t> queue_requests,
+        std::vector<const char*> validation_layers,
+        std::vector<const char*> device_extensions        
+    );
+
+    device_t::device_t(
+        VkPhysicalDevice physical_device,
         queue_family_indices_t queue_indices,
-        VkQueue graphicsQueue,
-        VkQueue presentQueue
+        std::vector<const char*> validation_layers,
+        std::vector<const char*> device_extensions        
     )
     : _physical_device{physical_device}
-    , _device{device}
+    , _device{make_device(
+        physical_device,
+        queue_indices.request_one_each(),
+        validation_layers,
+        device_extensions
+    )}
     , _queue_indices{queue_indices}
-    , _graphicsQueue{graphicsQueue}
-    , _presentQueue{presentQueue}
-    {}
+    {
+        if (queue_indices.graphics)
+            vkGetDeviceQueue(get(), *queue_indices.graphics, 0, &_graphicsQueue);
+        if (queue_indices.present)
+            vkGetDeviceQueue(get(), *queue_indices.present, 0, &_presentQueue);      
+    }
 
-    VkPhysicalDevice device_reference_t::physical_device() const
+    VkPhysicalDevice device_t::physical_device() const
     {
         return _physical_device;
     }
 
-    VkDevice device_reference_t::get() const
+    VkDevice device_t::get() const
     {
         return _device;
     }
 
-    queue_family_indices_t device_reference_t::queue_indices()
+    queue_family_indices_t device_t::queue_indices()
     {
         return _queue_indices;
     }
 
-    queue_reference_t device_reference_t::graphics_queue()
+    queue_reference_t device_t::graphics_queue()
     {
         return _graphicsQueue;
     }
 
-    queue_reference_t device_reference_t::present_queue()
+    queue_reference_t device_t::present_queue()
     {
         return _presentQueue;
-    }
-
-    void device_reference_t::clear()
-    {
-        _device = 0;
     }
 
     VkDevice make_device(
@@ -82,29 +91,6 @@ namespace my_vulkan
             "create logical device"
         );
         return result;
-    }
-
-    device_t::device_t(
-        VkPhysicalDevice physical_device,
-        queue_family_indices_t queue_indices,
-        std::vector<const char*> validation_layers,
-        std::vector<const char*> device_extensions        
-    )
-    : device_reference_t{
-        physical_device,
-        make_device(
-            physical_device,
-            queue_indices.request_one_each(),
-            validation_layers,
-            device_extensions
-        ),
-        queue_indices
-    }
-    {
-        if (queue_indices.graphics)
-            vkGetDeviceQueue(get(), *queue_indices.graphics, 0, &_graphicsQueue);
-        if (queue_indices.present)
-            vkGetDeviceQueue(get(), *queue_indices.present, 0, &_presentQueue);      
     }
 
     device_t::~device_t()

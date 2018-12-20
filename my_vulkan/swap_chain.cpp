@@ -57,15 +57,14 @@ namespace my_vulkan
     }
 
     swap_chain_t::swap_chain_t(
-        VkPhysicalDevice physical_device,
-        VkDevice device,
+        device_t* in_device,
         VkSurfaceKHR surface,
         queue_family_indices_t queue_indices,
         VkExtent2D actual_extent
     )
-    : _device{device}
+    : _device{in_device}
     {
-        auto support = query_swap_chain_support(physical_device, surface);
+        auto support = query_swap_chain_support(_device->physical_device(), surface);
         VkSurfaceFormatKHR surfaceFormat = choose_surface_format(support.formats);
         VkPresentModeKHR presentMode = choose_present_mode(support.presentModes);
         _extent = choose_extent(actual_extent, support.capabilities);
@@ -106,13 +105,13 @@ namespace my_vulkan
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
         vk_require(
-            vkCreateSwapchainKHR(device, &createInfo, nullptr, &_swap_chain),
+            vkCreateSwapchainKHR(device(), &createInfo, nullptr, &_swap_chain),
             "creating swap chain"
         );
         std::vector<VkImage> images;
-        vkGetSwapchainImagesKHR(device, _swap_chain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(device(), _swap_chain, &imageCount, nullptr);
         images.resize(imageCount);
-        vkGetSwapchainImagesKHR(device, _swap_chain, &imageCount, images.data());
+        vkGetSwapchainImagesKHR(device(), _swap_chain, &imageCount, images.data());
         for (auto image : images)
             _images.push_back(image_t{_device, image, _format, _extent});
     }
@@ -143,7 +142,7 @@ namespace my_vulkan
     {
         if (_device)
         {
-            vkDestroySwapchainKHR(_device, _swap_chain, 0);
+            vkDestroySwapchainKHR(_device->get(), _swap_chain, 0);
             _device = 0;
         }
     }
@@ -173,7 +172,7 @@ namespace my_vulkan
         swap_chain_t::acquisition_outcome_t result;
         uint32_t image_index;
         VkResult result_code = vkAcquireNextImageKHR(
-            _device,
+            device(),
             _swap_chain,
             timeout.value_or(std::numeric_limits<uint64_t>::max()),
             semaphore,
@@ -206,7 +205,7 @@ namespace my_vulkan
 
     VkDevice swap_chain_t::device()
     {
-        return _device;
+        return _device ? _device->get() : 0;
     }
 
     VkSwapchainKHR swap_chain_t::get()
