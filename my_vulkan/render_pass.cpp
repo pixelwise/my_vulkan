@@ -6,7 +6,8 @@ namespace my_vulkan
     render_pass_t::render_pass_t(
         VkDevice device,
         VkFormat image_format,
-        VkFormat depth_format
+        VkFormat depth_format,
+        VkImageLayout color_attachment_final_layout
     )
     {
         VkAttachmentDescription colorAttachment = {};
@@ -17,7 +18,7 @@ namespace my_vulkan
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        colorAttachment.finalLayout = color_attachment_final_layout;
 
         VkAttachmentDescription depthAttachment = {};
         depthAttachment.format = depth_format;
