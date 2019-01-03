@@ -101,17 +101,22 @@ if(glfw3_FOUND)
         my_vulkan
         INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${Boost_INCLUDE_DIRS}
     )
     target_include_directories(
         my_vulkan
         PRIVATE
         ${Vulkan_INCLUDE_DIRS}
-        ${Boost_INCLUDE_DIRS}
     )
 endif()
 if(glfw3_FOUND)
-    message(STATUS "my_vulkan GLFW_INCLUDE_DIRS=${glfw_INCLUDE_DIR}")
+    message(STATUS "my_vulkan GLFW_INCLUDE_DIRS=${glfw_INCLUDE_DIR}; GLM_INCLUDE_DIRS=${GLM_INCLUDE_DIRS}")
     add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
+    target_include_directories(
+        glfw_vulkan_test
+        PRIVATE
+        ${GLM_INCLUDE_DIRS}
+    )
     target_link_libraries (
         glfw_vulkan_test
         ${Vulkan_LIBRARIES}
