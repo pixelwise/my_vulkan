@@ -11,7 +11,7 @@ namespace my_vulkan
     struct buffer_t
     {
         buffer_t(
-            device_reference_t device,
+            device_t* device,
             VkDeviceSize size,
             VkBufferUsageFlags usage,
             VkMemoryPropertyFlags properties
@@ -27,7 +27,7 @@ namespace my_vulkan
         ~buffer_t();
     private:
         void cleanup();
-        device_reference_t _device;
+        device_t* _device;
         VkDeviceSize _size;
         VkBuffer _buffer;
         std::unique_ptr<device_memory_t> _memory;

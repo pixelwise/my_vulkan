@@ -31,7 +31,7 @@ namespace my_vulkan
         std::vector<VkDescriptorImageInfo> infos(samplers.size());
         for (size_t i = 0; i < samplers.size(); ++i)
             infos[i] = VkDescriptorImageInfo{samplers[i], 0, {}};
-        VkWriteDescriptorSet info;
+        VkWriteDescriptorSet info = {};
         info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         info.dstSet = _descriptor_set;
         info.dstBinding = binding;
@@ -62,7 +62,7 @@ namespace my_vulkan
                 image_infos[i].view, 
                 image_infos[i].layout
             };
-        VkWriteDescriptorSet info;
+        VkWriteDescriptorSet info = {};
         info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         info.dstSet = _descriptor_set;
         info.dstBinding = binding;
@@ -85,7 +85,7 @@ namespace my_vulkan
         uint32_t array_offset
     )
     {
-        VkWriteDescriptorSet info;
+        VkWriteDescriptorSet info = {};
         info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         info.dstSet = _descriptor_set;
         info.dstBinding = binding;
@@ -109,7 +109,7 @@ namespace my_vulkan
         uint32_t array_offset
     )
     {
-        VkWriteDescriptorSet info;
+        VkWriteDescriptorSet info = {};
         info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         info.dstSet = _descriptor_set;
         info.dstBinding = binding;
@@ -133,7 +133,7 @@ namespace my_vulkan
         uint32_t array_offset
     )    
     {
-        VkWriteDescriptorSet info;
+        VkWriteDescriptorSet info = {};
         info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         info.dstSet = _descriptor_set;
         info.dstBinding = binding;
@@ -161,7 +161,7 @@ namespace my_vulkan
             "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT not available"
         };
 #else
-        VkWriteDescriptorSet info;
+        VkWriteDescriptorSet info = {};
         info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         info.dstSet = _descriptor_set;
         info.dstBinding = binding;
@@ -187,9 +187,8 @@ namespace my_vulkan
         uint32_t count
     )
     {
-        VkCopyDescriptorSet info;
+        VkCopyDescriptorSet info = {};
         info.sType = VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET;
-        info.pNext = 0;
         info.srcSet = _descriptor_set;
         info.dstSet = target;
         info.srcBinding = source_binding;

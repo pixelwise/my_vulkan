@@ -3,9 +3,15 @@
 
 namespace my_vulkan
 {
-    queue_reference_t::queue_reference_t(VkQueue queue)
+    queue_reference_t::queue_reference_t(VkQueue queue, uint32_t family_index)
     : _queue{queue}
+    , _family_index{family_index}
     {
+    }
+
+    void queue_reference_t::set(VkQueue queue)
+    {
+        _queue = queue;
     }
 
     void queue_reference_t::submit(
@@ -47,6 +53,7 @@ namespace my_vulkan
 
     void queue_reference_t::submit(std::vector<VkSubmitInfo> submits, VkFence fence)
     {
+        std::unique_lock<std::mutex> lock{_mutex};
         vk_require(
             vkQueueSubmit(
                 _queue,
@@ -63,6 +70,7 @@ namespace my_vulkan
         std::vector<VkSemaphore> semaphores
     )
     {
+        std::unique_lock<std::mutex> lock{_mutex};
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = semaphores.size();
@@ -89,16 +97,8 @@ namespace my_vulkan
         return boost::none;   
     }
 
-    void queue_reference_t::wait_idle()
+    uint32_t queue_reference_t::family_index()
     {
-        vk_require(
-            vkQueueWaitIdle(_queue),
-            "waiting for queue to idle"
-        );
-    }
-
-    VkQueue queue_reference_t::get()
-    {
-        return _queue;
+        return _family_index;
     }
 }

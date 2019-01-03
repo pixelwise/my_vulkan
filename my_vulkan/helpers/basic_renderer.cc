@@ -132,7 +132,7 @@ namespace my_vulkan
     , _fragment_shader{std::move(fragment_shader)}
     , _uniform_layout{make_uniform_layout()}
     , _graphics_pipeline{
-        output_config.device.get(),
+        output_config.device->get(),
         output_config.extent,
         output_config.render_pass,
         _uniform_layout,
@@ -164,7 +164,7 @@ namespace my_vulkan
     )
     {
         _graphics_pipeline = {
-            _device.get(),
+            _device->get(),
             extent,
             render_pass,
             _uniform_layout,
@@ -298,7 +298,7 @@ namespace my_vulkan
         vertex_t,
         num_textures
     >::pipeline_buffer_t::pipeline_buffer_t(
-        device_reference_t device,
+        device_t* device,
         VkDescriptorPool descriptor_pool,
         VkDescriptorSetLayout layout
     )
@@ -312,13 +312,13 @@ namespace my_vulkan
     }
     , _fragment_uniforms{
         _device,
-        to_std140(vertex_uniforms_t{}).data.size(),
+        to_std140(fragment_uniforms_t{}).data.size(),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
     }
     , _descriptor_set{
-        _device.get(),
+        _device->get(),
         descriptor_pool,
         layout
     }
@@ -506,7 +506,11 @@ namespace my_vulkan
         while (_next_buffer_index >= _pipeline_buffers.size())
         {
             _descriptor_pools.emplace_back(
-                _device.get(),
+                _device->get(),
+                std::vector<VkDescriptorPoolSize>{
+                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2},
+                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_textures}
+                },
                 _depth
             );
              _pipeline_buffers.push_back(

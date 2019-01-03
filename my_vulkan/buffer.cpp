@@ -5,7 +5,7 @@
 namespace my_vulkan
 {
     buffer_t::buffer_t(
-        device_reference_t device,
+        device_t* device,
         VkDeviceSize size,
         VkBufferUsageFlags usage,
         VkMemoryPropertyFlags properties
@@ -19,23 +19,23 @@ namespace my_vulkan
         bufferInfo.usage = usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         vk_require(
-            vkCreateBuffer(_device.get(), &bufferInfo, nullptr, &_buffer),
+            vkCreateBuffer(_device->get(), &bufferInfo, nullptr, &_buffer),
             "creating buffer"
         );
         VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(_device.get(), _buffer, &memRequirements);
+        vkGetBufferMemoryRequirements(_device->get(), _buffer, &memRequirements);
         _memory.reset(new device_memory_t{
-            _device.get(),
+            _device->get(),
             {
                 memRequirements.size,
                 findMemoryType(
-                    device.physical_device(),
+                    device->physical_device(),
                     memRequirements.memoryTypeBits,
                     properties
                 )                
             }
         });
-        vkBindBufferMemory(_device.get(), _buffer, _memory->get(), 0);
+        vkBindBufferMemory(_device->get(), _buffer, _memory->get(), 0);
     }
 
     device_memory_t* buffer_t::memory()
@@ -44,7 +44,7 @@ namespace my_vulkan
     }
 
     buffer_t::buffer_t(buffer_t&& other) noexcept
-    : _device{0, 0}
+    : _device{0}
     {
         *this = std::move(other);
     }
@@ -95,11 +95,11 @@ namespace my_vulkan
 
     void buffer_t::cleanup()
     {
-        if (_device.get())
+        if (_device)
         {
-            vkDestroyBuffer(_device.get(), _buffer, nullptr);
+            vkDestroyBuffer(_device->get(), _buffer, nullptr);
             _memory.reset();
-            _device.clear();
+            _device = 0;
         }
     }
 }

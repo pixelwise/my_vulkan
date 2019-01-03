@@ -129,6 +129,7 @@ namespace my_vulkan
         command_buffer_t& operator=(command_buffer_t&& other) noexcept;
         ~command_buffer_t();
         VkCommandBuffer get();
+        VkDevice device();
         scope_t begin(VkCommandBufferUsageFlags flags);
 
     private:

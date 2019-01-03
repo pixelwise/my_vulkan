@@ -16,8 +16,7 @@ namespace my_vulkan
             boost::optional<acquisition_failure_t> failure;
         };
         swap_chain_t(
-            VkPhysicalDevice physical_device,
-            VkDevice device,
+            device_t* _device,
             VkSurfaceKHR surface,
             queue_family_indices_t queue_indices,
             VkExtent2D actual_extent
@@ -47,7 +46,7 @@ namespace my_vulkan
         VkDevice device();
     private:
         void cleanup();
-        VkDevice _device;
+        device_t* _device;
         VkSwapchainKHR _swap_chain;
         std::vector<image_t> _images;
         VkFormat _format;

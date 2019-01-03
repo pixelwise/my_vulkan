@@ -17,11 +17,11 @@ namespace my_vulkan
         private:
             command_buffer_t _buffer;
             command_buffer_t::scope_t _scope;
-            queue_reference_t _queue;
+            queue_reference_t* _queue;
         };
        command_pool_t(
             VkDevice device,
-            uint32_t queueFamilyIndex
+            queue_reference_t& queue
         );
         command_pool_t(const command_pool_t&) = delete;
         command_pool_t(command_pool_t&& other) noexcept;
@@ -32,12 +32,13 @@ namespace my_vulkan
             VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY
         );
         one_time_scope_t begin_oneshot();
-        queue_reference_t queue();
+        queue_reference_t& queue();
+        VkDevice device();
         ~command_pool_t();
     private:
         void cleanup();
         VkDevice _device;
         VkCommandPool _command_pool;
-        VkQueue _queue;
+        queue_reference_t* _queue;
     };
 }

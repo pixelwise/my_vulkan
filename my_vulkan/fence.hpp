@@ -8,7 +8,7 @@ namespace my_vulkan
     {
         fence_t(
             VkDevice device,
-            VkFenceCreateFlags flags = VK_FENCE_CREATE_SIGNALED_BIT
+            VkFenceCreateFlags flags = 0
         );
         fence_t(const fence_t&) = delete;
         fence_t& operator=(const fence_t&) = delete;

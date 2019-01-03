@@ -6,7 +6,7 @@ namespace my_vulkan
 {
     struct rendering_output_config_t
     {
-        device_reference_t device;
+        device_t* device;
         VkExtent2D extent;
         VkRenderPass render_pass;
         size_t depth;
@@ -38,7 +38,7 @@ namespace my_vulkan
         {
         public:
             pipeline_buffer_t(
-                device_reference_t device,
+                device_t* device,
                 VkDescriptorPool descriptor_pool,
                 VkDescriptorSetLayout layout
             );
@@ -58,7 +58,7 @@ namespace my_vulkan
                 VkPipelineLayout layout
             );
         private:
-            device_reference_t _device;
+            device_t* _device;
             buffer_t _vertex_uniforms;
             buffer_t _fragment_uniforms;
             descriptor_set_t _descriptor_set;
@@ -88,7 +88,7 @@ namespace my_vulkan
         static std::vector<VkVertexInputAttributeDescription> make_attribute_descriptions();
         static vertex_layout_t make_vertex_layout();
         static std::vector<VkDescriptorSetLayoutBinding> make_uniform_layout();
-        device_reference_t _device;
+        device_t* _device;
         std::vector<uint8_t> _vertex_shader;
         std::vector<uint8_t> _fragment_shader;
         std::vector<VkDescriptorSetLayoutBinding> _uniform_layout;
