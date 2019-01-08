@@ -58,7 +58,7 @@ namespace my_vulkan
     }
 
     image_t::image_t(
-        device_t* device,
+        device_t& device,
         VkExtent3D extent,
         VkFormat format,
         VkImageUsageFlags usage,
@@ -66,7 +66,7 @@ namespace my_vulkan
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties
     )
-    : _device{device}
+    : _device{&device}
     , _image{make_image(
         _device->get(),
         extent,
@@ -93,7 +93,7 @@ namespace my_vulkan
     }
 
     image_t::image_t(
-        device_t* device,
+        device_t& device,
         VkImage image,
         VkFormat format,
         VkExtent2D extent,
@@ -103,13 +103,13 @@ namespace my_vulkan
     }
 
     image_t::image_t(
-        device_t* device,
+        device_t& device,
         VkImage image,
         VkFormat format,
         VkExtent3D extent,
         VkImageLayout initial_layout
     )
-    : _device{device}
+    : _device{&device}
     , _image{image}
     , _format{format}
     , _extent{extent}
