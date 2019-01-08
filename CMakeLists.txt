@@ -58,12 +58,12 @@ target_include_directories(
     my_vulkan_offscreen
     INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${Boost_INCLUDE_DIRS}
 )
 target_include_directories(
     my_vulkan_offscreen
     PRIVATE
     ${Vulkan_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
 )
 
 if(glfw3_FOUND)
