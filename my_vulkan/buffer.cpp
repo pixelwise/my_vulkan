@@ -5,12 +5,12 @@
 namespace my_vulkan
 {
     buffer_t::buffer_t(
-        device_t* device,
+        device_t& device,
         VkDeviceSize size,
         VkBufferUsageFlags usage,
         VkMemoryPropertyFlags properties
     )
-    : _device{device}
+    : _device{&device}
     , _size{size}
     {
         VkBufferCreateInfo bufferInfo = {};
@@ -29,7 +29,7 @@ namespace my_vulkan
             {
                 memRequirements.size,
                 findMemoryType(
-                    device->physical_device(),
+                    device.physical_device(),
                     memRequirements.memoryTypeBits,
                     properties
                 )                
@@ -66,14 +66,14 @@ namespace my_vulkan
     void buffer_t::load_data(command_pool_t& command_pool, const void* data)
     {
         buffer_t staging_buffer{
-            _device,
+            *_device,
             _size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         };
         staging_buffer.memory()->set_data(data, _size);
         my_vulkan::buffer_t result{
-            _device,
+            *_device,
             _size,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT

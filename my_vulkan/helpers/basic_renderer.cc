@@ -304,14 +304,14 @@ namespace my_vulkan
     )
     : _device{device}
     , _vertex_uniforms{
-        _device,
+        *_device,
         to_std140(vertex_uniforms_t{}).data.size(),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
     }
     , _fragment_uniforms{
-        _device,
+        *_device,
         to_std140(fragment_uniforms_t{}).data.size(),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -343,7 +343,7 @@ namespace my_vulkan
     {
         size_t data_size = sizeof(vertex_t) * vertices.size();
         buffer_t vertex_buffer{
-            _device,
+            *_device,
             data_size,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT

@@ -11,7 +11,7 @@ namespace my_vulkan
     struct buffer_t
     {
         buffer_t(
-            device_t* device,
+            device_t& device,
             VkDeviceSize size,
             VkBufferUsageFlags usage,
             VkMemoryPropertyFlags properties

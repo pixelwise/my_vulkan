@@ -381,7 +381,7 @@ namespace my_vulkan
         auto oneshot_scope = command_pool.begin_oneshot();
         size_t image_size = _extent.width * _extent.height * bytes_per_pixel(format());
         buffer_t staging_buffer{
-            _device,
+            *_device,
             image_size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT

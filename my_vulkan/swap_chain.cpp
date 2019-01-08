@@ -113,7 +113,7 @@ namespace my_vulkan
         images.resize(imageCount);
         vkGetSwapchainImagesKHR(device(), _swap_chain, &imageCount, images.data());
         for (auto image : images)
-            _images.push_back(image_t{_device, image, _format, _extent});
+            _images.push_back(image_t{*_device, image, _format, _extent});
     }
     
     swap_chain_t::swap_chain_t(swap_chain_t&& other) noexcept

@@ -10,7 +10,7 @@ namespace my_vulkan
         )
         {
             my_vulkan::image_t result{
-                &logical_device,
+                logical_device,
                 {extent.width, extent.height, 1},
                 format,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
