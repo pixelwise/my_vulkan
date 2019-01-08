@@ -35,6 +35,7 @@ namespace my_vulkan
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = queue.family_index();
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         vk_require(
             vkCreateCommandPool(device, &poolInfo, nullptr, &_command_pool),
             "creating command pool"
