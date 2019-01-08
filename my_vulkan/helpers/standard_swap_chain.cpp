@@ -71,7 +71,10 @@ namespace my_vulkan
                     frame_sync_points_t{
                         semaphore_t{logical_device.get()},
                         semaphore_t{logical_device.get()},
-                        fence_t{logical_device.get()}
+                        fence_t{
+                            logical_device.get(),
+                            VK_FENCE_CREATE_SIGNALED_BIT
+                        }
                     }
                 );
             }
