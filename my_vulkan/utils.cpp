@@ -19,7 +19,7 @@ namespace my_vulkan
 
     bool queue_family_indices_t::isComplete() const
     {
-        return graphics && present;
+        return graphics && present && transfer;
     }
 
     std::vector<uint32_t> queue_family_indices_t::unique_indices() const
@@ -45,21 +45,22 @@ namespace my_vulkan
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
         int i = 0;
-        for (const auto& queueFamily : queueFamilies) {
-            if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        for (const auto& queueFamily : queueFamilies)
+        {
+            if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
                 indices.graphics = i;
-            }
+
+            if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+                indices.transfer = i;
 
             VkBool32 presentSupport = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-            if (queueFamily.queueCount > 0 && presentSupport) {
+            if (queueFamily.queueCount > 0 && presentSupport)
                 indices.present = i;
-            }
 
-            if (indices.isComplete()) {
+            if (indices.isComplete())
                 break;
-            }
 
             i++;
         }
