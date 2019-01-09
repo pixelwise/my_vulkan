@@ -66,8 +66,14 @@ namespace my_vulkan
         );
         void copy_from(
             VkImage image,
-            command_buffer_t::scope_t& command_pool,
+            command_buffer_t::scope_t& command_scope,
             boost::optional<VkExtent3D> extent = boost::none,
+            int src_aspects = VK_IMAGE_ASPECT_COLOR_BIT,
+            int dst_aspects = VK_IMAGE_ASPECT_COLOR_BIT
+        );
+        void blit_from(
+            image_t& image,
+            command_buffer_t::scope_t& command_scope,
             int src_aspects = VK_IMAGE_ASPECT_COLOR_BIT,
             int dst_aspects = VK_IMAGE_ASPECT_COLOR_BIT
         );

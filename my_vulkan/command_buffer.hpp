@@ -111,6 +111,14 @@ namespace my_vulkan
                 VkImageLayout dst_layout,
                 std::vector<VkImageCopy> operations
             );
+            void blit(
+                VkImage src,
+                VkImageLayout src_layout,
+                VkImage dst,
+                VkImageLayout dst_layout,
+                std::vector<VkImageBlit> operations,
+                VkFilter filter = VK_FILTER_NEAREST
+            );
 
             void end();
             ~scope_t();

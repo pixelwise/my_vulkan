@@ -334,7 +334,28 @@ namespace my_vulkan
             dst,
             dst_layout,
             uint32_t(operations.size()),
-            operations.data()            
+            operations.data()
+        );
+    }
+
+    void command_buffer_t::scope_t::blit(
+        VkImage src,
+        VkImageLayout src_layout,
+        VkImage dst,
+        VkImageLayout dst_layout,
+        std::vector<VkImageBlit> operations,
+        VkFilter filter
+    )
+    {
+        vkCmdBlitImage(
+            _command_buffer,
+            src,
+            src_layout,
+            dst,
+            dst_layout,
+            uint32_t(operations.size()),
+            operations.data(),
+            filter
         );
     }
 

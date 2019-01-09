@@ -288,6 +288,41 @@ namespace my_vulkan
         );        
     }
 
+    void image_t::blit_from(
+        image_t& image,
+        command_buffer_t::scope_t& command_scope,
+        int src_aspects,
+        int dst_aspects
+    )
+    {
+        auto src_extent = image.extent();
+        auto dst_extent = extent();
+        VkImageBlit region = {};
+        region.srcSubresource.layerCount = 1;
+        region.srcSubresource.aspectMask = src_aspects;
+        region.dstSubresource.layerCount = 1;
+        region.dstSubresource.aspectMask = dst_aspects;
+        region.srcOffsets[0] = {0, 0, 0};
+        region.srcOffsets[1] = {
+            int32_t(src_extent.width),
+            int32_t(src_extent.height),
+            int32_t(src_extent.depth)
+        };
+        region.dstOffsets[0] = {0, 0, 0};
+        region.dstOffsets[1] = {
+            int32_t(dst_extent.width),
+            int32_t(dst_extent.height),
+            int32_t(dst_extent.depth)
+        };
+        command_scope.blit(
+            image.get(),
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            _image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            {region}
+        );
+    }
+
     void image_t::transition_layout(
         VkImageLayout oldLayout,
         VkImageLayout newLayout,
