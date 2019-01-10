@@ -12,7 +12,6 @@
 #include <glm/glm.hpp>
 
 #include <memory>
-#include <iostream>
 #include <stdexcept>
 
 static VkFormat vertex_format_with_components(float, size_t num_components)
@@ -508,8 +507,8 @@ namespace my_vulkan
             _descriptor_pools.emplace_back(
                 _device->get(),
                 std::vector<VkDescriptorPoolSize>{
-                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2},
-                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_textures}
+                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uint32_t(2 * _depth)},
+                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(num_textures * _depth)}
                 },
                 _depth
             );
@@ -523,8 +522,7 @@ namespace my_vulkan
                     };
                 }))
             );
-            std::cout << "allocated buffer set " << _pipeline_buffers.size() << std::endl;
-       }
+        }
         return _pipeline_buffers.at(_next_buffer_index++).at(phase);
     }
 }

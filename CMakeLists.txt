@@ -14,6 +14,9 @@ if (USE_ASAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
 
+find_package(OpenCV 3 REQUIRED)
+find_package(glm 0.9.8 REQUIRED)
+
 file(GLOB_RECURSE GLSL_SOURCE_FILES
     "*.frag"
     "*.vert"
@@ -52,6 +55,7 @@ add_library(my_vulkan_offscreen
     my_vulkan/texture_sampler.cpp
     my_vulkan/utils.cpp
     my_vulkan/helpers/standard_swap_chain.cpp
+    my_vulkan/helpers/offscreen_render_target.cpp
 )
 message("CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(
@@ -102,15 +106,11 @@ if(glfw3_FOUND)
         INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${Boost_INCLUDE_DIRS}
-    )
-    target_include_directories(
-        my_vulkan
-        PRIVATE
+        ${OpenCV_INCLUDE_DIRS}
         ${Vulkan_INCLUDE_DIRS}
     )
 endif()
 if(glfw3_FOUND)
-    message(STATUS "my_vulkan GLFW_INCLUDE_DIRS=${glfw_INCLUDE_DIR}; GLM_INCLUDE_DIRS=${GLM_INCLUDE_DIRS}")
     add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
     target_include_directories(
         glfw_vulkan_test
