@@ -10,9 +10,6 @@ namespace my_vulkan
 {
     namespace helpers
     {
-        // todo: true double buffering (or n-fold?)
-        // - also have separate renderbuffers with separate image backing
-        // - make accessible phase and command buffer
         class offscreen_render_target_t
         {
         public:
