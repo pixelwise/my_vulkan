@@ -10,7 +10,25 @@ namespace my_vulkan
         VkBufferUsageFlags usage,
         VkMemoryPropertyFlags properties
     )
-    : _device{&device}
+    : buffer_t{
+        device.get(),
+        device.physical_device(),
+        size,
+        usage,
+        properties
+    }
+    {
+    }
+
+    buffer_t::buffer_t(
+        VkDevice device,
+        VkPhysicalDevice physical_device,
+        VkDeviceSize size,
+        VkBufferUsageFlags usage,
+        VkMemoryPropertyFlags properties
+    )
+    : _device{device}
+    , _physical_device{physical_device}
     , _size{size}
     {
         VkBufferCreateInfo bufferInfo = {};
@@ -19,23 +37,23 @@ namespace my_vulkan
         bufferInfo.usage = usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         vk_require(
-            vkCreateBuffer(_device->get(), &bufferInfo, nullptr, &_buffer),
+            vkCreateBuffer(_device, &bufferInfo, nullptr, &_buffer),
             "creating buffer"
         );
         VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(_device->get(), _buffer, &memRequirements);
+        vkGetBufferMemoryRequirements(_device, _buffer, &memRequirements);
         _memory.reset(new device_memory_t{
-            _device->get(),
+            _device,
             {
                 memRequirements.size,
                 findMemoryType(
-                    device.physical_device(),
+                    physical_device,
                     memRequirements.memoryTypeBits,
                     properties
                 )                
             }
         });
-        vkBindBufferMemory(_device->get(), _buffer, _memory->get(), 0);
+        vkBindBufferMemory(_device, _buffer, _memory->get(), 0);
     }
 
     device_memory_t* buffer_t::memory()
@@ -53,6 +71,7 @@ namespace my_vulkan
     {
         cleanup();
         _buffer = other._buffer;
+        _physical_device = other._physical_device;
         _memory = std::move(other._memory);
         std::swap(_device, other._device);
         return *this;
@@ -66,14 +85,16 @@ namespace my_vulkan
     void buffer_t::load_data(command_pool_t& command_pool, const void* data)
     {
         buffer_t staging_buffer{
-            *_device,
+            _device,
+            _physical_device,
             _size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         };
         staging_buffer.memory()->set_data(data, _size);
         my_vulkan::buffer_t result{
-            *_device,
+            _device,
+            _physical_device,
             _size,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
@@ -97,7 +118,7 @@ namespace my_vulkan
     {
         if (_device)
         {
-            vkDestroyBuffer(_device->get(), _buffer, nullptr);
+            vkDestroyBuffer(_device, _buffer, nullptr);
             _memory.reset();
             _device = 0;
         }

@@ -16,6 +16,13 @@ namespace my_vulkan
             VkBufferUsageFlags usage,
             VkMemoryPropertyFlags properties
         );
+        buffer_t(
+            VkDevice device,
+            VkPhysicalDevice physical_device,
+            VkDeviceSize size,
+            VkBufferUsageFlags usage,
+            VkMemoryPropertyFlags properties
+        );
         buffer_t(const buffer_t&) = delete;
         buffer_t(buffer_t&& other) noexcept;
         buffer_t& operator=(const buffer_t&) = delete;
@@ -27,7 +34,8 @@ namespace my_vulkan
         ~buffer_t();
     private:
         void cleanup();
-        device_t* _device;
+        VkDevice _device;
+        VkPhysicalDevice _physical_device;
         VkDeviceSize _size;
         VkBuffer _buffer;
         std::unique_ptr<device_memory_t> _memory;

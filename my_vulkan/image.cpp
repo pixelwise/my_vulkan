@@ -66,9 +66,33 @@ namespace my_vulkan
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties
     )
-    : _device{&device}
+    : image_t{
+        device.get(),
+        device.physical_device(),
+        extent,
+        format,
+        usage,
+        initial_layout,
+        tiling,
+        properties
+    }
+    {
+    }
+
+    image_t::image_t(
+        VkDevice device,
+        VkPhysicalDevice physical_device,
+        VkExtent3D extent,
+        VkFormat format,
+        VkImageUsageFlags usage,
+        VkImageLayout initial_layout,
+        VkImageTiling tiling,
+        VkMemoryPropertyFlags properties
+    )
+    : _device{device}
+    , _physical_device{physical_device}
     , _image{make_image(
-        _device->get(),
+        _device,
         extent,
         format,
         usage,
@@ -80,36 +104,46 @@ namespace my_vulkan
     , _layout{initial_layout}
     , _borrowed{false}
     , _memory{new device_memory_t{
-        _device->get(),
+        _device,
         find_image_memory_config(
-            _device->physical_device(),
-            _device->get(),
+            physical_device,
+            _device,
             _image,
             properties
         )
     }}
     {
-        vkBindImageMemory(_device->get(), _image, _memory->get(), 0);
+        vkBindImageMemory(_device, _image, _memory->get(), 0);
     }
 
     image_t::image_t(
-        device_t& device,
+        VkDevice device,
+        VkPhysicalDevice physical_device,
         VkImage image,
         VkFormat format,
         VkExtent2D extent,
         VkImageLayout initial_layout
-    ) : image_t{device, image, format, {extent.width, extent.height, 1}, initial_layout}
+    ) : image_t{
+        device,
+        physical_device,
+        image,
+        format,
+        {extent.width, extent.height, 1},
+        initial_layout
+    }
     {
     }
 
     image_t::image_t(
-        device_t& device,
+        VkDevice device,
+        VkPhysicalDevice physical_device,
         VkImage image,
         VkFormat format,
         VkExtent3D extent,
         VkImageLayout initial_layout
     )
-    : _device{&device}
+    : _device{device}
+    , _physical_device{physical_device}
     , _image{image}
     , _format{format}
     , _extent{extent}
@@ -133,6 +167,7 @@ namespace my_vulkan
         _format = other._format;
         _extent = other._extent;
         _borrowed = other._borrowed;
+        _physical_device = other._physical_device;
         std::swap(_device, other._device);
         return *this;
     }
@@ -157,11 +192,11 @@ namespace my_vulkan
         viewInfo.subresourceRange.layerCount = 1;
         VkImageView image_view;
         vk_require(
-            vkCreateImageView(_device->get(), &viewInfo, nullptr, &image_view),
+            vkCreateImageView(_device, &viewInfo, nullptr, &image_view),
             "creating image view"
         );
         return image_view_t{
-            _device->get(),
+            _device,
             image_view
         };
     }
@@ -171,7 +206,7 @@ namespace my_vulkan
         if (_device && !_borrowed)
         {
             if (_image)
-                vkDestroyImage(_device->get(), _image, nullptr);
+                vkDestroyImage(_device, _image, nullptr);
             _memory.reset();
         }
         _device = 0;
@@ -215,7 +250,7 @@ namespace my_vulkan
         };
         VkSubresourceLayout result;
         vkGetImageSubresourceLayout(
-            _device->get(),
+            _device,
             _image,
             &sub_resource,
             &result
@@ -235,7 +270,7 @@ namespace my_vulkan
         );
         copy_from(buffer, command_scope, 0, extent);
         command_scope.end();
-        fence_t fence{_device->get()};
+        fence_t fence{_device};
         command_pool.queue().submit(command_buffer.get(), fence.get());
         fence.wait();
     }
@@ -416,7 +451,8 @@ namespace my_vulkan
         auto oneshot_scope = command_pool.begin_oneshot();
         size_t image_size = _extent.width * _extent.height * bytes_per_pixel(format());
         buffer_t staging_buffer{
-            *_device,
+            _device,
+            _physical_device,
             image_size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT

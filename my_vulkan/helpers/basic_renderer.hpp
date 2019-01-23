@@ -32,7 +32,8 @@ namespace my_vulkan
             output_config_t output_config,
             std::vector<uint8_t> vertex_shader,
             std::vector<uint8_t> fragment_shader,
-            render_settings_t render_settings = {}
+            render_settings_t render_settings = {},
+            bool dynamic_viewport = false
         );
         class pipeline_buffer_t
         {
@@ -72,7 +73,8 @@ namespace my_vulkan
         void execute_draw(
             pipeline_buffer_t& buffer,
             command_buffer_t::scope_t& command_scope,
-            size_t num_vertices
+            size_t num_vertices,
+            boost::optional<VkRect2D> target_rect = boost::none
         );
         void update_render_pipeline(
             VkExtent2D extent,

@@ -5,13 +5,16 @@ namespace my_vulkan
 {
     render_pass_t::render_pass_t(
         VkDevice device,
-        VkFormat image_format,
+        VkFormat color_format,
         VkFormat depth_format,
         VkImageLayout color_attachment_final_layout
     )
+    : _device{device}
+    , _color_format{color_format}
+    , _depth_format{depth_format}
     {
         VkAttachmentDescription colorAttachment = {};
-        colorAttachment.format = image_format;
+        colorAttachment.format = color_format;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -98,4 +101,20 @@ namespace my_vulkan
             _device = 0;
         }
     }
+
+    VkDevice render_pass_t::device() const
+    {
+        return _device;
+    }
+
+    VkFormat render_pass_t::color_format() const
+    {
+        return _color_format;
+    }
+
+    VkFormat render_pass_t::depth_format() const
+    {
+        return _depth_format;
+    }
+
 }

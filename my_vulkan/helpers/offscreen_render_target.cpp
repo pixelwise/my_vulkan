@@ -5,35 +5,32 @@ namespace my_vulkan
     namespace helpers
     {
         offscreen_render_target_t::offscreen_render_target_t(
-            device_t& device,
+            render_pass_t& render_pass,
+            VkPhysicalDevice physical_device,
+            queue_reference_t& queue,
             VkExtent2D size,
-            VkFormat color_format,
-            VkFormat depth_format,
             bool need_readback
         )
-        : _render_pass{
-            device.get(),
-            color_format,
-            depth_format,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL                
-        }
+        : _render_pass{render_pass.get()}
         {
             while (_slots.size() < 2)
             {
                 _slots.emplace_back(
-                    device,
-                    _render_pass.get(),
+                    render_pass.device(),
+                    _render_pass,
+                    queue,
                     size,
-                    color_format,
-                    depth_format,
-                    need_readback
+                    render_pass.color_format(),
+                    render_pass.depth_format(),
+                    need_readback,
+                    physical_device
                 );
             }
         }
 
         VkRenderPass offscreen_render_target_t::render_pass()
         {
-            return _render_pass.get();
+            return _render_pass;
         }
 
         size_t offscreen_render_target_t::depth() const
@@ -67,16 +64,19 @@ namespace my_vulkan
         }
 
         offscreen_render_target_t::slot_t::slot_t(
-            device_t& device,
+            VkDevice device,
             VkRenderPass render_pass,
+            queue_reference_t& queue,
             VkExtent2D size,
             VkFormat color_format,
             VkFormat depth_format,
-            bool need_readback
+            bool need_readback,
+            VkPhysicalDevice physical_device
         )
-        : _device{&device}
+        : _queue{&queue}
         , _color_image{
             device,
+            physical_device,
             {size.width, size.height, 1},
             color_format,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
@@ -85,13 +85,14 @@ namespace my_vulkan
         , _color_view{_color_image.view()}
         , _depth_image{
             device,
+            physical_device,
             {size.width, size.height, 1},
             depth_format,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
         }
         , _depth_view{_depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT)}
         , _framebuffer{
-            device.get(),
+            device,
             render_pass,
             {_color_view.get(), _depth_view.get()},
             size                
@@ -100,6 +101,7 @@ namespace my_vulkan
             need_readback ?
             new image_t{
                 device,
+                physical_device,
                 {size.width, size.height, 1},
                 VK_FORMAT_B8G8R8A8_UNORM,
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -110,8 +112,8 @@ namespace my_vulkan
             } :
             nullptr
         }
-        , _fence{device.get(), VK_FENCE_CREATE_SIGNALED_BIT}
-        , _command_pool{device.get(), device.graphics_queue()}
+        , _fence{device, VK_FENCE_CREATE_SIGNALED_BIT}
+        , _command_pool{device, queue}
         , _command_buffer{_command_pool.make_buffer()}
         {
         }
@@ -175,7 +177,7 @@ namespace my_vulkan
                 );
             }
             _commands.reset();
-            _device->graphics_queue().submit(
+            _queue->submit(
                 _command_buffer.get(),
                 _fence.get()
             );               

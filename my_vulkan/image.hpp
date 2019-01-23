@@ -13,7 +13,8 @@ namespace my_vulkan
     struct image_t
     {
         image_t(
-            device_t& device,
+            VkDevice device,
+            VkPhysicalDevice physical_device,
             VkExtent3D extent,
             VkFormat format,
             VkImageUsageFlags usage = 0,
@@ -23,13 +24,24 @@ namespace my_vulkan
         );
         image_t(
             device_t& device,
+            VkExtent3D extent,
+            VkFormat format,
+            VkImageUsageFlags usage = 0,
+            VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
+            VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
+            VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+        image_t(
+            VkDevice device,
+            VkPhysicalDevice physical_device,
             VkImage image,
             VkFormat format,
             VkExtent3D extent,
             VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED
         );
         image_t(
-            device_t& device,
+            VkDevice device,
+            VkPhysicalDevice physical_device,
             VkImage image,
             VkFormat format,
             VkExtent2D extent,
@@ -85,7 +97,8 @@ namespace my_vulkan
         void load_pixels(command_pool_t& commands, const void* pixels);
     private:
         void cleanup();
-        device_t* _device;
+        VkDevice _device;
+        VkPhysicalDevice _physical_device;
         VkImage _image;
         VkFormat _format;
         VkExtent3D _extent;

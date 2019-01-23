@@ -35,7 +35,8 @@ namespace my_vulkan
             const std::vector<uint8_t>& vertex_shader,
             const std::vector<uint8_t>& fragment_shader,
             VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-            render_settings_t settings = {} 
+            render_settings_t settings = {},
+            bool dynamic_viewport = false
         );
         graphics_pipeline_t(const graphics_pipeline_t&) = delete;
         graphics_pipeline_t(graphics_pipeline_t&& other) noexcept;

@@ -124,7 +124,8 @@ namespace my_vulkan
         output_config_t output_config,
         std::vector<uint8_t> vertex_shader,
         std::vector<uint8_t> fragment_shader,
-        render_settings_t render_settings               
+        render_settings_t render_settings,
+        bool dynamic_viewport
     )
     : _device{output_config.device}
     , _vertex_shader{std::move(vertex_shader)}
@@ -139,7 +140,8 @@ namespace my_vulkan
         _vertex_shader,
         _fragment_shader,
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-        render_settings
+        render_settings,
+        dynamic_viewport
     }
     , _depth{output_config.depth}
     {
@@ -467,12 +469,14 @@ namespace my_vulkan
     >::execute_draw(
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
-        size_t num_vertices
+        size_t num_vertices,
+        boost::optional<VkRect2D> target_rect
     )
     {
         command_scope.bind_pipeline(
             VK_PIPELINE_BIND_POINT_GRAPHICS,
-            _graphics_pipeline.get()
+            _graphics_pipeline.get(),
+            target_rect
         );
         buffer.bind(
             command_scope,

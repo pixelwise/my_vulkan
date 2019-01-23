@@ -24,18 +24,20 @@ namespace my_vulkan
             {
             public:
                 slot_t(
-                    device_t& device,
+                    VkDevice device,
                     VkRenderPass render_pass,
+                    queue_reference_t& queue,
                     VkExtent2D size,
                     VkFormat color_format,
                     VkFormat depth_format,
-                    bool need_readback
+                    bool need_readback,
+                    VkPhysicalDevice physical_device
                 );
                 phase_context_t begin(size_t index);
                 void finish();
                 cv::Mat4b read_bgra();
             private:
-                device_t* _device;
+                queue_reference_t* _queue;
                 image_t _color_image;
                 image_view_t _color_view;
                 image_t _depth_image;
@@ -50,10 +52,10 @@ namespace my_vulkan
             };
         public:
             offscreen_render_target_t(
-                device_t& device,
+                render_pass_t& render_pass,
+                VkPhysicalDevice physical_device,
+                queue_reference_t& queue,
                 VkExtent2D size,
-                VkFormat color_format,
-                VkFormat depth_format,
                 bool need_readback = false
             );
             size_t depth() const;
@@ -62,7 +64,7 @@ namespace my_vulkan
             void finish_phase();
             boost::optional<cv::Mat4b> read_bgra(bool flush = false);
         private:
-            render_pass_t _render_pass;
+            VkRenderPass _render_pass;
             std::vector<slot_t> _slots;
             size_t _write_slot{0};
             size_t _num_slots_filled{0};

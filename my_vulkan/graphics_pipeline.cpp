@@ -16,7 +16,8 @@ namespace my_vulkan
         const std::vector<uint8_t>& vertex_shader,
         const std::vector<uint8_t>& fragment_shader,
         VkPrimitiveTopology topology,
-        render_settings_t settings
+        render_settings_t settings,
+        bool dynamic_viewport
     )
     : _device{device}
     , _uniform_layout{_device, uniform_layout}
@@ -156,6 +157,22 @@ namespace my_vulkan
         vertexInputInfo.pVertexAttributeDescriptions =
             vertex_layout.attributes.data();
 
+        std::vector<VkDynamicState> dynamic_states;
+        if (dynamic_viewport)
+        {
+            dynamic_states = {
+                VK_DYNAMIC_STATE_VIEWPORT,
+                VK_DYNAMIC_STATE_SCISSOR
+            };
+        }
+
+        VkPipelineDynamicStateCreateInfo dynamic_state_info = {
+            VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            0,
+            0,
+            static_cast<uint32_t>(dynamic_states.size()),
+            dynamic_states.data()
+        };
 
         VkGraphicsPipelineCreateInfo pipelineInfo = {};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -171,6 +188,7 @@ namespace my_vulkan
         pipelineInfo.layout = _layout;
         pipelineInfo.renderPass = render_pass;
         pipelineInfo.subpass = 0;
+        pipelineInfo.pDynamicState = &dynamic_state_info;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
         vk_require(

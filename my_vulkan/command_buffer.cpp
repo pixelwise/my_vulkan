@@ -117,7 +117,8 @@ namespace my_vulkan
 
     void command_buffer_t::scope_t::bind_pipeline(
         VkPipelineBindPoint bind_point,
-        VkPipeline pipeline
+        VkPipeline pipeline,
+        boost::optional<VkRect2D> target_rect
     )
     {
         vkCmdBindPipeline(
@@ -125,6 +126,29 @@ namespace my_vulkan
             bind_point, 
             pipeline
         );
+        if (target_rect)
+        {
+            VkViewport viewport{
+                (float)target_rect->offset.x,
+                (float)target_rect->offset.y,
+                (float)target_rect->extent.width,
+                (float)target_rect->extent.height,
+                0,
+                1
+            };
+            vkCmdSetViewport(
+                _command_buffer,
+                0,
+                1,
+                &viewport
+            );
+            vkCmdSetScissor(
+                _command_buffer,
+                0,
+                1,
+                &*target_rect
+            );
+        }
     }
 
     void command_buffer_t::scope_t::bind_vertex_buffers(
