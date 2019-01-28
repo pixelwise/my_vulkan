@@ -2,6 +2,9 @@
 
 #include "../my_vulkan.hpp"
 
+#include <memory>
+#include <stdexcept>
+
 namespace my_vulkan
 {
     struct rendering_output_config_t
@@ -38,6 +41,45 @@ namespace my_vulkan
         class pipeline_buffer_t
         {
         public:
+            class pinned_t
+            {
+            public:
+                pipeline_buffer_t* operator->()
+                {
+                    return _target;
+                }
+                pinned_t(pipeline_buffer_t& target)
+                {
+                    if (target._pinned)
+                        throw std::runtime_error{"double pinned pipeline buffer"};
+                    target._pinned = true;
+                    _target = &target;
+                }
+                pinned_t(const pinned_t&) = delete;
+                pinned_t& operator=(const pinned_t&) = delete;
+                pinned_t(pinned_t&& other)
+                : _target{0}
+                {
+                    *this = std::move(other);
+                }
+                pinned_t& operator=(pinned_t&& other)
+                {
+                    reset();
+                    std::swap(_target, other._target);
+                    return *this;
+                }
+                ~pinned_t()
+                {
+                }
+            private:
+                void reset()
+                {
+                    if (_target)
+                        _target->_pinned = false;
+                    _target = 0;                    
+                }
+                pipeline_buffer_t* _target;
+            };
             pipeline_buffer_t(
                 device_t* device,
                 VkDescriptorSetLayout layout
@@ -53,10 +95,18 @@ namespace my_vulkan
                 size_t index,
                 VkDescriptorImageInfo texture
             );
+            void begin_phase(size_t i)
+            {
+                if (_phase == i)
+                    _phase.reset();
+            }
             void bind(
                 command_buffer_t::scope_t& command_scope,
-                VkPipelineLayout layout
+                VkPipelineLayout layout,
+                size_t phase
             );
+            bool in_use() const;
+            pinned_t pin() {return pinned_t{*this};}
         private:
             device_t* _device;
             buffer_t _vertex_uniforms;
@@ -64,11 +114,15 @@ namespace my_vulkan
             descriptor_pool_t _descriptor_pool;
             descriptor_set_t _descriptor_set;
             boost::optional<buffer_t> _vertices;
+            boost::optional<size_t> _phase;
+            bool _pinned = false;
         };
         void begin_phase(size_t phase)
         {
             _current_phase = phase;
-            _next_buffer_index = 0;            
+            _next_buffer_index = 0;
+            for (auto& buffer_ptr : _pipeline_buffers)
+                buffer_ptr->begin_phase(phase);
         }
         void execute_draw(
             pipeline_buffer_t& buffer,
@@ -80,7 +134,7 @@ namespace my_vulkan
             VkExtent2D extent,
             VkRenderPass render_pass
         );
-        pipeline_buffer_t& buffer(size_t phase);
+        pipeline_buffer_t& buffer();
         basic_renderer_t(basic_renderer_t&) = delete;
         basic_renderer_t(basic_renderer_t&&) = default;
         basic_renderer_t& operator=(const basic_renderer_t&) = delete;
@@ -95,7 +149,7 @@ namespace my_vulkan
         std::vector<uint8_t> _fragment_shader;
         std::vector<VkDescriptorSetLayoutBinding> _uniform_layout;
         graphics_pipeline_t _graphics_pipeline;
-        std::vector<std::vector<pipeline_buffer_t>> _pipeline_buffers;
+        std::vector<std::unique_ptr<pipeline_buffer_t>> _pipeline_buffers;
         const size_t _depth;
         size_t _current_phase{0};
         size_t _next_buffer_index{0};

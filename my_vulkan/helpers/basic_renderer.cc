@@ -11,9 +11,6 @@
 
 #include <glm/glm.hpp>
 
-#include <memory>
-#include <stdexcept>
-
 static VkFormat vertex_format_with_components(float, size_t num_components)
 {
     switch(num_components)
@@ -369,6 +366,23 @@ namespace my_vulkan
         typename vertex_t,
         size_t num_textures
     >
+    bool
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::pipeline_buffer_t::in_use() const
+    {
+        return !!_phase || _pinned;
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
     void
     basic_renderer_t<
         vertex_uniforms_t,
@@ -448,9 +462,11 @@ namespace my_vulkan
         num_textures
     >::pipeline_buffer_t::bind(
         command_buffer_t::scope_t& command_scope,
-        VkPipelineLayout layout
+        VkPipelineLayout layout,
+        size_t phase
     )
     {
+        _phase = phase;
         command_scope.bind_vertex_buffers(
             {{_vertices->get(), 0}}
         );            
@@ -487,10 +503,16 @@ namespace my_vulkan
         );
         buffer.bind(
             command_scope,
-            _graphics_pipeline.layout()
+            _graphics_pipeline.layout(),
+            _current_phase
         );
         command_scope.draw({0, uint32_t(num_vertices)});            
     }
+
+    // have a buffer pool
+    // hand out buffers as needed
+    // when executing draw, mark buffer as "used in phase i"
+    // when beginning a phase mark all buffers "in use" in that phase as not in use
 
     template<
         typename vertex_uniforms_t,
@@ -509,22 +531,17 @@ namespace my_vulkan
         fragment_uniforms_t,
         vertex_t,
         num_textures
-    >::buffer(size_t phase)
+    >::buffer()
     {
-        if (phase != _current_phase)
-            begin_phase(phase);
-        while (_next_buffer_index >= _pipeline_buffers.size())
-        {
-             _pipeline_buffers.push_back(
-                materialize(boost::counting_range<size_t>(0, _depth) |
-                boost::adaptors::transformed([&](auto i){
-                    return pipeline_buffer_t{
-                        _device,
-                        _graphics_pipeline.uniform_layout()
-                    };
-                }))
-            );
-        }
-        return _pipeline_buffers.at(_next_buffer_index++).at(phase);
+        for (auto& buffer_ptr : _pipeline_buffers)
+            if (!buffer_ptr->in_use())
+                return *buffer_ptr;
+         _pipeline_buffers.push_back(
+            std::make_unique<pipeline_buffer_t>(
+                _device,
+                _graphics_pipeline.uniform_layout()
+            )
+        );
+        return *_pipeline_buffers.back();
     }
 }
