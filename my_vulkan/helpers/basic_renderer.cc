@@ -300,7 +300,6 @@ namespace my_vulkan
         num_textures
     >::pipeline_buffer_t::pipeline_buffer_t(
         device_t* device,
-        VkDescriptorPool descriptor_pool,
         VkDescriptorSetLayout layout
     )
     : _device{device}
@@ -318,9 +317,17 @@ namespace my_vulkan
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
     }
+    , _descriptor_pool{
+        _device->get(),
+        std::vector<VkDescriptorPoolSize>{
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uint32_t(2)},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(num_textures)}
+        },
+        1        
+    }
     , _descriptor_set{
         _device->get(),
-        descriptor_pool,
+        _descriptor_pool.get(),
         layout
     }
     {   
@@ -508,20 +515,11 @@ namespace my_vulkan
             begin_phase(phase);
         while (_next_buffer_index >= _pipeline_buffers.size())
         {
-            _descriptor_pools.emplace_back(
-                _device->get(),
-                std::vector<VkDescriptorPoolSize>{
-                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uint32_t(2 * _depth)},
-                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(num_textures * _depth)}
-                },
-                _depth
-            );
              _pipeline_buffers.push_back(
                 materialize(boost::counting_range<size_t>(0, _depth) |
                 boost::adaptors::transformed([&](auto i){
                     return pipeline_buffer_t{
                         _device,
-                        _descriptor_pools.back().get(),
                         _graphics_pipeline.uniform_layout()
                     };
                 }))

@@ -40,7 +40,6 @@ namespace my_vulkan
         public:
             pipeline_buffer_t(
                 device_t* device,
-                VkDescriptorPool descriptor_pool,
                 VkDescriptorSetLayout layout
             );
             void update_vertices(
@@ -62,6 +61,7 @@ namespace my_vulkan
             device_t* _device;
             buffer_t _vertex_uniforms;
             buffer_t _fragment_uniforms;
+            descriptor_pool_t _descriptor_pool;
             descriptor_set_t _descriptor_set;
             boost::optional<buffer_t> _vertices;
         };
@@ -95,7 +95,6 @@ namespace my_vulkan
         std::vector<uint8_t> _fragment_shader;
         std::vector<VkDescriptorSetLayoutBinding> _uniform_layout;
         graphics_pipeline_t _graphics_pipeline;
-        std::vector<descriptor_pool_t> _descriptor_pools;
         std::vector<std::vector<pipeline_buffer_t>> _pipeline_buffers;
         const size_t _depth;
         size_t _current_phase{0};
