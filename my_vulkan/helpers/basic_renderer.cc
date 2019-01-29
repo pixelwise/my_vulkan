@@ -32,7 +32,7 @@ static VkFormat vertex_format_for_attribute(attribute_t)
 {
     return vertex_format_with_components(
         typename attribute_t::value_type{},
-        attribute_t::length()
+        attribute_t{}.length()
     );
 }
 
