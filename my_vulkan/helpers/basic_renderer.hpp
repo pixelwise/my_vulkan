@@ -87,6 +87,9 @@ namespace my_vulkan
             void update_vertices(
                 const std::vector<vertex_t>& vertices
             );
+            void update_indices(
+                const std::vector<uint32_t>& indices
+            );
             void update_uniforms(
                 vertex_uniforms_t vertex_uniforms,
                 fragment_uniforms_t fragment_uniforms
@@ -114,6 +117,7 @@ namespace my_vulkan
             descriptor_pool_t _descriptor_pool;
             descriptor_set_t _descriptor_set;
             boost::optional<buffer_t> _vertices;
+            boost::optional<buffer_t> _indices;
             boost::optional<size_t> _phase;
             bool _pinned = false;
         };
@@ -130,6 +134,13 @@ namespace my_vulkan
             size_t num_vertices,
             boost::optional<VkRect2D> target_rect = boost::none
         );
+        void execute_indexed_draw(
+            pipeline_buffer_t& buffer,
+            command_buffer_t::scope_t& command_scope,
+            size_t num_indices,
+            boost::optional<VkRect2D> target_rect = boost::none,
+            size_t vertex_offset = 0
+        );
         void update_render_pipeline(
             VkExtent2D extent,
             VkRenderPass render_pass
@@ -140,6 +151,11 @@ namespace my_vulkan
         basic_renderer_t& operator=(const basic_renderer_t&) = delete;
         basic_renderer_t& operator=(basic_renderer_t&&) = default;
     private:
+        void bind(
+            pipeline_buffer_t& buffer,
+            command_buffer_t::scope_t& command_scope,
+            boost::optional<VkRect2D> target_rect
+        );
         static VkVertexInputBindingDescription make_vertex_bindings_description();
         static std::vector<VkVertexInputAttributeDescription> make_attribute_descriptions();
         static vertex_layout_t make_vertex_layout();

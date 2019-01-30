@@ -94,6 +94,18 @@ namespace my_vulkan
             format == VK_FORMAT_D24_UNORM_S8_UINT;        
     }
 
+    VkFormat uchar_format_with_components(size_t n)
+    {
+        switch(n)
+        {
+            case 1: return VK_FORMAT_R8_UNORM;
+            case 2: return VK_FORMAT_R8G8_UNORM;
+            case 3: return VK_FORMAT_R8G8B8_UNORM;
+            case 4: return VK_FORMAT_R8G8B8A8_UNORM;
+        }
+        return VK_FORMAT_UNDEFINED;
+    }
+
     size_t bytes_per_pixel(VkFormat format)
     {
         switch (format)

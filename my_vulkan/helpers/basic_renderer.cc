@@ -41,18 +41,20 @@ static std::vector<VkVertexInputAttributeDescription>
 make_vertex_attribute_descriptions(vertex_t prototype)
 {
     std::vector<VkVertexInputAttributeDescription> result;
-    size_t i = 0;
+    uint32_t i = 0;
     boost::fusion::for_each(
         prototype,
         [&](const auto& attribute)
         {
-            result.emplace_back(
+            result.push_back(VkVertexInputAttributeDescription{
+                i++, // assign to locations, not bindings
                 0,
-                i++,
                 vertex_format_for_attribute(attribute),
-                static_cast<size_t>(std::addressof(attribute)) -
-                static_cast<size_t>(std::addressof(prototype))
-            );
+                uint32_t(
+                    reinterpret_cast<const char*>(std::addressof(attribute)) -
+                    reinterpret_cast<const char*>(std::addressof(prototype))
+                )
+            });
         }
     );
     return result;
@@ -366,6 +368,36 @@ namespace my_vulkan
         typename vertex_t,
         size_t num_textures
     >
+    void
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::pipeline_buffer_t::update_indices(
+        const std::vector<uint32_t> &indices
+    )
+    {
+        size_t data_size = sizeof(uint32_t) * indices.size();
+        buffer_t index_buffer{
+            *_device,
+            data_size,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        };
+        index_buffer.memory()->set_data(
+            indices.data(),
+            data_size
+        );
+        _indices = std::move(index_buffer);
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
     bool
     basic_renderer_t<
         vertex_uniforms_t,
@@ -469,7 +501,12 @@ namespace my_vulkan
         _phase = phase;
         command_scope.bind_vertex_buffers(
             {{_vertices->get(), 0}}
-        );            
+        );
+        if (_indices)
+            command_scope.bind_index_buffer(
+                _indices->get(),
+                VK_INDEX_TYPE_UINT32
+            );
         command_scope.bind_descriptor_set(
             VK_PIPELINE_BIND_POINT_GRAPHICS, 
             layout,
@@ -496,6 +533,55 @@ namespace my_vulkan
         boost::optional<VkRect2D> target_rect
     )
     {
+        bind(buffer, command_scope, target_rect);
+        command_scope.draw({0, uint32_t(num_vertices)});            
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
+    void
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::execute_indexed_draw(
+        pipeline_buffer_t& buffer,
+        command_buffer_t::scope_t& command_scope,
+        size_t num_indices,
+        boost::optional<VkRect2D> target_rect,
+        size_t vertex_offset
+    )
+    {
+        bind(buffer, command_scope, target_rect);
+        command_scope.draw_indexed(
+            {0, uint32_t(num_indices)},
+            uint32_t(vertex_offset)
+        );
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
+    void
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::bind(
+        pipeline_buffer_t& buffer,
+        command_buffer_t::scope_t& command_scope,
+        boost::optional<VkRect2D> target_rect
+    )
+    {
         command_scope.bind_pipeline(
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             _graphics_pipeline.get(),
@@ -506,7 +592,6 @@ namespace my_vulkan
             _graphics_pipeline.layout(),
             _current_phase
         );
-        command_scope.draw({0, uint32_t(num_vertices)});            
     }
 
     // have a buffer pool

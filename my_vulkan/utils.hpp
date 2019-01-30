@@ -58,6 +58,7 @@ namespace my_vulkan
     };
     bool has_stencil_component(VkFormat format);
     size_t bytes_per_pixel(VkFormat format);
+    VkFormat uchar_format_with_components(size_t n);
     VkFormat find_depth_format(VkPhysicalDevice physical_device);
     VkFormat find_supported_format(
         VkPhysicalDevice physical_device,

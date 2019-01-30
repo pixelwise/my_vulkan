@@ -43,7 +43,7 @@ namespace my_vulkan
             );
             void bind_index_buffer(
                 VkBuffer buffer,
-                VkIndexType,
+                VkIndexType type,
                 size_t offset = 0
             );
             void bind_descriptor_set(
