@@ -23,6 +23,8 @@ namespace my_vulkan
     {
         bool depth_test = false;
         blending_t blending = blending_t::none;
+        // culling
+        // topology
     };
     struct graphics_pipeline_t
     {

@@ -138,8 +138,7 @@ namespace my_vulkan
             pipeline_buffer_t& buffer,
             command_buffer_t::scope_t& command_scope,
             size_t num_indices,
-            boost::optional<VkRect2D> target_rect = boost::none,
-            size_t vertex_offset = 0
+            boost::optional<VkRect2D> target_rect = boost::none
         );
         void update_render_pipeline(
             VkExtent2D extent,

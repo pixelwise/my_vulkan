@@ -382,7 +382,7 @@ namespace my_vulkan
         buffer_t index_buffer{
             *_device,
             data_size,
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         };
         index_buffer.memory()->set_data(
@@ -553,14 +553,12 @@ namespace my_vulkan
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
         size_t num_indices,
-        boost::optional<VkRect2D> target_rect,
-        size_t vertex_offset
+        boost::optional<VkRect2D> target_rect
     )
     {
         bind(buffer, command_scope, target_rect);
         command_scope.draw_indexed(
-            {0, uint32_t(num_indices)},
-            uint32_t(vertex_offset)
+            {0, uint32_t(num_indices)}
         );
     }
 
