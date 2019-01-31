@@ -130,6 +130,8 @@ namespace my_vulkan
     , _vertex_shader{std::move(vertex_shader)}
     , _fragment_shader{std::move(fragment_shader)}
     , _uniform_layout{make_uniform_layout()}
+    , _render_settings{render_settings}
+    , _dynamic_viewport{dynamic_viewport}
     , _graphics_pipeline{
         output_config.device->get(),
         output_config.extent,
@@ -138,9 +140,8 @@ namespace my_vulkan
         make_vertex_layout(),
         _vertex_shader,
         _fragment_shader,
-        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-        render_settings,
-        dynamic_viewport
+        _render_settings,
+        _dynamic_viewport
     }
     , _depth{output_config.depth}
     {
@@ -171,7 +172,8 @@ namespace my_vulkan
             make_vertex_layout(),
             _vertex_shader,
             _fragment_shader,
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
+            _render_settings,
+            _dynamic_viewport,
         };
     }
 

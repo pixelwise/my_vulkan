@@ -163,6 +163,8 @@ namespace my_vulkan
         std::vector<uint8_t> _vertex_shader;
         std::vector<uint8_t> _fragment_shader;
         std::vector<VkDescriptorSetLayoutBinding> _uniform_layout;
+        render_settings_t _render_settings;
+        bool _dynamic_viewport;
         graphics_pipeline_t _graphics_pipeline;
         std::vector<std::unique_ptr<pipeline_buffer_t>> _pipeline_buffers;
         const size_t _depth;

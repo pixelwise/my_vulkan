@@ -23,8 +23,8 @@ namespace my_vulkan
     {
         bool depth_test = false;
         blending_t blending = blending_t::none;
+        VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         // culling
-        // topology
     };
     struct graphics_pipeline_t
     {
@@ -36,7 +36,6 @@ namespace my_vulkan
             vertex_layout_t vertex_layout,
             const std::vector<uint8_t>& vertex_shader,
             const std::vector<uint8_t>& fragment_shader,
-            VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             render_settings_t settings = {},
             bool dynamic_viewport = false
         );

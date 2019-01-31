@@ -15,7 +15,6 @@ namespace my_vulkan
         vertex_layout_t vertex_layout,
         const std::vector<uint8_t>& vertex_shader,
         const std::vector<uint8_t>& fragment_shader,
-        VkPrimitiveTopology topology,
         render_settings_t settings,
         bool dynamic_viewport
     )
@@ -145,7 +144,7 @@ namespace my_vulkan
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = topology;
+        inputAssembly.topology = settings.topology;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
