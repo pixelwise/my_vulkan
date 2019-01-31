@@ -446,10 +446,16 @@ namespace my_vulkan
         );        
     }
 
-    void image_t::load_pixels(command_pool_t& command_pool, const void* pixels)
+    void image_t::load_pixels(
+        command_pool_t& command_pool,
+        const void* pixels,
+        boost::optional<size_t> pitch
+    )
     {
         auto oneshot_scope = command_pool.begin_oneshot();
-        size_t image_size = _extent.width * _extent.height * bytes_per_pixel(format());
+        size_t image_size =
+            _extent.width *
+            pitch.value_or(_extent.height * bytes_per_pixel(format()));
         buffer_t staging_buffer{
             _device,
             _physical_device,
