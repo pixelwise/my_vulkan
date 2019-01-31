@@ -97,7 +97,7 @@ namespace my_vulkan
         void load_pixels(
             command_pool_t& commands,
             const void* pixels,
-            boost::optional<size_t> pitch
+            boost::optional<size_t> pitch = boost::none
         );
     private:
         void cleanup();
