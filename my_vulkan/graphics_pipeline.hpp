@@ -16,7 +16,7 @@ namespace my_vulkan
     {
         none,
         alpha,
-        fill,
+        inverse_alpha,
         add
     };
     struct render_settings_t
