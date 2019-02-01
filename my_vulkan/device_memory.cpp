@@ -56,7 +56,7 @@ namespace my_vulkan
     void device_memory_t::set_data(const void* data, size_t size)
     {
         auto mapping = map();
-	std::memcpy(mapping.data(), data, size);
+        std::memcpy(mapping.data(), data, size);
     }
 
     device_memory_t::mapping_t device_memory_t::map(
