@@ -87,6 +87,9 @@ namespace my_vulkan
             void update_vertices(
                 const std::vector<vertex_t>& vertices
             );
+            std::shared_ptr<buffer_t> upload_vertices(
+                const std::vector<vertex_t>& vertices
+            );
             void update_indices(
                 const std::vector<uint32_t>& indices
             );
@@ -116,7 +119,7 @@ namespace my_vulkan
             buffer_t _fragment_uniforms;
             descriptor_pool_t _descriptor_pool;
             descriptor_set_t _descriptor_set;
-            boost::optional<buffer_t> _vertices;
+            std::shared_ptr<buffer_t> _vertices;
             boost::optional<buffer_t> _indices;
             boost::optional<size_t> _phase;
             bool _pinned = false;

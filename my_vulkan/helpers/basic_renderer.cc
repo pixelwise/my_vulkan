@@ -350,18 +350,37 @@ namespace my_vulkan
         const std::vector<vertex_t>& vertices
     )
     {
+        _vertices = upload_vertices(vertices);
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
+    std::shared_ptr<buffer_t>
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::pipeline_buffer_t::upload_vertices(
+        const std::vector<vertex_t>& vertices
+    )
+    {
         size_t data_size = sizeof(vertex_t) * vertices.size();
-        buffer_t vertex_buffer{
+        auto vertex_buffer = std::make_shared<buffer_t>(
             *_device,
             data_size,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        };
-        vertex_buffer.memory()->set_data(
+        );
+        vertex_buffer->memory()->set_data(
             vertices.data(),
             data_size
         );
-        _vertices = std::move(vertex_buffer);
+        return vertex_buffer;
     }
 
     template<
