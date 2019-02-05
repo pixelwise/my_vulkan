@@ -12,7 +12,6 @@ namespace my_vulkan
         device_t* device;
         VkExtent2D extent;
         VkRenderPass render_pass;
-        size_t depth;
     };
 
     template<
@@ -173,7 +172,6 @@ namespace my_vulkan
         bool _dynamic_viewport;
         graphics_pipeline_t _graphics_pipeline;
         std::vector<std::unique_ptr<pipeline_buffer_t>> _pipeline_buffers;
-        const size_t _depth;
         size_t _current_phase{0};
         size_t _next_buffer_index{0};
     };

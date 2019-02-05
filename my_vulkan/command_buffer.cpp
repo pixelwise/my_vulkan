@@ -115,6 +115,20 @@ namespace my_vulkan
         vkCmdBeginRenderPass(_command_buffer, &info, contents);
     }
 
+    void command_buffer_t::scope_t::clear(
+        std::vector<VkClearAttachment> attachements,
+        std::vector<VkClearRect> rects
+    )
+    {
+        vkCmdClearAttachments(
+            _command_buffer,
+            uint32_t(attachements.size()),
+            attachements.data(),
+            uint32_t(rects.size()),
+            rects.data()
+        );
+    }
+
     void command_buffer_t::scope_t::bind_pipeline(
         VkPipelineBindPoint bind_point,
         VkPipeline pipeline,

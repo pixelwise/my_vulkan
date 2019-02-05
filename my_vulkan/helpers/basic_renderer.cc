@@ -143,7 +143,6 @@ namespace my_vulkan
         _render_settings,
         _dynamic_viewport
     }
-    , _depth{output_config.depth}
     {
     }
 

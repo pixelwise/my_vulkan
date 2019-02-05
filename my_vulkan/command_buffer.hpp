@@ -32,6 +32,10 @@ namespace my_vulkan
                 std::vector<VkClearValue> clear_values,
                 VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE
             );
+            void clear(
+                std::vector<VkClearAttachment> attachements,
+                std::vector<VkClearRect> rects
+            );
             void bind_pipeline(
                 VkPipelineBindPoint bind_point,
                 VkPipeline pipeline,
