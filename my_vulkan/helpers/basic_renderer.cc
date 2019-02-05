@@ -350,7 +350,26 @@ namespace my_vulkan
         const std::vector<vertex_t>& vertices
     )
     {
-        _vertices = upload_vertices(vertices);
+        update_vertices(upload_vertices(vertices));
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures
+    >
+    void
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures
+    >::pipeline_buffer_t::update_vertices(
+        std::shared_ptr<buffer_t> vertices
+    )
+    {
+        _vertices = vertices;
     }
 
     template<

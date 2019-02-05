@@ -87,6 +87,9 @@ namespace my_vulkan
             void update_vertices(
                 const std::vector<vertex_t>& vertices
             );
+            void update_vertices(
+                std::shared_ptr<buffer_t> vertices
+            );
             std::shared_ptr<buffer_t> upload_vertices(
                 const std::vector<vertex_t>& vertices
             );
