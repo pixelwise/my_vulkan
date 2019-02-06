@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../my_vulkan.hpp"
+#include "render_target.hpp"
 
 #include <opencv2/core/core.hpp>
 
@@ -38,6 +39,8 @@ namespace my_vulkan
                 cv::Mat4b read_bgra();
             private:
                 queue_reference_t* _queue;
+                VkRenderPass _render_pass;
+                VkExtent2D _size;
                 image_t _color_image;
                 image_view_t _color_view;
                 image_t _depth_image;
@@ -52,12 +55,14 @@ namespace my_vulkan
             };
         public:
             offscreen_render_target_t(
-                render_pass_t& render_pass,
-                VkPhysicalDevice physical_device,
-                queue_reference_t& queue,
+                device_t& device,
+                VkRenderPass render_pass,
+                VkFormat color_format,
+                VkFormat depth_format,
                 VkExtent2D size,
                 bool need_readback = false
             );
+            render_target_t render_target();
             size_t depth() const;
             VkRenderPass render_pass();
             phase_context_t begin_phase();

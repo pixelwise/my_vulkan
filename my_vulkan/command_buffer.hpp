@@ -29,7 +29,7 @@ namespace my_vulkan
                 VkRenderPass renderPass,
                 VkFramebuffer framebuffer,
                 VkRect2D render_area,
-                std::vector<VkClearValue> clear_values,
+                std::vector<VkClearValue> clear_values = {},
                 VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE
             );
             void clear(

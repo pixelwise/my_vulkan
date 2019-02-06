@@ -70,7 +70,7 @@ namespace my_vulkan
             std::vector<VkFramebuffer> framebuffers();
             acquisition_outcome_t acquire(
                 VkRect2D rect,
-                std::vector<VkClearValue> clear_values
+                std::vector<VkClearValue> clear_values = {}
             );
             command_pool_t& command_pool();
         private:

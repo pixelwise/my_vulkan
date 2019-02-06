@@ -5,27 +5,44 @@ namespace my_vulkan
     namespace helpers
     {
         offscreen_render_target_t::offscreen_render_target_t(
-            render_pass_t& render_pass,
-            VkPhysicalDevice physical_device,
-            queue_reference_t& queue,
+            device_t& device,
+            VkRenderPass render_pass,
+            VkFormat color_format,
+            VkFormat depth_format,
             VkExtent2D size,
             bool need_readback
         )
-        : _render_pass{render_pass.get()}
+        : _render_pass{render_pass}
         {
             while (_slots.size() < 2)
             {
                 _slots.emplace_back(
-                    render_pass.device(),
+                    device.get(),
                     _render_pass,
-                    queue,
+                    device.graphics_queue(),
                     size,
-                    render_pass.color_format(),
-                    render_pass.depth_format(),
+                    color_format,
+                    depth_format,
                     need_readback,
-                    physical_device
+                    device.physical_device()
                 );
             }
+        }
+
+        render_target_t offscreen_render_target_t::render_target()
+        {
+            return {
+                [&]{
+                    auto scope = begin_phase();
+                    return render_scope_t{
+                        scope.commands,
+                        scope.index
+                    };
+                },
+                [&]{
+                    finish_phase();
+                }
+            };
         }
 
         VkRenderPass offscreen_render_target_t::render_pass()
@@ -74,6 +91,8 @@ namespace my_vulkan
             VkPhysicalDevice physical_device
         )
         : _queue{&queue}
+        , _render_pass{render_pass}
+        , _size{size}
         , _color_image{
             device,
             physical_device,
@@ -145,6 +164,11 @@ namespace my_vulkan
             _fence.wait();
             _fence.reset();
             _commands = _command_buffer.begin(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+            _commands->begin_render_pass(
+                _render_pass,
+                _framebuffer.get(),
+                {{0, 0}, _size}
+            );
             return {
                 index,
                 _framebuffer.get(),
