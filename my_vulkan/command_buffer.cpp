@@ -115,6 +115,19 @@ namespace my_vulkan
         vkCmdBeginRenderPass(_command_buffer, &info, contents);
     }
 
+    void command_buffer_t::scope_t::set_viewport(
+        std::vector<VkViewport> viewports,
+        uint32_t first
+    )
+    {
+        vkCmdSetViewport(
+            _command_buffer,
+            first,
+            uint32_t(viewports.size()),
+            viewports.data()
+        );
+    }
+
     void command_buffer_t::scope_t::clear(
         std::vector<VkClearAttachment> attachements,
         std::vector<VkClearRect> rects

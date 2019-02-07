@@ -12,6 +12,7 @@ namespace my_vulkan
         device_t* device;
         VkExtent2D extent;
         VkRenderPass render_pass;
+        bool dynamic_viewport = true;
     };
 
     template<
@@ -34,8 +35,7 @@ namespace my_vulkan
             output_config_t output_config,
             std::vector<uint8_t> vertex_shader,
             std::vector<uint8_t> fragment_shader,
-            render_settings_t render_settings = {},
-            bool dynamic_viewport = false
+            render_settings_t render_settings = {}
         );
         class pipeline_buffer_t
         {
@@ -129,7 +129,6 @@ namespace my_vulkan
         void begin_phase(size_t phase)
         {
             _current_phase = phase;
-            _next_buffer_index = 0;
             for (auto& buffer_ptr : _pipeline_buffers)
                 buffer_ptr->begin_phase(phase);
         }

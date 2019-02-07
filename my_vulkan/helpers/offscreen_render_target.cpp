@@ -10,11 +10,13 @@ namespace my_vulkan
             VkFormat color_format,
             VkFormat depth_format,
             VkExtent2D size,
-            bool need_readback
+            bool need_readback,
+            size_t depth
         )
         : _render_pass{render_pass}
+        , _size{size}
         {
-            while (_slots.size() < 2)
+            while (_slots.size() < depth)
             {
                 _slots.emplace_back(
                     device.get(),
@@ -39,10 +41,17 @@ namespace my_vulkan
                         scope.index
                     };
                 },
-                [&]{
-                    finish_phase();
-                }
+                [&](auto waits, auto signals){
+                    finish_phase(std::move(waits), std::move(signals));
+                },
+                _size,
+                depth()
             };
+        }
+
+        VkDescriptorImageInfo offscreen_render_target_t::texture(size_t phase)
+        {
+            return _slots.at(phase).texture();
         }
 
         VkRenderPass offscreen_render_target_t::render_pass()
@@ -60,9 +69,12 @@ namespace my_vulkan
             return _slots[_write_slot].begin(_write_slot);
         }
 
-        void offscreen_render_target_t::finish_phase()
+        void offscreen_render_target_t::finish_phase(
+            std::vector<queue_reference_t::wait_semaphore_info_t> waits,
+            std::vector<VkSemaphore> signals
+        )
         {
-            _slots[_write_slot].finish();
+            _slots[_write_slot].finish(std::move(waits), std::move(signals));
             ++_write_slot;
             _num_slots_filled = std::min(depth(), _num_slots_filled + 1);
             if (_write_slot == _slots.size())
@@ -78,6 +90,11 @@ namespace my_vulkan
             size_t read_slot = (_write_slot + num_slots - _num_slots_filled) % num_slots;
             --_num_slots_filled;
             return _slots[read_slot].read_bgra();
+        }
+
+        VkExtent2D offscreen_render_target_t::size()
+        {
+            return _size;
         }
 
         offscreen_render_target_t::slot_t::slot_t(
@@ -102,6 +119,7 @@ namespace my_vulkan
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT
         }
         , _color_view{_color_image.view()}
+        , _sampler{device}
         , _depth_image{
             device,
             physical_device,
@@ -135,6 +153,15 @@ namespace my_vulkan
         , _command_pool{device, queue}
         , _command_buffer{_command_pool.make_buffer()}
         {
+        }
+
+        VkDescriptorImageInfo offscreen_render_target_t::slot_t::texture()
+        {
+            return {
+                _sampler.get(),
+                _color_view.get(),
+                _color_image.layout()
+            };
         }
 
         cv::Mat4b offscreen_render_target_t::slot_t::read_bgra()
@@ -176,7 +203,10 @@ namespace my_vulkan
             };
         }
 
-        void offscreen_render_target_t::slot_t::finish()
+        void offscreen_render_target_t::slot_t::finish(
+            std::vector<queue_reference_t::wait_semaphore_info_t> waits,
+            std::vector<VkSemaphore> signals
+        )
         {
             if (!_commands)
                 throw std::runtime_error{
@@ -203,6 +233,8 @@ namespace my_vulkan
             _commands.reset();
             _queue->submit(
                 _command_buffer.get(),
+                std::move(waits),
+                std::move(signals),
                 _fence.get()
             );               
         }

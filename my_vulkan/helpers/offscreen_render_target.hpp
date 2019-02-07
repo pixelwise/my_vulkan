@@ -35,14 +35,19 @@ namespace my_vulkan
                     VkPhysicalDevice physical_device
                 );
                 phase_context_t begin(size_t index);
-                void finish();
+                void finish(
+                    std::vector<queue_reference_t::wait_semaphore_info_t> waits,
+                    std::vector<VkSemaphore> signals
+                );
                 cv::Mat4b read_bgra();
+                VkDescriptorImageInfo texture();
             private:
                 queue_reference_t* _queue;
                 VkRenderPass _render_pass;
                 VkExtent2D _size;
                 image_t _color_image;
                 image_view_t _color_view;
+                texture_sampler_t _sampler;
                 image_t _depth_image;
                 image_view_t _depth_view;
                 framebuffer_t _framebuffer;
@@ -60,16 +65,23 @@ namespace my_vulkan
                 VkFormat color_format,
                 VkFormat depth_format,
                 VkExtent2D size,
-                bool need_readback = false
+                bool need_readback = false,
+                size_t depth = 2
             );
             render_target_t render_target();
             size_t depth() const;
             VkRenderPass render_pass();
             phase_context_t begin_phase();
-            void finish_phase();
+            void finish_phase(
+                std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
+                std::vector<VkSemaphore> signals = {}
+            );
             boost::optional<cv::Mat4b> read_bgra(bool flush = false);
+            VkDescriptorImageInfo texture(size_t phase);
+            VkExtent2D size();
         private:
             VkRenderPass _render_pass;
+            VkExtent2D _size;
             std::vector<slot_t> _slots;
             size_t _write_slot{0};
             size_t _num_slots_filled{0};

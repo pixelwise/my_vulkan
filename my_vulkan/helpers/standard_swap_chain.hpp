@@ -47,7 +47,10 @@ namespace my_vulkan
                 );
                 uint32_t phase() const;
                 command_buffer_t::scope_t& commands();
-                boost::optional<acquisition_failure_t> finish();
+                boost::optional<acquisition_failure_t> finish(
+                    std::vector<queue_reference_t::wait_semaphore_info_t> wait_semaphores = {},
+                    std::vector<VkSemaphore> signal_semaphores = {}
+                );
             private:
                 standard_swap_chain_t* _parent;
                 frame_sync_points_t* _sync;

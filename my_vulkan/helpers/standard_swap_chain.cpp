@@ -133,18 +133,23 @@ namespace my_vulkan
             return _commands;
         }
 
-        boost::optional<acquisition_failure_t> standard_swap_chain_t::working_set_t::finish()
+        boost::optional<acquisition_failure_t> standard_swap_chain_t::working_set_t::finish(
+            std::vector<queue_reference_t::wait_semaphore_info_t> wait_semaphores,
+            std::vector<VkSemaphore> signal_semaphores
+        )
         {
             commands().end_render_pass();
             commands().end();
             auto& resources = _parent->_pipeline_resources[phase()];
+            wait_semaphores.push_back({
+                _sync->image_available.get(),
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+            });
+            signal_semaphores.push_back(_sync->render_finished.get());
             _parent->_graphics_queue->submit(
                 resources.command_buffer.get(),
-                {{
-                    _sync->image_available.get(),
-                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-                }},
-                {_sync->render_finished.get()},
+                std::move(wait_semaphores),
+                std::move(signal_semaphores),
                 _sync->in_flight.get()
             );
             if (auto presentation_failure = _parent->_present_queue->present(

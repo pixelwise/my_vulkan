@@ -32,6 +32,10 @@ namespace my_vulkan
                 std::vector<VkClearValue> clear_values = {},
                 VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE
             );
+            void set_viewport(
+                std::vector<VkViewport> viewports,
+                uint32_t first = 0
+            );
             void clear(
                 std::vector<VkClearAttachment> attachements,
                 std::vector<VkClearRect> rects

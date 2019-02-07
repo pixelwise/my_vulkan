@@ -123,15 +123,14 @@ namespace my_vulkan
         output_config_t output_config,
         std::vector<uint8_t> vertex_shader,
         std::vector<uint8_t> fragment_shader,
-        render_settings_t render_settings,
-        bool dynamic_viewport
+        render_settings_t render_settings
     )
     : _device{output_config.device}
     , _vertex_shader{std::move(vertex_shader)}
     , _fragment_shader{std::move(fragment_shader)}
     , _uniform_layout{make_uniform_layout()}
     , _render_settings{render_settings}
-    , _dynamic_viewport{dynamic_viewport}
+    , _dynamic_viewport{output_config.dynamic_viewport}
     , _graphics_pipeline{
         output_config.device->get(),
         output_config.extent,
