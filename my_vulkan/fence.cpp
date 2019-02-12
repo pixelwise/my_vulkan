@@ -50,6 +50,11 @@ namespace my_vulkan
         return _fence;
     }
 
+    fence_t::~fence_t()
+    {
+        cleanup();
+    }
+
     void fence_t::cleanup()
     {
         if (_device)

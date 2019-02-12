@@ -116,7 +116,8 @@ namespace my_vulkan
             {size.width, size.height, 1},
             color_format,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-            VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+            VK_IMAGE_USAGE_SAMPLED_BIT
         }
         , _color_view{_color_image.view()}
         , _sampler{device}
@@ -212,6 +213,7 @@ namespace my_vulkan
                 throw std::runtime_error{
                     "finish before begin in vulkan::offscreen_render_target_t"
                 };
+            _commands->end_render_pass();
             if (_readback_image)
             {
                 _mapping.reset();

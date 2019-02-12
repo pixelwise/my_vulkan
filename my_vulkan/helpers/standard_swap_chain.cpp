@@ -14,7 +14,7 @@ namespace my_vulkan
                 {extent.width, extent.height, 1},
                 format,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+                VK_IMAGE_LAYOUT_UNDEFINED
             };
             return result;
         }

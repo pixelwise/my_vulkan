@@ -38,6 +38,11 @@ namespace my_vulkan
         return _semaphore;
     }
 
+    semaphore_t::~semaphore_t()
+    {
+        cleanup();
+    }
+
     void semaphore_t::cleanup()
     {
         if (_device)

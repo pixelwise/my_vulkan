@@ -1,8 +1,12 @@
+#define _GNU_SOURCE
+
 #include "utils.hpp"
 
 #include <iostream>
 #include <sstream>
 #include <set>
+
+#include <boost/stacktrace.hpp>
 
 namespace my_vulkan
 {
@@ -581,38 +585,10 @@ namespace my_vulkan
     {
         auto message = "[" + std::string{pLayerPrefix} + "]: " + std::string{pMessage};
         std::cerr << message << std::endl;
+        std::cerr << boost::stacktrace::stacktrace() << std::endl;
         if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
             throw std::runtime_error{message};
         return true;
     }
 
-    VkDebugReportCallbackEXT install_error_throw_callback(VkInstance instance)
-    {
-        VkDebugReportCallbackCreateInfoEXT debugReportCreateInfo = {};
-        debugReportCreateInfo.sType =
-            VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-        debugReportCreateInfo.flags =
-            VK_DEBUG_REPORT_ERROR_BIT_EXT;
-        debugReportCreateInfo.pfnCallback = 
-            (PFN_vkDebugReportCallbackEXT)error_throw_callback;
-
-        // We have to explicitly load this function.
-        PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT =
-            reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(
-                vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT")
-            );
-        assert(vkCreateDebugReportCallbackEXT);
-        VkDebugReportCallbackEXT debugReportCallback;
-        vk_require(
-            vkCreateDebugReportCallbackEXT(
-                instance,
-                &debugReportCreateInfo,
-                nullptr,
-                &debugReportCallback
-            ),
-            "installing debug callback"
-        );
-        return debugReportCallback;
-
-    }
 }

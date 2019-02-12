@@ -15,6 +15,7 @@ namespace my_vulkan
         semaphore_t(semaphore_t&& other) noexcept;
         semaphore_t& operator=(semaphore_t&& other) noexcept;
         VkSemaphore get();
+        ~semaphore_t();
     private:
         void cleanup();
         VkDevice _device;

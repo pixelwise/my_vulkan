@@ -32,6 +32,11 @@ namespace my_vulkan
         return _view;
     }
 
+    image_view_t::~image_view_t()
+    {
+        cleanup();
+    }
+
     void image_view_t::cleanup()
     {
         if (_device)

@@ -93,6 +93,11 @@ namespace my_vulkan
         return _render_pass;
     }
 
+    render_pass_t::~render_pass_t()
+    {
+        cleanup();
+    }
+
     void render_pass_t::cleanup()
     {
         if (_device)

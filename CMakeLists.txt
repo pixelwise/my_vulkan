@@ -94,6 +94,7 @@ if(glfw3_FOUND)
         my_vulkan/swap_chain.cpp
         my_vulkan/texture_sampler.cpp
         my_vulkan/utils.cpp
+        my_vulkan/debug_callback.cpp
         my_vulkan/helpers/standard_swap_chain.cpp
     )
 

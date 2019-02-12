@@ -128,6 +128,19 @@ namespace my_vulkan
         );
     }
 
+    void command_buffer_t::scope_t::set_scissor(
+        std::vector<VkRect2D> scissors,
+        uint32_t first
+    )
+    {
+        vkCmdSetScissor(
+            _command_buffer,
+            first,
+            uint32_t(scissors.size()),
+            scissors.data()
+        );
+    }
+
     void command_buffer_t::scope_t::clear(
         std::vector<VkClearAttachment> attachements,
         std::vector<VkClearRect> rects

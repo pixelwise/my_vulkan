@@ -16,6 +16,7 @@ namespace my_vulkan
         render_pass_t(const render_pass_t&) = delete;
         render_pass_t& operator=(render_pass_t&& other);
         render_pass_t& operator=(const render_pass_t&) = delete;
+        ~render_pass_t();
         VkRenderPass get();
         VkDevice device() const;
         VkFormat color_format() const;

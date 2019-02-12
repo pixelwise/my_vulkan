@@ -36,6 +36,10 @@ namespace my_vulkan
                 std::vector<VkViewport> viewports,
                 uint32_t first = 0
             );
+            void set_scissor(
+                std::vector<VkRect2D> scissors,
+                uint32_t first = 0
+            );
             void clear(
                 std::vector<VkClearAttachment> attachements,
                 std::vector<VkClearRect> rects

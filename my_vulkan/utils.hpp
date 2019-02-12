@@ -81,6 +81,14 @@ namespace my_vulkan
         VkSurfaceKHR surface,
         std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME}
     );
-    VkDebugReportCallbackEXT install_error_throw_callback(VkInstance instance);
+    VkBool32 error_throw_callback(
+        VkDebugReportFlagsEXT                       flags,
+        VkDebugReportObjectTypeEXT                  objectType,
+        uint64_t                                    object,
+        size_t                                      location,
+        int32_t                                     messageCode,
+        const char*                                 pLayerPrefix,
+        const char*                                 pMessage,
+        void*                                       pUserData);
 }
 

@@ -339,7 +339,8 @@ private:
         my_vulkan::image_t result{
             logical_device,
             {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
-            VK_FORMAT_R8G8B8A8_UNORM
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_IMAGE_USAGE_SAMPLED_BIT
         };
         result.load_pixels(command_pool, pixels);
         stbi_image_free(pixels);

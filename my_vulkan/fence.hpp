@@ -14,6 +14,7 @@ namespace my_vulkan
         fence_t& operator=(const fence_t&) = delete;
         fence_t(fence_t&& other) noexcept;
         fence_t& operator=(fence_t&& other) noexcept;
+        ~fence_t();
         void reset();
         void wait(
             uint64_t timeout = std::numeric_limits<uint64_t>::max()

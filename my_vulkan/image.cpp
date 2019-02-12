@@ -168,6 +168,7 @@ namespace my_vulkan
         _extent = other._extent;
         _borrowed = other._borrowed;
         _physical_device = other._physical_device;
+        _layout = other._layout;
         std::swap(_device, other._device);
         return *this;
     }
@@ -438,6 +439,8 @@ namespace my_vulkan
         {
             throw std::invalid_argument("unsupported layout transition!");
         }
+
+        _layout = newLayout;
 
         command_scope.pipeline_barrier(
             sourceStage,
