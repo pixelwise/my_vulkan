@@ -15,7 +15,7 @@ namespace my_vulkan
         };
         struct render_target_t
         {
-            std::function<render_scope_t()> begin;
+            std::function<render_scope_t(VkRect2D)> begin;
             std::function<void(
                 std::vector<queue_reference_t::wait_semaphore_info_t>,
                 std::vector<VkSemaphore>

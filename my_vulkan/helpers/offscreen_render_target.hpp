@@ -34,7 +34,7 @@ namespace my_vulkan
                     bool need_readback,
                     VkPhysicalDevice physical_device
                 );
-                phase_context_t begin(size_t index);
+                phase_context_t begin(size_t index, VkRect2D rect);
                 void finish(
                     std::vector<queue_reference_t::wait_semaphore_info_t> waits,
                     std::vector<VkSemaphore> signals
@@ -44,7 +44,6 @@ namespace my_vulkan
             private:
                 queue_reference_t* _queue;
                 VkRenderPass _render_pass;
-                VkExtent2D _size;
                 image_t _color_image;
                 image_view_t _color_view;
                 texture_sampler_t _sampler;
@@ -71,7 +70,7 @@ namespace my_vulkan
             render_target_t render_target();
             size_t depth() const;
             VkRenderPass render_pass();
-            phase_context_t begin_phase();
+            phase_context_t begin_phase(boost::optional<VkRect2D> rect = boost::none);
             void finish_phase(
                 std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
                 std::vector<VkSemaphore> signals = {}

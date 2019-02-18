@@ -34,8 +34,8 @@ namespace my_vulkan
         render_target_t offscreen_render_target_t::render_target()
         {
             return {
-                [&]{
-                    auto scope = begin_phase();
+                [&](VkRect2D rect){
+                    auto scope = begin_phase(rect);
                     return render_scope_t{
                         scope.commands,
                         scope.index
@@ -64,9 +64,9 @@ namespace my_vulkan
             return _slots.size();
         }
 
-        offscreen_render_target_t::phase_context_t offscreen_render_target_t::begin_phase()
+        offscreen_render_target_t::phase_context_t offscreen_render_target_t::begin_phase(boost::optional<VkRect2D> rect)
         {
-            return _slots[_write_slot].begin(_write_slot);
+            return _slots[_write_slot].begin(_write_slot, rect.value_or(VkRect2D{{0, 0}, size()}));
         }
 
         void offscreen_render_target_t::finish_phase(
@@ -109,7 +109,6 @@ namespace my_vulkan
         )
         : _queue{&queue}
         , _render_pass{render_pass}
-        , _size{size}
         , _color_image{
             device,
             physical_device,
@@ -183,7 +182,7 @@ namespace my_vulkan
         }
 
         offscreen_render_target_t::phase_context_t
-        offscreen_render_target_t::slot_t::begin(size_t index)
+        offscreen_render_target_t::slot_t::begin(size_t index, VkRect2D rect)
         {
             if (_commands)
                 throw std::runtime_error{
@@ -195,7 +194,7 @@ namespace my_vulkan
             _commands->begin_render_pass(
                 _render_pass,
                 _framebuffer.get(),
-                {{0, 0}, _size}
+                rect
             );
             return {
                 index,
