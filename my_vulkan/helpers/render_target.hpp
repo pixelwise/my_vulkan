@@ -24,16 +24,19 @@ namespace my_vulkan
             const end_t end;
             const VkExtent2D size;
             const size_t depth;
+            const bool flipped;
             render_target_t(
                 begin_t in_begin,
                 end_t in_end,
                 VkExtent2D in_size,
-                size_t in_depth
+                size_t in_depth,
+                bool in_flipped
             )
             : begin{std::move(in_begin)}
             , end{std::move(in_end)}
             , size{in_size}
             , depth{in_depth}
+            , flipped{in_flipped}
             , target_rect{{0, 0}, in_size}
             {
             }

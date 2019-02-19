@@ -45,7 +45,8 @@ namespace my_vulkan
                     finish_phase(std::move(waits), std::move(signals));
                 },
                 _size,
-                depth()
+                depth(),
+                true
             };
         }
 
