@@ -21,12 +21,12 @@ namespace my_vulkan
                 std::vector<queue_reference_t::wait_semaphore_info_t>,
                 std::vector<VkSemaphore>
             )>;
-            const begin_t begin;
-            const end_t end;
-            const VkExtent2D size;
-            const size_t depth;
-            const bool flipped;
-            const VkRect2D target_rect;
+            begin_t begin;
+            end_t end;
+            VkExtent2D size;
+            size_t depth;
+            bool flipped;
+            VkRect2D target_rect;
             render_target_t(
                 begin_t in_begin,
                 end_t in_end,
