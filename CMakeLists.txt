@@ -58,11 +58,18 @@ add_library(my_vulkan_offscreen
     my_vulkan/helpers/offscreen_render_target.cpp
 )
 message("CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
+message("my_vulkan's Boost_INCLUDE_DIRS=${Boost_INCLUDE_DIRS}")
+
+target_include_directories(
+    my_vulkan_offscreen
+    PUBLIC
+    ${Boost_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
+)
 target_include_directories(
     my_vulkan_offscreen
     INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Boost_INCLUDE_DIRS}
 )
 target_include_directories(
     my_vulkan_offscreen
@@ -102,12 +109,21 @@ if(glfw3_FOUND)
         my_vulkan PRIVATE
         glfw
     )
+
+    target_include_directories(
+        my_vulkan
+        PUBLIC
+        ${Boost_INCLUDE_DIRS}
+        ${OpenCV_INCLUDE_DIRS}
+    )
     target_include_directories(
         my_vulkan
         INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${Boost_INCLUDE_DIRS}
-        ${OpenCV_INCLUDE_DIRS}
+    )
+    target_include_directories(
+        my_vulkan
+        PRIVATE
         ${Vulkan_INCLUDE_DIRS}
     )
 endif()
