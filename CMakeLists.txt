@@ -76,6 +76,12 @@ target_include_directories(
     ${Vulkan_INCLUDE_DIRS}
 )
 
+target_link_libraries(
+    my_vulkan_offscreen
+    PRIVATE
+    -ldl
+)
+
 if(glfw3_FOUND)
     add_library(my_vulkan
         my_vulkan/buffer.cpp
