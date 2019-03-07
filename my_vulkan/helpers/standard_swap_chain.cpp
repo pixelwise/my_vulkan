@@ -182,5 +182,11 @@ namespace my_vulkan
                 result[i] = _pipeline_resources[i].framebuffer.get();
             return result;
         }
+
+        void standard_swap_chain_t::wait_for_idle()
+        {
+            for (auto& sync : _frame_sync_points)
+                sync.in_flight.wait();
+        }
     }
 }
