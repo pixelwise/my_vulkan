@@ -2,6 +2,7 @@
 
 #include "../command_buffer.hpp"
 #include "../queue.hpp"
+#include <glm/vec2.hpp>
 #include <functional>
 #include <stdexcept>
 
@@ -27,12 +28,14 @@ namespace my_vulkan
             size_t depth;
             bool flipped;
             VkRect2D target_rect;
+            glm::vec2 ui_multiplier;
             render_target_t(
                 begin_t in_begin,
                 end_t in_end,
                 VkExtent2D in_size,
                 size_t in_depth,
-                bool in_flipped
+                bool in_flipped,
+                glm::vec2 ui_multiplier = {1, 1}
             )
             : render_target_t{
                 in_begin,
@@ -41,6 +44,7 @@ namespace my_vulkan
                 in_depth,
                 in_flipped,
                 {{0, 0}, in_size},
+                ui_multiplier
             }
             {
             }
@@ -59,7 +63,8 @@ namespace my_vulkan
                     size,
                     depth,
                     flipped,
-                    rect
+                    rect,
+                    ui_multiplier,
                 };
             }
         private:
@@ -69,7 +74,8 @@ namespace my_vulkan
                 VkExtent2D in_size,
                 size_t in_depth,
                 bool in_flipped,
-                VkRect2D in_target_rect
+                VkRect2D in_target_rect,
+                glm::vec2 in_ui_multiplier
             )
             : begin{std::move(in_begin)}
             , end{std::move(in_end)}
@@ -77,6 +83,7 @@ namespace my_vulkan
             , depth{in_depth}
             , flipped{in_flipped}
             , target_rect{in_target_rect}
+            , ui_multiplier{in_ui_multiplier}
             {
             }
         };
