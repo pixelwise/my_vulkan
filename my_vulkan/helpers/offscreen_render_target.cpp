@@ -117,7 +117,7 @@ namespace my_vulkan
             color_format,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-            VK_IMAGE_USAGE_SAMPLED_BIT
+            VK_IMAGE_USAGE_SAMPLED_BIT,
         }
         , _color_view{_color_image.view()}
         , _sampler{device}
@@ -214,6 +214,11 @@ namespace my_vulkan
                     "finish before begin in vulkan::offscreen_render_target_t"
                 };
             _commands->end_render_pass();
+            _color_image.transition_layout(
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                *_commands
+            );
             if (_readback_image)
             {
                 _mapping.reset();
