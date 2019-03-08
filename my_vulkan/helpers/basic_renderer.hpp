@@ -84,13 +84,7 @@ namespace my_vulkan
                 VkDescriptorSetLayout layout
             );
             void update_vertices(
-                const std::vector<vertex_t>& vertices
-            );
-            void update_vertices(
                 std::shared_ptr<buffer_t> vertices
-            );
-            std::shared_ptr<buffer_t> upload_vertices(
-                const std::vector<vertex_t>& vertices
             );
             void update_indices(
                 const std::vector<uint32_t>& indices
@@ -126,6 +120,9 @@ namespace my_vulkan
             boost::optional<size_t> _phase;
             bool _pinned = false;
         };
+        std::shared_ptr<buffer_t> upload_vertices(
+            const std::vector<vertex_t>& vertices
+        );
         void begin_phase(size_t phase)
         {
             _current_phase = phase;
@@ -135,13 +132,13 @@ namespace my_vulkan
         void execute_draw(
             pipeline_buffer_t& buffer,
             command_buffer_t::scope_t& command_scope,
-            size_t num_vertices,
+            index_range_t range,
             boost::optional<VkRect2D> target_rect = boost::none
         );
         void execute_indexed_draw(
             pipeline_buffer_t& buffer,
             command_buffer_t::scope_t& command_scope,
-            size_t num_indices,
+            index_range_t range,
             boost::optional<VkRect2D> target_rect = boost::none
         );
         void update_render_pipeline(

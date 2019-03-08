@@ -345,25 +345,6 @@ namespace my_vulkan
         vertex_t,
         num_textures
     >::pipeline_buffer_t::update_vertices(
-        const std::vector<vertex_t>& vertices
-    )
-    {
-        update_vertices(upload_vertices(vertices));
-    }
-
-    template<
-        typename vertex_uniforms_t,
-        typename fragment_uniforms_t,
-        typename vertex_t,
-        size_t num_textures
-    >
-    void
-    basic_renderer_t<
-        vertex_uniforms_t,
-        fragment_uniforms_t,
-        vertex_t,
-        num_textures
-    >::pipeline_buffer_t::update_vertices(
         std::shared_ptr<buffer_t> vertices
     )
     {
@@ -382,7 +363,7 @@ namespace my_vulkan
         fragment_uniforms_t,
         vertex_t,
         num_textures
-    >::pipeline_buffer_t::upload_vertices(
+    >::upload_vertices(
         const std::vector<vertex_t>& vertices
     )
     {
@@ -567,12 +548,12 @@ namespace my_vulkan
     >::execute_draw(
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
-        size_t num_vertices,
+        index_range_t range,
         boost::optional<VkRect2D> target_rect
     )
     {
         bind(buffer, command_scope, target_rect);
-        command_scope.draw({0, uint32_t(num_vertices)});            
+        command_scope.draw(range);
     }
 
     template<
@@ -590,14 +571,12 @@ namespace my_vulkan
     >::execute_indexed_draw(
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
-        size_t num_indices,
+        index_range_t range,
         boost::optional<VkRect2D> target_rect
     )
     {
         bind(buffer, command_scope, target_rect);
-        command_scope.draw_indexed(
-            {0, uint32_t(num_indices)}
-        );
+        command_scope.draw_indexed(range);
     }
 
     template<
