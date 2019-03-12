@@ -188,5 +188,39 @@ namespace my_vulkan
             for (auto& sync : _frame_sync_points)
                 sync.in_flight.wait();
         }
+
+        render_target_t standard_swap_chain_t::render_target()
+        {
+            std::shared_ptr<boost::optional<working_set_t>> working_set{
+                new boost::optional<working_set_t>{}
+            };
+            return render_target_t{
+                [working_set, this](VkRect2D rect){
+                    auto outcome = acquire(
+                        rect,
+                        {
+                            {.color = {{0.0f, 0.0f, 0.0f, 0.0f}}},
+                            {.depthStencil = {1.0f, 0}},
+                        }
+                    );
+                    if (outcome.failure)
+                        throw std::runtime_error{"swap chaing acquisition failed"};
+                    *working_set = std::move(*outcome.working_set);
+                    return render_scope_t{
+                        &(*working_set)->commands(),
+                        (*working_set)->phase()
+                    };
+                },
+                [working_set](auto waits, auto signals){
+                    (*working_set)->finish(std::move(waits), std::move(signals));
+                },
+                {
+                    extent().width,
+                    extent().height
+                },
+                depth(),
+                false
+            };            
+        }
     }
 }

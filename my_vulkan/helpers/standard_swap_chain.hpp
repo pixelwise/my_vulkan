@@ -17,6 +17,7 @@
 #include "../fence.hpp"
 #include "../semaphore.hpp"
 #include "../queue.hpp"
+#include "render_target.hpp"
 
 namespace my_vulkan
 {
@@ -77,6 +78,7 @@ namespace my_vulkan
             );
             command_pool_t& command_pool();
             void wait_for_idle();
+            render_target_t render_target();
         private:
             queue_reference_t* _graphics_queue;
             queue_reference_t* _present_queue;
