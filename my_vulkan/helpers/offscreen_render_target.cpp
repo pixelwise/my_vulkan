@@ -16,19 +16,84 @@ namespace my_vulkan
         : _render_pass{render_pass}
         , _size{size}
         {
-            while (_slots.size() < depth)
+            for (size_t i = 0; i < depth; ++i)
+                _color_buffers.emplace_back(
+                    device.get(),
+                    device.physical_device(),
+                    size,
+                    color_format
+                );
+            for (size_t i = 0; i < depth; ++i)
             {
+                slot_t::finish_callback_t callback =
+                    [&image = _color_buffers[i].image](
+                        command_buffer_t::scope_t& commands,
+                        image_t& //readback_image
+                    ) {
+                        image.transition_layout(
+                            VK_IMAGE_LAYOUT_UNDEFINED,
+                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                            commands
+                        );                        
+                    };
+                if (need_readback) 
+                    callback = [callback, &image = _color_buffers[i].image](
+                        command_buffer_t::scope_t& commands,
+                        image_t& readback_image
+                    ) {
+                        callback(commands, readback_image);
+                        readback_image.transition_layout(
+                            VK_IMAGE_LAYOUT_UNDEFINED,
+                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                            commands
+                        );
+                        readback_image.blit_from(
+                            image,
+                            commands
+                        );
+                        readback_image.transition_layout(
+                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                            VK_IMAGE_LAYOUT_GENERAL,
+                            commands
+                        );                        
+                    };
                 _slots.emplace_back(
                     device.get(),
                     _render_pass,
                     device.graphics_queue(),
                     size,
-                    color_format,
+                    _color_buffers[i].view.get(),
                     depth_format,
                     need_readback,
-                    device.physical_device()
+                    device.physical_device(),
+                    callback
                 );
+                _textures.push_back({
+                    _color_buffers[i].sampler.get(),
+                    _color_buffers[i].view.get(),
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                });
             }
+        }
+
+        offscreen_render_target_t::color_buffer_t::color_buffer_t(
+            VkDevice device,
+            VkPhysicalDevice physical_device,
+            VkExtent2D size,
+            VkFormat color_format
+        )
+        : image{
+            device,
+            physical_device,
+            {size.width, size.height, 1},
+            color_format,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+            VK_IMAGE_USAGE_SAMPLED_BIT,
+        }
+        , view{image.view()}
+        , sampler{device}
+        {
         }
 
         render_target_t offscreen_render_target_t::render_target()
@@ -52,7 +117,7 @@ namespace my_vulkan
 
         VkDescriptorImageInfo offscreen_render_target_t::texture(size_t phase)
         {
-            return _slots.at(phase).texture();
+            return _textures.at(phase);
         }
 
         VkRenderPass offscreen_render_target_t::render_pass()
@@ -103,24 +168,14 @@ namespace my_vulkan
             VkRenderPass render_pass,
             queue_reference_t& queue,
             VkExtent2D size,
-            VkFormat color_format,
+            VkImageView color_view,
             VkFormat depth_format,
             bool need_readback,
-            VkPhysicalDevice physical_device
+            VkPhysicalDevice physical_device,
+            finish_callback_t finish_callback
         )
         : _queue{&queue}
         , _render_pass{render_pass}
-        , _color_image{
-            device,
-            physical_device,
-            {size.width, size.height, 1},
-            color_format,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-            VK_IMAGE_USAGE_SAMPLED_BIT,
-        }
-        , _color_view{_color_image.view()}
-        , _sampler{device}
         , _depth_image{
             device,
             physical_device,
@@ -132,7 +187,7 @@ namespace my_vulkan
         , _framebuffer{
             device,
             render_pass,
-            {_color_view.get(), _depth_view.get()},
+            {color_view, _depth_view.get()},
             size                
         }
         , _readback_image{
@@ -153,16 +208,8 @@ namespace my_vulkan
         , _fence{device, VK_FENCE_CREATE_SIGNALED_BIT}
         , _command_pool{device, queue}
         , _command_buffer{_command_pool.make_buffer()}
+        , _finish_callback{std::move(finish_callback)}
         {
-        }
-
-        VkDescriptorImageInfo offscreen_render_target_t::slot_t::texture()
-        {
-            return {
-                _sampler.get(),
-                _color_view.get(),
-                _color_image.layout()
-            };
         }
 
         cv::Mat4b offscreen_render_target_t::slot_t::read_bgra()
@@ -214,29 +261,9 @@ namespace my_vulkan
                     "finish before begin in vulkan::offscreen_render_target_t"
                 };
             _commands->end_render_pass();
-            _color_image.transition_layout(
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                *_commands
-            );
-            if (_readback_image)
-            {
-                _mapping.reset();
-                _readback_image->transition_layout(
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    *_commands
-                );
-                _readback_image->blit_from(
-                    _color_image,
-                    *_commands
-                );
-                _readback_image->transition_layout(
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    VK_IMAGE_LAYOUT_GENERAL,
-                    *_commands
-                );
-            }
+            _mapping.reset();
+            if (_finish_callback)
+                _finish_callback(*_commands, *_readback_image);
             _commands.reset();
             _queue->submit(
                 _command_buffer.get(),

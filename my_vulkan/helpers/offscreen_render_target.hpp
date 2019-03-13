@@ -24,15 +24,20 @@ namespace my_vulkan
             class slot_t
             {
             public:
+                using finish_callback_t = std::function<void(
+                    command_buffer_t::scope_t&,
+                    image_t&
+                )>;
                 slot_t(
                     VkDevice device,
                     VkRenderPass render_pass,
                     queue_reference_t& queue,
                     VkExtent2D size,
-                    VkFormat color_format,
+                    VkImageView color_view,
                     VkFormat depth_format,
                     bool need_readback,
-                    VkPhysicalDevice physical_device
+                    VkPhysicalDevice physical_device,
+                    finish_callback_t finish_callback = 0
                 );
                 phase_context_t begin(size_t index, VkRect2D rect);
                 void finish(
@@ -40,13 +45,9 @@ namespace my_vulkan
                     std::vector<VkSemaphore> signals
                 );
                 cv::Mat4b read_bgra();
-                VkDescriptorImageInfo texture();
             private:
                 queue_reference_t* _queue;
                 VkRenderPass _render_pass;
-                image_t _color_image;
-                image_view_t _color_view;
-                texture_sampler_t _sampler;
                 image_t _depth_image;
                 image_view_t _depth_view;
                 framebuffer_t _framebuffer;
@@ -56,6 +57,7 @@ namespace my_vulkan
                 command_buffer_t _command_buffer;
                 boost::optional<command_buffer_t::scope_t> _commands;
                 boost::optional<device_memory_t::mapping_t> _mapping;
+                finish_callback_t _finish_callback;
             };
         public:
             offscreen_render_target_t(
@@ -66,6 +68,14 @@ namespace my_vulkan
                 VkExtent2D size,
                 bool need_readback = false,
                 size_t depth = 2
+            );
+            offscreen_render_target_t(
+                device_t& device,
+                VkRenderPass render_pass,
+                std::vector<VkImageView> color_views,
+                VkFormat depth_format,
+                VkExtent2D size,
+                bool need_readback = false
             );
             render_target_t render_target();
             size_t depth() const;
@@ -79,8 +89,23 @@ namespace my_vulkan
             VkDescriptorImageInfo texture(size_t phase);
             VkExtent2D size();
         private:
+            struct color_buffer_t
+            {
+                image_t image;
+                image_view_t view;
+                texture_sampler_t sampler;
+
+                color_buffer_t(
+                    VkDevice device,
+                    VkPhysicalDevice physical_device,
+                    VkExtent2D size,
+                    VkFormat color_format
+                );
+            };
             VkRenderPass _render_pass;
             VkExtent2D _size;
+            std::vector<color_buffer_t> _color_buffers;
+            std::vector<VkDescriptorImageInfo> _textures;
             std::vector<slot_t> _slots;
             size_t _write_slot{0};
             size_t _num_slots_filled{0};
