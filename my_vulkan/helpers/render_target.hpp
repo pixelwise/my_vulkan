@@ -67,6 +67,21 @@ namespace my_vulkan
                     ui_multiplier,
                 };
             }
+            render_target_t with_callback(std::function<void()> callback) const
+            {
+                return {
+                    begin,
+                    [callback, end = this->end](auto wait_semaphores, auto signal_semaphore){
+                        end(std::move(wait_semaphores), std::move(signal_semaphore));
+                        callback();
+                    },
+                    size,
+                    depth,
+                    flipped,
+                    target_rect,
+                    ui_multiplier,
+                };
+            }
         private:
             render_target_t(
                 begin_t in_begin,
