@@ -76,6 +76,32 @@ namespace my_vulkan
             }
         }
 
+        offscreen_render_target_t::offscreen_render_target_t(
+            device_t& device,
+            VkRenderPass render_pass,
+            std::vector<VkImageView> color_views,
+            VkFormat depth_format,
+            VkExtent2D size
+        )
+        : _render_pass{render_pass}
+        , _size{size}
+        {
+            for (size_t i = 0; i < color_views.size(); ++i)
+            {
+                _slots.emplace_back(
+                    device.get(),
+                    _render_pass,
+                    device.graphics_queue(),
+                    size,
+                    color_views[i],
+                    depth_format,
+                    false,
+                    device.physical_device(),
+                    slot_t::finish_callback_t{0}
+                );
+            }            
+        }
+
         offscreen_render_target_t::color_buffer_t::color_buffer_t(
             VkDevice device,
             VkPhysicalDevice physical_device,

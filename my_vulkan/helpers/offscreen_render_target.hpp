@@ -74,8 +74,7 @@ namespace my_vulkan
                 VkRenderPass render_pass,
                 std::vector<VkImageView> color_views,
                 VkFormat depth_format,
-                VkExtent2D size,
-                bool need_readback = false
+                VkExtent2D size
             );
             render_target_t render_target();
             size_t depth() const;
