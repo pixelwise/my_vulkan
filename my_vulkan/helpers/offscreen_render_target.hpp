@@ -84,6 +84,7 @@ namespace my_vulkan
                 std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
                 std::vector<VkSemaphore> signals = {}
             );
+            boost::optional<size_t> consume_read_slot(bool flush = false);
             boost::optional<cv::Mat4b> read_bgra(bool flush = false);
             VkDescriptorImageInfo texture(size_t phase);
             VkExtent2D size();

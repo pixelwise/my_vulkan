@@ -175,13 +175,21 @@ namespace my_vulkan
 
         boost::optional<cv::Mat4b> offscreen_render_target_t::read_bgra(bool flush)
         {
+            if (auto read_slot = consume_read_slot(flush))
+                return _slots[*read_slot].read_bgra();
+            else
+                return boost::none;
+        }
+
+        boost::optional<size_t> offscreen_render_target_t::consume_read_slot(bool flush)
+        {
             size_t num_slots = _slots.size();
             size_t slots_required = flush ? 1 : num_slots;
             if (_num_slots_filled < slots_required)
                 return boost::none;
             size_t read_slot = (_write_slot + num_slots - _num_slots_filled) % num_slots;
             --_num_slots_filled;
-            return _slots[read_slot].read_bgra();
+            return read_slot;
         }
 
         VkExtent2D offscreen_render_target_t::size()
