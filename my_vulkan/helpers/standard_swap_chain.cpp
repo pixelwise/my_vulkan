@@ -222,5 +222,10 @@ namespace my_vulkan
                 false
             };            
         }
+        
+        VkFormat standard_swap_chain_t::depth_format() const
+        {
+            return _depth_image.format();
+        }
     }
 }

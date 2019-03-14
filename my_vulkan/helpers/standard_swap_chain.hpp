@@ -79,6 +79,7 @@ namespace my_vulkan
             command_pool_t& command_pool();
             void wait_for_idle();
             render_target_t render_target();
+            VkFormat depth_format() const;
         private:
             queue_reference_t* _graphics_queue;
             queue_reference_t* _present_queue;

@@ -57,7 +57,7 @@ namespace my_vulkan
         vk_require(
             vkQueueSubmit(
                 _queue,
-                submits.size(),
+                uint32_t(submits.size()),
                 submits.data(),
                 fence
             ),
