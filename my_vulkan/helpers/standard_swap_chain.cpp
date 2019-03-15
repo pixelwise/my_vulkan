@@ -236,7 +236,7 @@ namespace my_vulkan
             std::shared_ptr<boost::optional<working_set_t>> working_set{
                 new boost::optional<working_set_t>{}
             };
-            render_target_t result{
+            return {
                 [working_set, this](VkRect2D rect){
                     auto outcome = acquire(
                         rect,
@@ -265,7 +265,7 @@ namespace my_vulkan
                 },
                 depth(),
                 false
-            };          
+            };
         }
         
         VkFormat standard_swap_chain_t::color_format() const
