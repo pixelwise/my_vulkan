@@ -436,4 +436,12 @@ namespace my_vulkan
             _command_buffer = 0;
         }
     }
+
+    void command_buffer_t::reset()
+    {
+        vk_require(
+            vkResetCommandBuffer(get(), 0),
+            "reetting command buffer"
+        );
+    }
 }

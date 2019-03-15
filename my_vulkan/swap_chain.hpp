@@ -16,7 +16,7 @@ namespace my_vulkan
             boost::optional<acquisition_failure_t> failure;
         };
         swap_chain_t(
-            device_t* _device,
+            device_t& _device,
             VkSurfaceKHR surface,
             queue_family_indices_t queue_indices,
             VkExtent2D actual_extent

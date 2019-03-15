@@ -22,12 +22,12 @@ namespace my_vulkan
                 std::vector<queue_reference_t::wait_semaphore_info_t>,
                 std::vector<VkSemaphore>
             )>;
+            using rect_t = std::function<VkRect2D()>;
             begin_t begin;
             end_t end;
-            VkExtent2D size;
             size_t depth;
             bool flipped;
-            VkRect2D target_rect;
+            rect_t rect;
             glm::vec2 ui_multiplier;
             render_target_t(
                 begin_t in_begin,
@@ -40,32 +40,23 @@ namespace my_vulkan
             : render_target_t{
                 in_begin,
                 in_end,
-                in_size,
                 in_depth,
                 in_flipped,
-                {{0, 0}, in_size},
+                [in_size]{return VkRect2D{{0, 0}, in_size};},
                 ui_multiplier
             }
             {
             }
-            render_target_t with_target_rect(VkRect2D rect) const
+            render_target_t with_begin(begin_t new_begin) const
             {
-                if (
-                    rect.offset.x < 0 ||
-                    rect.offset.y < 0 ||
-                    rect.extent.width + rect.offset.x > size.width ||
-                    rect.extent.height + rect.offset.y > size.height
-                )
-                    throw std::runtime_error{"target rect not within bounds"};
                 return {
-                    begin,
+                    new_begin,
                     end,
-                    size,
                     depth,
                     flipped,
                     rect,
                     ui_multiplier,
-                };
+                };                
             }
             render_target_t with_callback(std::function<void()> callback) const
             {
@@ -75,10 +66,9 @@ namespace my_vulkan
                         end(std::move(wait_semaphores), std::move(signal_semaphore));
                         callback();
                     },
-                    size,
                     depth,
                     flipped,
-                    target_rect,
+                    rect,
                     ui_multiplier,
                 };
             }
@@ -86,18 +76,16 @@ namespace my_vulkan
             render_target_t(
                 begin_t in_begin,
                 end_t in_end,
-                VkExtent2D in_size,
                 size_t in_depth,
                 bool in_flipped,
-                VkRect2D in_target_rect,
+                rect_t in_rect,
                 glm::vec2 in_ui_multiplier
             )
             : begin{std::move(in_begin)}
             , end{std::move(in_end)}
-            , size{in_size}
             , depth{in_depth}
             , flipped{in_flipped}
-            , target_rect{in_target_rect}
+            , rect{in_rect}
             , ui_multiplier{in_ui_multiplier}
             {
             }

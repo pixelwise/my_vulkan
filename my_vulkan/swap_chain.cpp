@@ -57,12 +57,12 @@ namespace my_vulkan
     }
 
     swap_chain_t::swap_chain_t(
-        device_t* in_device,
+        device_t& device,
         VkSurfaceKHR surface,
         queue_family_indices_t queue_indices,
         VkExtent2D actual_extent
     )
-    : _device{in_device}
+    : _device{&device}
     {
         auto support = query_swap_chain_support(_device->physical_device(), surface);
         VkSurfaceFormatKHR surfaceFormat = choose_surface_format(support.formats);
@@ -105,13 +105,13 @@ namespace my_vulkan
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
         vk_require(
-            vkCreateSwapchainKHR(device(), &createInfo, nullptr, &_swap_chain),
+            vkCreateSwapchainKHR(_device->get(), &createInfo, nullptr, &_swap_chain),
             "creating swap chain"
         );
         std::vector<VkImage> images;
-        vkGetSwapchainImagesKHR(device(), _swap_chain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(_device->get(), _swap_chain, &imageCount, nullptr);
         images.resize(imageCount);
-        vkGetSwapchainImagesKHR(device(), _swap_chain, &imageCount, images.data());
+        vkGetSwapchainImagesKHR(_device->get(), _swap_chain, &imageCount, images.data());
         for (auto image : images)
             _images.push_back(image_t{
                 _device->get(), 

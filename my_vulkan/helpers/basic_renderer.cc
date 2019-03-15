@@ -514,7 +514,7 @@ namespace my_vulkan
     >::pipeline_buffer_t::bind(
         command_buffer_t::scope_t& command_scope,
         VkPipelineLayout layout,
-        size_t phase
+        phase_t phase
     )
     {
         _phase = phase;

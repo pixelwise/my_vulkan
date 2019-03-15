@@ -37,6 +37,25 @@ namespace my_vulkan
             std::vector<uint8_t> fragment_shader,
             render_settings_t render_settings = {}
         );
+        struct phase_t
+        {
+            size_t context_id;
+            size_t phase;
+            phase_t(size_t context_id, size_t phase)
+            : context_id{context_id}
+            , phase{phase}
+            {}
+            phase_t(size_t phase)
+            : context_id{0}
+            , phase{phase}
+            {}
+            bool operator==(phase_t y) const
+            {
+                return 
+                    context_id == y.context_id &&
+                    phase == y.phase;
+            }
+        };
         class pipeline_buffer_t
         {
         public:
@@ -97,7 +116,7 @@ namespace my_vulkan
                 size_t index,
                 VkDescriptorImageInfo texture
             );
-            void begin_phase(size_t i)
+            void begin_phase(phase_t i)
             {
                 if (_phase == i)
                     _phase.reset();
@@ -105,7 +124,7 @@ namespace my_vulkan
             void bind(
                 command_buffer_t::scope_t& command_scope,
                 VkPipelineLayout layout,
-                size_t phase
+                phase_t phase
             );
             bool in_use() const;
             pinned_t pin() {return pinned_t{*this};}
@@ -117,13 +136,13 @@ namespace my_vulkan
             descriptor_set_t _descriptor_set;
             std::shared_ptr<buffer_t> _vertices;
             boost::optional<buffer_t> _indices;
-            boost::optional<size_t> _phase;
+            boost::optional<phase_t> _phase;
             bool _pinned = false;
         };
         std::shared_ptr<buffer_t> upload_vertices(
             const std::vector<vertex_t>& vertices
         );
-        void begin_phase(size_t phase)
+        void begin_phase(phase_t phase)
         {
             _current_phase = phase;
             for (auto& buffer_ptr : _pipeline_buffers)
@@ -168,7 +187,7 @@ namespace my_vulkan
         bool _dynamic_viewport;
         graphics_pipeline_t _graphics_pipeline;
         std::vector<std::unique_ptr<pipeline_buffer_t>> _pipeline_buffers;
-        size_t _current_phase{0};
+        phase_t _current_phase{0, 0};
         size_t _next_buffer_index{0};
     };
 }

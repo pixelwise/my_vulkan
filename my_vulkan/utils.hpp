@@ -12,6 +12,7 @@ namespace my_vulkan
         out_of_date,
         suboptimal
     };
+    const char* to_string(acquisition_failure_t failure);
     void vk_require(VkResult result, const char* description);
     struct queue_request_t
     {

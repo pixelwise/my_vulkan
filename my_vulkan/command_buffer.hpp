@@ -152,7 +152,7 @@ namespace my_vulkan
         VkCommandBuffer get();
         VkDevice device();
         scope_t begin(VkCommandBufferUsageFlags flags);
-
+        void reset();
     private:
         void cleanup();
         VkDevice _device;

@@ -1,4 +1,6 @@
 #include "standard_swap_chain.hpp"
+#include <iostream>
+
 namespace my_vulkan
 {
     namespace helpers
@@ -20,35 +22,38 @@ namespace my_vulkan
         }
 
         standard_swap_chain_t::standard_swap_chain_t(
-            device_t& logical_device,
+            device_t& device,
             VkSurfaceKHR surface,
             queue_family_indices_t queue_indices,
             VkExtent2D desired_extent
         )
-        : swap_chain_t{
-            &logical_device,
+        : _device{&device}
+        , _surface{surface}
+        , _queue_indices{queue_indices}
+        , _swap_chain{new swap_chain_t{
+            device,
             surface,
             queue_indices,
             desired_extent
-        }
-        , _graphics_queue{&logical_device.graphics_queue()}
-        , _present_queue{&logical_device.present_queue()}
+        }}
+        , _graphics_queue{&device.graphics_queue()}
+        , _present_queue{&device.present_queue()}
         , _depth_image{create_depth_image(
-            logical_device,
-            find_depth_format(logical_device.physical_device()),
-            extent()
+            device,
+            find_depth_format(device.physical_device()),
+            _swap_chain->extent()
         )}
         , _depth_view{
             _depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT)
         }
         , _render_pass{
-            logical_device.get(),
-            format(),
+            device.get(),
+            color_format(),
             _depth_image.format()
         }
-        , _command_pool{logical_device.get(), logical_device.graphics_queue()}
+        , _command_pool{device.get(), device.graphics_queue()}
         {
-            for (auto&& image : images())
+            for (auto&& image : _swap_chain->images())
             {
                 auto image_view = image.view(VK_IMAGE_ASPECT_COLOR_BIT);
                 auto image_view_handle = image_view.get();
@@ -56,7 +61,7 @@ namespace my_vulkan
                     pipeline_resources_t{
                         std::move(image_view),
                         framebuffer_t{
-                            logical_device.get(),
+                            device.get(),
                             _render_pass.get(),
                             std::vector<VkImageView>{
                                 image_view_handle,
@@ -69,15 +74,52 @@ namespace my_vulkan
                 );
                 _frame_sync_points.push_back(
                     frame_sync_points_t{
-                        semaphore_t{logical_device.get()},
-                        semaphore_t{logical_device.get()},
+                        semaphore_t{device.get()},
+                        semaphore_t{device.get()},
                         fence_t{
-                            logical_device.get(),
+                            device.get(),
                             VK_FENCE_CREATE_SIGNALED_BIT
                         }
                     }
                 );
             }
+        }
+
+        void standard_swap_chain_t::update(VkExtent2D new_extent)
+        {
+            wait_for_idle();
+            _swap_chain.reset(new swap_chain_t{
+                *_device,
+                _surface,
+                _queue_indices,
+                new_extent
+            });
+            _depth_image = create_depth_image(
+                *_device,
+                find_depth_format(_device->physical_device()),
+                _swap_chain->extent()
+            );
+            _depth_view = _depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT);
+            auto& images = _swap_chain->images();
+            for (size_t i = 0; i < images.size(); ++i)
+            {
+                _pipeline_resources[i].command_buffer.reset();
+                _pipeline_resources[i].image_view = images[i].view(
+                    VK_IMAGE_ASPECT_COLOR_BIT
+                );
+                _pipeline_resources[i].framebuffer = framebuffer_t{
+                    _device->get(),
+                    _render_pass.get(),
+                    std::vector<VkImageView>{
+                        _pipeline_resources[i].image_view.get(),
+                        _depth_view.get()
+                    },
+                    new_extent
+                };
+            }
+            std::cout << "updated swap chain with size "
+                << new_extent.width << "x" << new_extent.height
+                << std::endl;
         }
 
         standard_swap_chain_t::acquisition_outcome_t standard_swap_chain_t::acquire(
@@ -89,7 +131,7 @@ namespace my_vulkan
             auto& sync_points = _frame_sync_points[_current_frame];
             _current_frame = (_current_frame + 1) % _frame_sync_points.size();
             sync_points.in_flight.wait();
-            auto parent_outcome = acquire_next_image(sync_points.image_available.get());
+            auto parent_outcome = _swap_chain-> acquire_next_image(sync_points.image_available.get());
             outcome.failure = parent_outcome.failure;
             if (auto i = parent_outcome.image_index)
             {
@@ -153,7 +195,7 @@ namespace my_vulkan
                 _sync->in_flight.get()
             );
             if (auto presentation_failure = _parent->_present_queue->present(
-                {_parent->get(), phase()},
+                {_parent->_swap_chain->get(), phase()},
                 {_sync->render_finished.get()}
             ))
                 return presentation_failure;
@@ -194,7 +236,7 @@ namespace my_vulkan
             std::shared_ptr<boost::optional<working_set_t>> working_set{
                 new boost::optional<working_set_t>{}
             };
-            return render_target_t{
+            render_target_t result{
                 [working_set, this](VkRect2D rect){
                     auto outcome = acquire(
                         rect,
@@ -204,7 +246,10 @@ namespace my_vulkan
                         }
                     );
                     if (outcome.failure)
-                        throw std::runtime_error{"swap chaing acquisition failed"};
+                        throw std::runtime_error{
+                            std::string{"swap chaing acquisition failed: "} +
+                            to_string(*outcome.failure)
+                        };
                     *working_set = std::move(*outcome.working_set);
                     return render_scope_t{
                         &(*working_set)->commands(),
@@ -220,12 +265,22 @@ namespace my_vulkan
                 },
                 depth(),
                 false
-            };            
+            };          
         }
         
+        VkFormat standard_swap_chain_t::color_format() const
+        {
+            return _swap_chain->format();
+        }
+
         VkFormat standard_swap_chain_t::depth_format() const
         {
             return _depth_image.format();
+        }
+
+        VkExtent2D standard_swap_chain_t::extent() const
+        {
+            return _swap_chain->extent();
         }
     }
 }

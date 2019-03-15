@@ -10,6 +10,22 @@
 
 namespace my_vulkan
 {
+    const char* to_string(acquisition_failure_t failure)
+    {
+        switch(failure)
+        {
+            case acquisition_failure_t::not_ready:
+                return "not_ready";
+            case acquisition_failure_t::timeout:
+                return "timeout";
+            case acquisition_failure_t::out_of_date:
+                return "out_of_date";
+            case acquisition_failure_t::suboptimal:
+                return "suboptimal";
+        }
+        return "??";
+    }
+
     void vk_require(VkResult result, const char* description)
     {
         if (result != VK_SUCCESS)

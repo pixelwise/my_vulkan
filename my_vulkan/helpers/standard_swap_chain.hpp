@@ -23,7 +23,7 @@ namespace my_vulkan
 {
     namespace helpers
     {
-        class standard_swap_chain_t : public swap_chain_t
+        class standard_swap_chain_t
         {
             struct frame_sync_points_t
             {
@@ -79,8 +79,15 @@ namespace my_vulkan
             command_pool_t& command_pool();
             void wait_for_idle();
             render_target_t render_target();
+            VkFormat color_format() const;
             VkFormat depth_format() const;
+            VkExtent2D extent() const;
+            void update(VkExtent2D new_extent);
         private:
+            device_t* _device;
+            VkSurfaceKHR _surface;
+            queue_family_indices_t _queue_indices;
+            std::unique_ptr<swap_chain_t> _swap_chain;
             queue_reference_t* _graphics_queue;
             queue_reference_t* _present_queue;
             image_t _depth_image;
