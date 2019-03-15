@@ -494,7 +494,7 @@ namespace my_vulkan
         if (index >= num_textures)
             throw std::runtime_error{"invalid texture index"};
         _descriptor_set.update_combined_image_sampler_write(
-            2 + index,
+            uint32_t(2 + index),
             {texture}
         );
     }
