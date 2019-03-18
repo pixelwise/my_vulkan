@@ -143,7 +143,6 @@ public:
     , swap_chain{new my_vulkan::helpers::standard_swap_chain_t{
         logical_device,
         surface.get(),
-        queue_indices,
         window_extent()
     }}
 
@@ -307,7 +306,6 @@ private:
         swap_chain.reset(new my_vulkan::helpers::standard_swap_chain_t{
             logical_device,
             surface.get(),
-            queue_indices,
             window_extent()
         });
         graphics_pipeline = my_vulkan::graphics_pipeline_t{

@@ -59,11 +59,11 @@ namespace my_vulkan
     swap_chain_t::swap_chain_t(
         device_t& device,
         VkSurfaceKHR surface,
-        queue_family_indices_t queue_indices,
         VkExtent2D actual_extent
     )
     : _device{&device}
     {
+        auto queue_indices = device.queue_indices();
         auto support = query_swap_chain_support(_device->physical_device(), surface);
         VkSurfaceFormatKHR surfaceFormat = choose_surface_format(support.formats);
         VkPresentModeKHR presentMode = choose_present_mode(support.presentModes);

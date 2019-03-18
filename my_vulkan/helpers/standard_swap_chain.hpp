@@ -66,7 +66,6 @@ namespace my_vulkan
             standard_swap_chain_t(
                 device_t& logical_device,
                 VkSurfaceKHR surface,
-                queue_family_indices_t queue_indices,
                 VkExtent2D desired_extent
             );
             VkRenderPass render_pass();

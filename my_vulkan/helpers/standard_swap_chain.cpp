@@ -24,16 +24,13 @@ namespace my_vulkan
         standard_swap_chain_t::standard_swap_chain_t(
             device_t& device,
             VkSurfaceKHR surface,
-            queue_family_indices_t queue_indices,
             VkExtent2D desired_extent
         )
         : _device{&device}
         , _surface{surface}
-        , _queue_indices{queue_indices}
         , _swap_chain{new swap_chain_t{
             device,
             surface,
-            queue_indices,
             desired_extent
         }}
         , _graphics_queue{&device.graphics_queue()}
@@ -91,7 +88,6 @@ namespace my_vulkan
             _swap_chain.reset(new swap_chain_t{
                 *_device,
                 _surface,
-                _queue_indices,
                 new_extent
             });
             _depth_image = create_depth_image(
