@@ -155,19 +155,16 @@ namespace my_vulkan
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
 
-        VkShaderModule vertShaderModule = _vertex_shader->get();
-        VkShaderModule fragShaderModule = _vertex_shader->get();
-
         VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertShaderStageInfo.module = vertShaderModule;
+        vertShaderStageInfo.module = _vertex_shader->get();
         vertShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
         fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragShaderStageInfo.module = fragShaderModule;
+        fragShaderStageInfo.module = _fragment_shader->get();
         fragShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo shaderStages[] = {
@@ -234,12 +231,12 @@ namespace my_vulkan
             ),
             "creating pipeline"
         );
-        vkDestroyShaderModule(device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(device, vertShaderModule, nullptr);
     }
 
     graphics_pipeline_t::graphics_pipeline_t(graphics_pipeline_t&& other) noexcept
     : _device{other._device}
+    , _vertex_shader{std::move(other._vertex_shader)}
+    , _fragment_shader{std::move(other._fragment_shader)}
     , _uniform_layout{std::move(other._uniform_layout)}
     {
         _pipeline = other._pipeline;
