@@ -59,7 +59,7 @@ namespace my_vulkan
         return *this;
     }
 
-    VkShaderModule shader_module_t::get()
+    VkShaderModule shader_module_t::get() const
     {
         return _shader_module;
     }

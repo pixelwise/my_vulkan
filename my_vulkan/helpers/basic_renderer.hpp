@@ -15,6 +15,12 @@ namespace my_vulkan
         bool dynamic_viewport = true;
     };
 
+    struct basic_renderer_shader_modules_t
+    {
+        shader_module_t vertex_shader;
+        shader_module_t fragment_shader;
+    };
+
     template<
         typename in_vertex_uniforms_t,
         typename in_fragment_uniforms_t,
@@ -35,6 +41,20 @@ namespace my_vulkan
             output_config_t output_config,
             std::vector<uint8_t> vertex_shader,
             std::vector<uint8_t> fragment_shader,
+            render_settings_t render_settings = {}
+        )
+        : basic_renderer_t{
+            output_config,
+            {
+                shader_module_t{output_config.device->get(), vertex_shader},
+                shader_module_t{output_config.device->get(), fragment_shader},
+            },
+            render_settings
+        }
+        {}
+        basic_renderer_t(
+            output_config_t output_config,
+            const basic_renderer_shader_modules_t& shaders,
             render_settings_t render_settings = {}
         );
         struct phase_t
@@ -160,10 +180,6 @@ namespace my_vulkan
             index_range_t range,
             boost::optional<VkRect2D> target_rect = boost::none
         );
-        void update_render_pipeline(
-            VkExtent2D extent,
-            VkRenderPass render_pass
-        );
         pipeline_buffer_t& buffer();
         basic_renderer_t(basic_renderer_t&) = delete;
         basic_renderer_t(basic_renderer_t&&) = default;
@@ -180,8 +196,6 @@ namespace my_vulkan
         static vertex_layout_t make_vertex_layout();
         static std::vector<VkDescriptorSetLayoutBinding> make_uniform_layout();
         device_t* _device;
-        std::vector<uint8_t> _vertex_shader;
-        std::vector<uint8_t> _fragment_shader;
         std::vector<VkDescriptorSetLayoutBinding> _uniform_layout;
         render_settings_t _render_settings;
         bool _dynamic_viewport;

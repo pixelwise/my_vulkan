@@ -24,14 +24,14 @@ namespace my_vulkan
         render_pass,
         uniform_layout,
         vertex_layout,
-        std::make_shared<shader_module_t>(
+        shader_module_t{
             device,
             vertex_shader
-        ),
-        std::make_shared<shader_module_t>(
+        },
+        shader_module_t{
             device,
             fragment_shader
-        ),
+        },
         settings,
         dynamic_viewport
     }
@@ -44,14 +44,12 @@ namespace my_vulkan
         VkRenderPass render_pass,
         const std::vector<VkDescriptorSetLayoutBinding>& uniform_layout,
         vertex_layout_t vertex_layout,
-        std::shared_ptr<shader_module_t> vertex_shader,
-        std::shared_ptr<shader_module_t> fragment_shader,
+        const shader_module_t& vertex_shader,
+        const shader_module_t& fragment_shader,
         render_settings_t settings,
         bool dynamic_viewport
     )
     : _device{device}
-    , _vertex_shader{std::move(vertex_shader)}
-    , _fragment_shader{std::move(fragment_shader)}
     , _uniform_layout{_device, uniform_layout}
     {
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -158,13 +156,13 @@ namespace my_vulkan
         VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertShaderStageInfo.module = _vertex_shader->get();
+        vertShaderStageInfo.module = vertex_shader.get();
         vertShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
         fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragShaderStageInfo.module = _fragment_shader->get();
+        fragShaderStageInfo.module = fragment_shader.get();
         fragShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo shaderStages[] = {
@@ -235,8 +233,6 @@ namespace my_vulkan
 
     graphics_pipeline_t::graphics_pipeline_t(graphics_pipeline_t&& other) noexcept
     : _device{other._device}
-    , _vertex_shader{std::move(other._vertex_shader)}
-    , _fragment_shader{std::move(other._fragment_shader)}
     , _uniform_layout{std::move(other._uniform_layout)}
     {
         _pipeline = other._pipeline;

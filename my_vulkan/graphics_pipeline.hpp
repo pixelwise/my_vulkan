@@ -2,7 +2,6 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include <memory>
 #include "descriptor_set_layout.hpp"
 #include "swap_chain.hpp"
 #include "shader_module.hpp"
@@ -36,8 +35,8 @@ namespace my_vulkan
             VkRenderPass render_pass,
             const std::vector<VkDescriptorSetLayoutBinding>& uniform_layout,
             vertex_layout_t vertex_layout,
-            std::shared_ptr<shader_module_t> vertex_shader,
-            std::shared_ptr<shader_module_t> fragment_shader,
+            const shader_module_t& vertex_shader,
+            const shader_module_t& fragment_shader,
             render_settings_t settings = {},
             bool dynamic_viewport = false
         );
@@ -64,8 +63,6 @@ namespace my_vulkan
     private:
         void cleanup();
         VkDevice _device;
-        std::shared_ptr<shader_module_t> _vertex_shader;
-        std::shared_ptr<shader_module_t> _fragment_shader;
         descriptor_set_layout_t _uniform_layout;
         VkPipeline _pipeline;
         VkPipelineLayout _layout;

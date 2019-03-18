@@ -121,13 +121,10 @@ namespace my_vulkan
         num_textures
     >::basic_renderer_t(
         output_config_t output_config,
-        std::vector<uint8_t> vertex_shader,
-        std::vector<uint8_t> fragment_shader,
+        const basic_renderer_shader_modules_t& shaders,
         render_settings_t render_settings
     )
     : _device{output_config.device}
-    , _vertex_shader{std::move(vertex_shader)}
-    , _fragment_shader{std::move(fragment_shader)}
     , _uniform_layout{make_uniform_layout()}
     , _render_settings{render_settings}
     , _dynamic_viewport{output_config.dynamic_viewport}
@@ -137,42 +134,12 @@ namespace my_vulkan
         output_config.render_pass,
         _uniform_layout,
         make_vertex_layout(),
-        _vertex_shader,
-        _fragment_shader,
+        shaders.vertex_shader,
+        shaders.fragment_shader,
         _render_settings,
         _dynamic_viewport
     }
     {
-    }
-
-    template<
-        typename vertex_uniforms_t,
-        typename fragment_uniforms_t,
-        typename vertex_t,
-        size_t num_textures
-    >
-    void
-    basic_renderer_t<
-        vertex_uniforms_t,
-        fragment_uniforms_t,
-        vertex_t,
-        num_textures
-    >::update_render_pipeline(
-        VkExtent2D extent,
-        VkRenderPass render_pass
-    )
-    {
-        _graphics_pipeline = {
-            _device->get(),
-            extent,
-            render_pass,
-            _uniform_layout,
-            make_vertex_layout(),
-            _vertex_shader,
-            _fragment_shader,
-            _render_settings,
-            _dynamic_viewport,
-        };
     }
 
     template<

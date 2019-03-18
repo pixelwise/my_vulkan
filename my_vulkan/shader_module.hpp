@@ -21,7 +21,7 @@ namespace my_vulkan
         shader_module_t(shader_module_t&& other) noexcept;
         shader_module_t& operator=(shader_module_t&& other) noexcept;
         ~shader_module_t();
-        VkShaderModule get();
+        VkShaderModule get() const;
     private:
         void cleanup();
         VkDevice _device;
