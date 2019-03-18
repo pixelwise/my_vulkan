@@ -18,7 +18,40 @@ namespace my_vulkan
         render_settings_t settings,
         bool dynamic_viewport
     )
+    : graphics_pipeline_t{
+        device,
+        extent,
+        render_pass,
+        uniform_layout,
+        vertex_layout,
+        std::make_shared<shader_module_t>(
+            device,
+            vertex_shader
+        ),
+        std::make_shared<shader_module_t>(
+            device,
+            fragment_shader
+        ),
+        settings,
+        dynamic_viewport
+    }
+    {
+    }
+
+    graphics_pipeline_t::graphics_pipeline_t(
+        VkDevice device,
+        VkExtent2D extent,
+        VkRenderPass render_pass,
+        const std::vector<VkDescriptorSetLayoutBinding>& uniform_layout,
+        vertex_layout_t vertex_layout,
+        std::shared_ptr<shader_module_t> vertex_shader,
+        std::shared_ptr<shader_module_t> fragment_shader,
+        render_settings_t settings,
+        bool dynamic_viewport
+    )
     : _device{device}
+    , _vertex_shader{std::move(vertex_shader)}
+    , _fragment_shader{std::move(fragment_shader)}
     , _uniform_layout{_device, uniform_layout}
     {
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -122,8 +155,8 @@ namespace my_vulkan
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
 
-        VkShaderModule vertShaderModule = createShaderModule(device, vertex_shader);
-        VkShaderModule fragShaderModule = createShaderModule(device, fragment_shader);
+        VkShaderModule vertShaderModule = _vertex_shader->get();
+        VkShaderModule fragShaderModule = _vertex_shader->get();
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
