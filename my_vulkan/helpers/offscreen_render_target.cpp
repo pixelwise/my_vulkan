@@ -137,7 +137,7 @@ namespace my_vulkan
                 },
                 _size,
                 depth(),
-                true
+                false
             };
         }
 
