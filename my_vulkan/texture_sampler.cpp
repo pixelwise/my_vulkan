@@ -15,6 +15,9 @@ namespace my_vulkan
             case filter_mode_t::nearest:
                 filter = VK_FILTER_NEAREST;
                 break;
+            case filter_mode_t::cubic:
+                filter = VK_FILTER_CUBIC_IMG;
+                break;
         }
         VkSamplerCreateInfo samplerInfo = {};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;

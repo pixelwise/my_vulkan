@@ -7,7 +7,7 @@ namespace my_vulkan
     class texture_sampler_t
     {
     public:
-        enum class filter_mode_t{linear, nearest};
+        enum class filter_mode_t{linear, nearest, cubic};
         texture_sampler_t(
             VkDevice device,
             filter_mode_t filter_mode = filter_mode_t::linear
