@@ -32,9 +32,9 @@ namespace my_vulkan
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &buffer;
-        submitInfo.signalSemaphoreCount = signal_semaphores.size();
+        submitInfo.signalSemaphoreCount = uint32_t(signal_semaphores.size());
         submitInfo.pSignalSemaphores = signal_semaphores.data();
-        submitInfo.waitSemaphoreCount = wait_semaphores.size();
+        submitInfo.waitSemaphoreCount = uint32_t(wait_semaphores.size());
         submitInfo.pWaitSemaphores = wait_semaphores.data();
         submitInfo.pWaitDstStageMask = wait_semaphore_stages.data();
         submit({submitInfo}, fence);
@@ -73,7 +73,7 @@ namespace my_vulkan
         std::unique_lock<std::mutex> lock{_mutex};
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = semaphores.size();
+        presentInfo.waitSemaphoreCount = uint32_t(semaphores.size());
         presentInfo.pWaitSemaphores = semaphores.data();
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &swap_chain_target.swap_chain;

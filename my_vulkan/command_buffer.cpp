@@ -110,7 +110,7 @@ namespace my_vulkan
         info.renderPass = renderPass;
         info.framebuffer = framebuffer;
         info.renderArea = render_area;
-        info.clearValueCount = clear_values.size();
+        info.clearValueCount = uint32_t(clear_values.size());
         info.pClearValues = clear_values.data();
         vkCmdBeginRenderPass(_command_buffer, &info, contents);
     }
@@ -207,7 +207,7 @@ namespace my_vulkan
         vkCmdBindVertexBuffers(
             _command_buffer,
             offset,
-            bindings.size(),
+            uint32_t(bindings.size()),
             buffers.data(),
             offsets.data()
         );
@@ -342,11 +342,11 @@ namespace my_vulkan
             src_stage_mask,
             dst_stage_mask,
             dependency_flags,
-            memory_barriers.size(),
+            uint32_t(memory_barriers.size()),
             memory_barriers.data(),
-            buffer_barriers.size(),
+            uint32_t(buffer_barriers.size()),
             buffer_barriers.data(),
-            image_barriers.size(),
+            uint32_t(image_barriers.size()),
             image_barriers.data()
         );
     }
@@ -361,7 +361,7 @@ namespace my_vulkan
             _command_buffer,
             src,
             dst,
-            operations.size(),
+            uint32_t(operations.size()),
             operations.data()
         );
     }

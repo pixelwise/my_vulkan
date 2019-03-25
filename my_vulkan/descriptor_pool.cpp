@@ -22,7 +22,7 @@ namespace my_vulkan
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = uint32_t(pool_sizes.size());
         poolInfo.pPoolSizes = pool_sizes.data();
-        poolInfo.maxSets = max_num_sets;
+        poolInfo.maxSets = uint32_t(max_num_sets);
         poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         vk_require(
             vkCreateDescriptorPool(_device, &poolInfo, nullptr, &_descriptor_pool),
