@@ -113,6 +113,7 @@ if(glfw3_FOUND)
     target_link_libraries(
         my_vulkan PRIVATE
         glfw
+	-ldl
     )
 
     target_include_directories(
