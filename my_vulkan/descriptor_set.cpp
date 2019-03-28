@@ -37,7 +37,7 @@ namespace my_vulkan
         info.dstBinding = binding;
         info.dstArrayElement = array_offset;
         info.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        info.descriptorCount = infos.size();
+        info.descriptorCount = uint32_t(infos.size());
         info.pImageInfo = infos.data();
         vkUpdateDescriptorSets(
             _device,
@@ -68,7 +68,7 @@ namespace my_vulkan
         info.dstBinding = binding;
         info.dstArrayElement = array_offset;
         info.descriptorType = type;
-        info.descriptorCount = infos.size();
+        info.descriptorCount = uint32_t(infos.size());
         info.pImageInfo = infos.data();
         vkUpdateDescriptorSets(
             _device,
@@ -91,7 +91,7 @@ namespace my_vulkan
         info.dstBinding = binding;
         info.dstArrayElement = array_offset;
         info.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        info.descriptorCount = image_infos.size();
+        info.descriptorCount = uint32_t(image_infos.size());
         info.pImageInfo = image_infos.data();
         vkUpdateDescriptorSets(
             _device,
@@ -115,7 +115,7 @@ namespace my_vulkan
         info.dstBinding = binding;
         info.dstArrayElement = array_offset;
         info.descriptorType = type;
-        info.descriptorCount = buffer_infos.size();
+        info.descriptorCount = uint32_t(buffer_infos.size());
         info.pBufferInfo = buffer_infos.data();
         vkUpdateDescriptorSets(
             _device,
@@ -139,7 +139,7 @@ namespace my_vulkan
         info.dstBinding = binding;
         info.dstArrayElement = array_offset;
         info.descriptorType = type;
-        info.descriptorCount = buffer_views.size();
+        info.descriptorCount = uint32_t(buffer_views.size());
         info.pTexelBufferView = buffer_views.data();
         vkUpdateDescriptorSets(
             _device,

@@ -11,7 +11,7 @@
 
 #include <glm/glm.hpp>
 
-static VkFormat vertex_format_with_components(float, size_t num_components)
+inline VkFormat vertex_format_with_components(float, size_t num_components)
 {
     switch(num_components)
     {
@@ -28,7 +28,7 @@ static VkFormat vertex_format_with_components(float, size_t num_components)
 }
 
 template<typename attribute_t>
-static VkFormat vertex_format_for_attribute(attribute_t)
+inline VkFormat vertex_format_for_attribute(attribute_t)
 {
     return vertex_format_with_components(
         typename attribute_t::value_type{},
@@ -37,7 +37,7 @@ static VkFormat vertex_format_for_attribute(attribute_t)
 }
 
 template<typename vertex_t>
-static std::vector<VkVertexInputAttributeDescription>
+inline std::vector<VkVertexInputAttributeDescription>
 make_vertex_attribute_descriptions(vertex_t prototype)
 {
     std::vector<VkVertexInputAttributeDescription> result;
