@@ -54,6 +54,7 @@ add_library(my_vulkan_offscreen
     my_vulkan/swap_chain.cpp
     my_vulkan/texture_sampler.cpp
     my_vulkan/utils.cpp
+    my_vulkan/debug_callback.cpp
     my_vulkan/helpers/standard_swap_chain.cpp
     my_vulkan/helpers/offscreen_render_target.cpp
 )
@@ -108,6 +109,7 @@ if(glfw3_FOUND)
         my_vulkan/utils.cpp
         my_vulkan/debug_callback.cpp
         my_vulkan/helpers/standard_swap_chain.cpp
+        my_vulkan/helpers/offscreen_render_target.cpp
     )
 
     target_link_libraries(
