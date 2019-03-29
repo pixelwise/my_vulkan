@@ -62,8 +62,17 @@ namespace my_vulkan
             {
                 return {
                     begin,
-                    [callback, end = this->end](auto wait_semaphores, auto signal_semaphore){
-                        end(std::move(wait_semaphores), std::move(signal_semaphore));
+                    [
+                        callback,
+                        end = this->end
+                    ](
+                        auto wait_semaphores,
+                        auto signal_semaphore
+                    ){
+                        end(
+                            std::move(wait_semaphores),
+                            std::move(signal_semaphore)
+                        );
                         callback();
                     },
                     depth,
