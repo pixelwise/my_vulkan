@@ -92,18 +92,57 @@ namespace my_vulkan
         VkMemoryMapFlags flags
     )
     : _memory(&memory)
+    , _device{memory._device}
+    , _region{optional_region.value_or(region_t{0, memory.size()})}
     {
-        auto region = optional_region.value_or(region_t{0, memory.size()});
         vk_require(
             vkMapMemory(
-                memory._device,
+                _device,
                 memory._memory, 
-                region.offset,
-                region.size, 
+                _region.offset,
+                _region.size, 
                 flags, 
                 &_data
             ),
             "mapping memory"
+        );
+    }
+
+    void device_memory_t::mapping_t::flush()
+    {
+        VkMappedMemoryRange range{
+            VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+            0,
+            _memory->_memory,
+            _region.offset,
+            _region.size
+        };
+        vk_require(
+            vkFlushMappedMemoryRanges(
+                _device,
+                1,
+                &range
+            ),
+            "flushing mapped memory"
+        );
+    }
+
+    void device_memory_t::mapping_t::invalidate()
+    {
+        VkMappedMemoryRange range{
+            VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+            0,
+            _memory->_memory,
+            _region.offset,
+            _region.size
+        };
+        vk_require(
+            vkInvalidateMappedMemoryRanges(
+                _device,
+                1,
+                &range
+            ),
+            "flushing mapped memory"
         );
     }
 

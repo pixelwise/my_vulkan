@@ -26,11 +26,15 @@ namespace my_vulkan
             mapping_t& operator=(const mapping_t&&) = delete;
             mapping_t& operator=(mapping_t&& other) noexcept;
             ~mapping_t();
+            void flush();
+            void invalidate();
             void unmap();
         private:
             void cleanup();
             void* _data;
             device_memory_t* _memory{0};
+            VkDevice _device;
+            region_t _region;
         };
         struct config_t
         {

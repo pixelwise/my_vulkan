@@ -30,6 +30,7 @@ namespace my_vulkan
                 if (need_readback) 
                     callback = [
                         &image = _color_buffers[i].image
+                        //size = size
                     ](
                         command_buffer_t::scope_t& commands,
                         image_t& readback_image
@@ -64,10 +65,25 @@ namespace my_vulkan
                                 VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
                             }}
                         );
+                        #if 0
+                        commands.blit(
+                            image.get(),
+                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                            readback_image.get(),
+                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                            {VkImageBlit{
+                                {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+                                {{0, 0, 0}, {int32_t(size.width), int32_t(size.height), 1}},
+                                {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+                                {{0, 0, 0}, {int32_t(size.width), int32_t(size.height), 1}},
+                            }}
+                        );
+                        #else
                         readback_image.copy_from(
                             image.get(),
                             commands
                         );
+                        #endif
                         commands.pipeline_barrier(
                             VK_PIPELINE_STAGE_TRANSFER_BIT,
                             VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -277,7 +293,9 @@ namespace my_vulkan
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_TILING_LINEAR,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_CACHED_BIT
             } :
             nullptr
         }
@@ -294,6 +312,7 @@ namespace my_vulkan
                 throw std::runtime_error{"no readback enabled"};
             _fence.wait();
             _mapping = _readback_image->memory()->map();
+            _mapping->invalidate();
             auto size = _readback_image->extent();
             auto layout = _readback_image->memory_layout();
             auto data = ((const unsigned char*)_mapping->data()) + layout.offset;
