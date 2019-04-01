@@ -18,7 +18,6 @@ if (USE_ASAN)
 endif()
 
 find_package(OpenCV 3 REQUIRED)
-find_package(glm 0.9.8 REQUIRED)
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
     "*.frag"
@@ -143,7 +142,6 @@ if(glfw3_FOUND)
     target_include_directories(
         glfw_vulkan_test
         PRIVATE
-        ${GLM_INCLUDE_DIRS}
     )
     target_link_libraries (
         glfw_vulkan_test
