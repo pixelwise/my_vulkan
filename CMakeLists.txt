@@ -18,6 +18,7 @@ if (USE_ASAN)
 endif()
 
 find_package(OpenCV 3 REQUIRED)
+find_package(glm 0.9.8 REQUIRED)
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
     "*.frag"
@@ -67,6 +68,7 @@ target_include_directories(
     PUBLIC
     ${Boost_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
+    ${GLM_INCLUDE_DIRS}
 )
 target_include_directories(
     my_vulkan_offscreen
@@ -125,6 +127,7 @@ if(glfw3_FOUND)
         PUBLIC
         ${Boost_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
+        ${GLM_INCLUDE_DIRS}
     )
     target_include_directories(
         my_vulkan
