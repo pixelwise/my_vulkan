@@ -21,9 +21,10 @@ namespace my_vulkan
                 VkMemoryMapFlags flags = 0
             );
             void* data();
+            mapping_t() = delete;
             mapping_t(const mapping_t&) = delete;
             mapping_t(mapping_t&& other) noexcept;
-            mapping_t& operator=(const mapping_t&&) = delete;
+            mapping_t& operator=(const mapping_t&) = delete;
             mapping_t& operator=(mapping_t&& other) noexcept;
             ~mapping_t();
             void flush();
@@ -32,7 +33,7 @@ namespace my_vulkan
         private:
             void cleanup();
             void* _data;
-            device_memory_t* _memory{0};
+            VkDeviceMemory _memory{0};
             VkDevice _device;
             region_t _region;
         };

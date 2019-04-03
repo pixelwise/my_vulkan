@@ -91,14 +91,14 @@ namespace my_vulkan
         boost::optional<region_t> optional_region,
         VkMemoryMapFlags flags
     )
-    : _memory(&memory)
+    : _memory(memory._memory)
     , _device{memory._device}
     , _region{optional_region.value_or(region_t{0, memory.size()})}
     {
         vk_require(
             vkMapMemory(
                 _device,
-                memory._memory, 
+                _memory,
                 _region.offset,
                 _region.size, 
                 flags, 
@@ -112,8 +112,8 @@ namespace my_vulkan
     {
         VkMappedMemoryRange range{
             VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-            0,
-            _memory->_memory,
+            nullptr,
+            _memory,
             _region.offset,
             _region.size
         };
@@ -132,7 +132,7 @@ namespace my_vulkan
         VkMappedMemoryRange range{
             VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
             0,
-            _memory->_memory,
+            _memory,
             _region.offset,
             _region.size
         };
@@ -152,6 +152,7 @@ namespace my_vulkan
     }
 
     device_memory_t::mapping_t::mapping_t(mapping_t&& other) noexcept
+    : _memory{0}
     {
         *this = std::move(other);
     }
@@ -162,6 +163,8 @@ namespace my_vulkan
     {
         cleanup();
         _data = other._data;
+        _device = other._device;
+        _region = other._region;
         std::swap(_memory, other._memory);
         return *this;
     }
@@ -180,7 +183,7 @@ namespace my_vulkan
     {
         if (_memory)
         {
-            vkUnmapMemory(_memory->_device, _memory->_memory);
+            vkUnmapMemory(_device, _memory);
             _memory = 0;   
         }
     }
