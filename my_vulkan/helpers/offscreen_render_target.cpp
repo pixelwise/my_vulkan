@@ -26,23 +26,47 @@ namespace my_vulkan
                 );
             for (size_t i = 0; i < depth; ++i)
             {
-                slot_t::finish_callback_t callback;
-                if (need_readback) 
-                    callback = [
+                slot_t::begin_callback_t begin_callback;
+                slot_t::end_callback_t end_callback;
+                if (need_readback)
+                {
+                    begin_callback = [
+                        &image = _color_buffers[i].image
+                    ](
+                        command_buffer_t::scope_t &commands
+                    )
+                    {
+                        commands.pipeline_barrier(
+                            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                            {VkImageMemoryBarrier{
+                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, nullptr,
+                                0,
+                                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                VK_IMAGE_LAYOUT_UNDEFINED,
+                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                VK_QUEUE_FAMILY_IGNORED,
+                                VK_QUEUE_FAMILY_IGNORED,
+                                image.get(),
+                                VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
+                            }}
+                        );
+                    };
+                    end_callback = [
                         &image = _color_buffers[i].image
                         //size = size
                     ](
-                        command_buffer_t::scope_t& commands,
-                        image_t& readback_image
+                        command_buffer_t::scope_t &commands,
+                        image_t &readback_image
                     ) {
                         commands.pipeline_barrier(
-                            VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                             VK_PIPELINE_STAGE_TRANSFER_BIT,
                             {VkImageMemoryBarrier{
-                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, 0,
-                                0,
+                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, nullptr,
+                                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                                 VK_ACCESS_TRANSFER_READ_BIT,
-                                VK_IMAGE_LAYOUT_UNDEFINED,
+                                VK_IMAGE_LAYOUT_UNDEFINED,//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                 VK_QUEUE_FAMILY_IGNORED,
                                 VK_QUEUE_FAMILY_IGNORED,
@@ -51,10 +75,10 @@ namespace my_vulkan
                             }}
                         );
                         commands.pipeline_barrier(
-                            VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_HOST_BIT,
                             VK_PIPELINE_STAGE_TRANSFER_BIT,
                             {VkImageMemoryBarrier{
-                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, 0,
+                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, nullptr,
                                 0,
                                 VK_ACCESS_TRANSFER_WRITE_BIT,
                                 VK_IMAGE_LAYOUT_UNDEFINED,
@@ -65,7 +89,7 @@ namespace my_vulkan
                                 VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
                             }}
                         );
-                        #if 0
+#if 0
                         commands.blit(
                             image.get(),
                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -78,19 +102,20 @@ namespace my_vulkan
                                 {{0, 0, 0}, {int32_t(size.width), int32_t(size.height), 1}},
                             }}
                         );
-                        #else
+#else
                         readback_image.copy_from(
                             image.get(),
                             commands
                         );
-                        #endif
+#endif
                         commands.pipeline_barrier(
                             VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_HOST_BIT,
                             {VkImageMemoryBarrier{
-                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, 0,
+                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                nullptr,
                                 VK_ACCESS_TRANSFER_WRITE_BIT,
-                                VK_ACCESS_MEMORY_READ_BIT,
+                                VK_ACCESS_HOST_READ_BIT,
                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                 VK_IMAGE_LAYOUT_GENERAL,
                                 VK_QUEUE_FAMILY_IGNORED,
@@ -100,8 +125,9 @@ namespace my_vulkan
                             }}
                         );
                     };
+                }
                 else
-                    callback =
+                    end_callback =
                         [
                             &image = _color_buffers[i].image
                         ](
@@ -123,7 +149,8 @@ namespace my_vulkan
                     depth_format,
                     need_readback,
                     device.physical_device(),
-                    callback
+                    begin_callback,
+                    end_callback
                 );
                 _textures.push_back({
                     _color_buffers[i].sampler.get(),
@@ -153,8 +180,7 @@ namespace my_vulkan
                     color_views[i],
                     depth_format,
                     false,
-                    device.physical_device(),
-                    slot_t::finish_callback_t{0}
+                    device.physical_device()
                 );
             }            
         }
@@ -173,7 +199,6 @@ namespace my_vulkan
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
             VK_IMAGE_USAGE_SAMPLED_BIT,
-
         }
         , view{image.view()}
         , sampler{device}
@@ -191,7 +216,7 @@ namespace my_vulkan
                     };
                 },
                 [&](auto waits, auto signals){
-                    finish_phase(std::move(waits), std::move(signals));
+                    end_phase(std::move(waits), std::move(signals));
                 },
                 _size,
                 depth(),
@@ -220,7 +245,7 @@ namespace my_vulkan
             return _slots[_write_slot].begin(_write_slot, rect.value_or(VkRect2D{{0, 0}, size()}));
         }
 
-        void offscreen_render_target_t::finish_phase(
+        void offscreen_render_target_t::end_phase(
             std::vector<queue_reference_t::wait_semaphore_info_t> waits,
             std::vector<VkSemaphore> signals
         )
@@ -265,7 +290,8 @@ namespace my_vulkan
             VkFormat depth_format,
             bool need_readback,
             VkPhysicalDevice physical_device,
-            finish_callback_t finish_callback
+            begin_callback_t begin_callback,
+            end_callback_t end_callback
         )
         : _queue{&queue}
         , _render_pass{render_pass}
@@ -295,14 +321,16 @@ namespace my_vulkan
                 VK_IMAGE_TILING_LINEAR,
                 //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+                VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             } :
             nullptr
         }
         , _fence{device, VK_FENCE_CREATE_SIGNALED_BIT}
         , _command_pool{device, queue}
         , _command_buffer{_command_pool.make_buffer()}
-        , _finish_callback{std::move(finish_callback)}
+        , _begin_callback{std::move(begin_callback)}
+        , _end_callback{std::move(end_callback)}
         {
         }
 
@@ -334,6 +362,8 @@ namespace my_vulkan
             _fence.wait();
             _fence.reset();
             _commands = _command_buffer.begin(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+            if (_begin_callback)
+                _begin_callback(*_commands);
             _commands->begin_render_pass(
                 _render_pass,
                 _framebuffer.get(),
@@ -357,8 +387,8 @@ namespace my_vulkan
                 };
             _commands->end_render_pass();
             _mapping.reset();
-            if (_finish_callback)
-                _finish_callback(*_commands, *_readback_image);
+            if (_end_callback)
+                _end_callback(*_commands, *_readback_image);
             _commands.reset();
             _queue->submit(
                 _command_buffer.get(),

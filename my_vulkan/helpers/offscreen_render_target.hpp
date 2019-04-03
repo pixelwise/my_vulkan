@@ -24,9 +24,12 @@ namespace my_vulkan
             class slot_t
             {
             public:
-                using finish_callback_t = std::function<void(
+                using begin_callback_t = std::function<void(
+                    command_buffer_t::scope_t&
+                )>;
+                using end_callback_t = std::function<void(
                     command_buffer_t::scope_t&,
-                    image_t&
+                        image_t&
                 )>;
                 slot_t(
                     VkDevice device,
@@ -37,7 +40,8 @@ namespace my_vulkan
                     VkFormat depth_format,
                     bool need_readback,
                     VkPhysicalDevice physical_device,
-                    finish_callback_t finish_callback = 0
+                    begin_callback_t begin_callback = 0,
+                    end_callback_t end_callback = 0
                 );
                 phase_context_t begin(size_t index, VkRect2D rect);
                 void finish(
@@ -57,7 +61,8 @@ namespace my_vulkan
                 command_buffer_t _command_buffer;
                 boost::optional<command_buffer_t::scope_t> _commands;
                 boost::optional<device_memory_t::mapping_t> _mapping;
-                finish_callback_t _finish_callback;
+                begin_callback_t _begin_callback;
+                end_callback_t _end_callback;
             };
         public:
             offscreen_render_target_t(
@@ -80,7 +85,7 @@ namespace my_vulkan
             size_t depth() const;
             VkRenderPass render_pass();
             phase_context_t begin_phase(boost::optional<VkRect2D> rect = boost::none);
-            void finish_phase(
+            void end_phase(
                 std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
                 std::vector<VkSemaphore> signals = {}
             );
