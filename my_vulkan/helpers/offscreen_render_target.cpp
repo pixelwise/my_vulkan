@@ -321,8 +321,8 @@ namespace my_vulkan
                 VK_IMAGE_TILING_LINEAR,
                 //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
-                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                VK_MEMORY_PROPERTY_HOST_CACHED_BIT
             } :
             nullptr
         }
@@ -340,7 +340,7 @@ namespace my_vulkan
                 throw std::runtime_error{"no readback enabled"};
             _fence.wait();
             _mapping = _readback_image->memory()->map();
-            //_mapping->invalidate();
+            _mapping->invalidate();
             auto size = _readback_image->extent();
             auto layout = _readback_image->memory_layout();
             auto data = ((const unsigned char*)_mapping->data()) + layout.offset;
