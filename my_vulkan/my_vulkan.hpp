@@ -16,9 +16,6 @@
 #include "render_pass.hpp"
 #include "semaphore.hpp"
 #include "shader_module.hpp"
-#ifdef MY_VULKAN_INCLUDE_GLFW
-    #include "surface.hpp"
-#endif
 #include "swap_chain.hpp"
 #include "texture_sampler.hpp"
 #include "utils.hpp"

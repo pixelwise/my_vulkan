@@ -1,3 +1,4 @@
+#define GLFW_INCLUDE_VULKAN
 #include "surface.hpp"
 
 #include <stdexcept>

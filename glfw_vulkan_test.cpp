@@ -9,8 +9,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#define MY_VULKAN_INCLUDE_GLFW
 #include "my_vulkan/my_vulkan.hpp"
+#include "my_vulkan/surface.hpp"
 #include "my_vulkan/helpers/standard_swap_chain.hpp"
 
 #include <iostream>
