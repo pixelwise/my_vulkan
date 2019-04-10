@@ -17,7 +17,7 @@ if (USE_ASAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
 
-find_package(OpenCV 3 REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(glm 0.9.8 REQUIRED)
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
