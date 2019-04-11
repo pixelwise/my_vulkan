@@ -66,7 +66,6 @@ message("CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(
     my_vulkan_offscreen
     PUBLIC
-    ${Boost_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
     ${GLM_INCLUDE_DIRS}
 )
@@ -75,16 +74,12 @@ target_include_directories(
     INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
-target_include_directories(
-    my_vulkan_offscreen
-    PRIVATE
-    ${Vulkan_INCLUDE_DIRS}
-)
 
 target_link_libraries(
     my_vulkan_offscreen
-    PRIVATE
-    -ldl
+    PUBLIC
+    Vulkan::Vulkan
+    Boost::boost
 )
 
 if(glfw3_FOUND)
@@ -117,28 +112,23 @@ if(glfw3_FOUND)
     )
 
     target_link_libraries(
-        my_vulkan PRIVATE
+        my_vulkan
+        PRIVATE
         glfw
-	-ldl
+        PUBLIC
+        Vulkan::Vulkan
+        Boost::boost
     )
 
     target_include_directories(
         my_vulkan
         PUBLIC
-        ${Boost_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${GLM_INCLUDE_DIRS}
-    )
-    target_include_directories(
-        my_vulkan
         INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
     )
-    target_include_directories(
-        my_vulkan
-        PRIVATE
-        ${Vulkan_INCLUDE_DIRS}
-    )
+
 endif()
 if(glfw3_FOUND)
     add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
@@ -148,7 +138,6 @@ if(glfw3_FOUND)
     )
     target_link_libraries (
         glfw_vulkan_test
-        ${Vulkan_LIBRARIES}
         glfw
         my_vulkan
     )
