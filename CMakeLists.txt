@@ -31,7 +31,7 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
 endforeach(GLSL)
 
 add_custom_target(
-    Shaders 
+    Shaders
     DEPENDS ${SPIRV_BINARY_FILES}
 )
 
@@ -80,6 +80,7 @@ target_link_libraries(
     PUBLIC
     Vulkan::Vulkan
     Boost::boost
+    dl
 )
 
 if(glfw3_FOUND)
@@ -118,6 +119,7 @@ if(glfw3_FOUND)
         PUBLIC
         Vulkan::Vulkan
         Boost::boost
+	dl
     )
 
     target_include_directories(
