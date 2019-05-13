@@ -32,10 +32,9 @@ template<typename Arg0, typename ...Args>
 struct std140_struct_impl;
 //!\internal
 template<typename Arg0, typename ...Args>
-class std140_struct_impl : public std140_struct_impl<Args...>
+struct std140_struct_impl : public std140_struct_impl<Args...>
 {
     typedef std140_struct_impl<Args...> Next;
-public:
     template<int S>
     constexpr static size_t offset(size_t offs)
     {
