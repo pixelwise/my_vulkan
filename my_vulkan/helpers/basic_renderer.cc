@@ -2,8 +2,6 @@
 
 #include "to_std140.hpp"
 
-#include "utils/range_utils.hpp"
-
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/include/size.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -156,7 +154,7 @@ namespace my_vulkan
     >::make_uniform_layout()
     {
         std::vector<VkDescriptorSetLayoutBinding> result;
-        uint32_t next_location = 0;
+        uint32_t textures_location = 0;
         static_assert(
             boost::fusion::result_of::empty<vertex_uniforms_t>::value ==
             boost::fusion::result_of::empty<fragment_uniforms_t>::value,
@@ -165,7 +163,7 @@ namespace my_vulkan
         if (!boost::fusion::result_of::empty<vertex_uniforms_t>::value)
         {
             result.push_back({
-                next_location++,
+                textures_location++,
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 1,
                 VK_SHADER_STAGE_VERTEX_BIT,
@@ -175,7 +173,7 @@ namespace my_vulkan
         if (!boost::fusion::result_of::empty<fragment_uniforms_t>::value)
         {
             result.push_back({
-                next_location++,
+                textures_location++,
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 1,
                 VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -185,7 +183,7 @@ namespace my_vulkan
         for (auto i : boost::counting_range<uint32_t>(0, num_textures))
         {
             result.push_back({
-                next_location++,
+                textures_location + i,
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 1,
                 VK_SHADER_STAGE_FRAGMENT_BIT,
