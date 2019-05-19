@@ -29,7 +29,7 @@ namespace my_vulkan
                 )>;
                 using end_callback_t = std::function<void(
                     command_buffer_t::scope_t&,
-                        image_t&
+                    image_t*
                 )>;
                 slot_t(
                     VkDevice device,

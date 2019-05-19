@@ -57,7 +57,7 @@ namespace my_vulkan
                         //size = size
                     ](
                         command_buffer_t::scope_t &commands,
-                        image_t &readback_image
+                        image_t* readback_image
                     ) {
                         commands.pipeline_barrier(
                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -85,7 +85,7 @@ namespace my_vulkan
                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                 VK_QUEUE_FAMILY_IGNORED,
                                 VK_QUEUE_FAMILY_IGNORED,
-                                readback_image.get(),
+                                readback_image->get(),
                                 VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
                             }}
                         );
@@ -93,7 +93,7 @@ namespace my_vulkan
                         commands.blit(
                             image.get(),
                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                            readback_image.get(),
+                            readback_image->get(),
                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                             {VkImageBlit{
                                 {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
@@ -103,7 +103,7 @@ namespace my_vulkan
                             }}
                         );
 #else
-                        readback_image.copy_from(
+                        readback_image->copy_from(
                             image.get(),
                             commands
                         );
@@ -120,7 +120,7 @@ namespace my_vulkan
                                 VK_IMAGE_LAYOUT_GENERAL,
                                 VK_QUEUE_FAMILY_IGNORED,
                                 VK_QUEUE_FAMILY_IGNORED,
-                                readback_image.get(),
+                                readback_image->get(),
                                 VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
                             }}
                         );
@@ -132,7 +132,7 @@ namespace my_vulkan
                             &image = _color_buffers[i].image
                         ](
                             command_buffer_t::scope_t& commands,
-                            image_t& //readback_image
+                            image_t* //readback_image
                         ) {
                             image.transition_layout(
                                 VK_IMAGE_LAYOUT_UNDEFINED,
@@ -388,7 +388,7 @@ namespace my_vulkan
             _commands->end_render_pass();
             _mapping.reset();
             if (_end_callback)
-                _end_callback(*_commands, *_readback_image);
+                _end_callback(*_commands, _readback_image.get());
             _commands.reset();
             _queue->submit(
                 _command_buffer.get(),
