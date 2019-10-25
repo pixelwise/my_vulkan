@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <boost/optional.hpp>
+#include <optional>
 #include <vector>
 
 namespace my_vulkan
@@ -21,9 +21,9 @@ namespace my_vulkan
     };
     struct queue_family_indices_t
     {
-        boost::optional<uint32_t> graphics;
-        boost::optional<uint32_t> present;
-        boost::optional<uint32_t> transfer;
+        std::optional<uint32_t> graphics;
+        std::optional<uint32_t> present;
+        std::optional<uint32_t> transfer;
         bool isComplete() const;
         std::vector<uint32_t> unique_indices() const;
         std::vector<queue_request_t> request_one_each()
@@ -38,13 +38,13 @@ namespace my_vulkan
         VkPhysicalDevice device,
         VkSurfaceKHR surface
     );
-    boost::optional<uint32_t> find_graphics_queue(
+    std::optional<uint32_t> find_graphics_queue(
         VkPhysicalDevice device
     );
-    boost::optional<uint32_t> find_transfer_queue(
+    std::optional<uint32_t> find_transfer_queue(
         VkPhysicalDevice device
     );
-    boost::optional<uint32_t> find_queue(
+    std::optional<uint32_t> find_queue(
         VkPhysicalDevice device,
         VkQueueFlags queue_type
     );

@@ -171,7 +171,7 @@ namespace my_vulkan
             return _commands;
         }
 
-        boost::optional<acquisition_failure_t> standard_swap_chain_t::working_set_t::finish(
+        std::optional<acquisition_failure_t> standard_swap_chain_t::working_set_t::finish(
             std::vector<queue_reference_t::wait_semaphore_info_t> wait_semaphores,
             std::vector<VkSemaphore> signal_semaphores
         )
@@ -195,7 +195,7 @@ namespace my_vulkan
                 {_sync->render_finished.get()}
             ))
                 return presentation_failure;
-            return boost::none;
+            return std::nullopt;
         }
 
         size_t standard_swap_chain_t::depth() const
@@ -229,8 +229,8 @@ namespace my_vulkan
 
         render_target_t standard_swap_chain_t::render_target()
         {
-            std::shared_ptr<boost::optional<working_set_t>> working_set{
-                new boost::optional<working_set_t>{}
+            std::shared_ptr<std::optional<working_set_t>> working_set{
+                new std::optional<working_set_t>{}
             };
             return {
                 [working_set, this](VkRect2D rect){

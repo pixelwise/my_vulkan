@@ -4,7 +4,7 @@
 #include "utils.hpp"
 #include "image.hpp"
 #include <boost/variant.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 
 namespace my_vulkan
 {
@@ -12,8 +12,8 @@ namespace my_vulkan
     {
         struct acquisition_outcome_t
         {
-            boost::optional<uint32_t> image_index;
-            boost::optional<acquisition_failure_t> failure;
+            std::optional<uint32_t> image_index;
+            std::optional<acquisition_failure_t> failure;
         };
         swap_chain_t(
             device_t& _device,
@@ -29,16 +29,16 @@ namespace my_vulkan
         VkExtent2D extent() const;
         acquisition_outcome_t acquire_next_image(
             VkSemaphore semaphore,
-            boost::optional<uint64_t> timeout = boost::none
+            std::optional<uint64_t> timeout = std::nullopt
         );
         acquisition_outcome_t acquire_next_image(
             VkFence fence,
-            boost::optional<uint64_t> timeout = boost::none
+            std::optional<uint64_t> timeout = std::nullopt
         );
         acquisition_outcome_t acquire_next_image(
             VkSemaphore semaphore,
             VkFence fence,
-            boost::optional<uint64_t> timeout = boost::none
+            std::optional<uint64_t> timeout = std::nullopt
         );
         VkSwapchainKHR get();
         ~swap_chain_t();

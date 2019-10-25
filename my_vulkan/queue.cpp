@@ -65,7 +65,7 @@ namespace my_vulkan
         );
     }
 
-    boost::optional<acquisition_failure_t> queue_reference_t::present(
+    std::optional<acquisition_failure_t> queue_reference_t::present(
         swapchain_target_t swap_chain_target,
         std::vector<VkSemaphore> semaphores
     )
@@ -94,7 +94,7 @@ namespace my_vulkan
             default:
                 vk_require(result_code, "queueing image for presentation");
         }
-        return boost::none;   
+        return std::nullopt;   
     }
 
     uint32_t queue_reference_t::family_index()

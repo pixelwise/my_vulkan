@@ -240,7 +240,7 @@ namespace my_vulkan
         }
 
         offscreen_render_target_t::phase_context_t
-        offscreen_render_target_t::begin_phase(boost::optional<VkRect2D> rect)
+        offscreen_render_target_t::begin_phase(std::optional<VkRect2D> rect)
         {
             return _slots[_write_slot].begin(_write_slot, rect.value_or(VkRect2D{{0, 0}, size()}));
         }
@@ -257,20 +257,20 @@ namespace my_vulkan
                 _write_slot = 0;
         }
 
-        boost::optional<cv::Mat4b> offscreen_render_target_t::read_bgra(bool flush)
+        std::optional<cv::Mat4b> offscreen_render_target_t::read_bgra(bool flush)
         {
             if (auto read_slot = consume_read_slot(flush))
                 return _slots[*read_slot].read_bgra();
             else
-                return boost::none;
+                return std::nullopt;
         }
 
-        boost::optional<size_t> offscreen_render_target_t::consume_read_slot(bool flush)
+        std::optional<size_t> offscreen_render_target_t::consume_read_slot(bool flush)
         {
             size_t num_slots = _slots.size();
             size_t slots_required = flush ? 1 : num_slots;
             if (_num_slots_filled < slots_required)
-                return boost::none;
+                return std::nullopt;
             size_t read_slot = (_write_slot + num_slots - _num_slots_filled) % num_slots;
             --_num_slots_filled;
             return read_slot;

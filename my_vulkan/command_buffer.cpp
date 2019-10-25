@@ -158,7 +158,7 @@ namespace my_vulkan
     void command_buffer_t::scope_t::bind_pipeline(
         VkPipelineBindPoint bind_point,
         VkPipeline pipeline,
-        boost::optional<VkRect2D> target_rect
+        std::optional<VkRect2D> target_rect
     )
     {
         vkCmdBindPipeline(

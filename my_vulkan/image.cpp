@@ -262,7 +262,7 @@ namespace my_vulkan
     void image_t::copy_from(
         VkBuffer buffer,
         command_pool_t& command_pool,
-        boost::optional<VkExtent3D> extent
+        std::optional<VkExtent3D> extent
     )
     {
         auto command_buffer = command_pool.make_buffer();
@@ -280,7 +280,7 @@ namespace my_vulkan
         VkBuffer buffer,
         command_buffer_t::scope_t& command_scope,
         uint32_t pitch,
-        boost::optional<VkExtent3D> in_extent
+        std::optional<VkExtent3D> in_extent
     )
     {
         VkBufferImageCopy region = {};
@@ -304,7 +304,7 @@ namespace my_vulkan
     void image_t::copy_from(
         VkImage image,
         command_buffer_t::scope_t& command_scope,
-        boost::optional<VkExtent3D> in_extent,
+        std::optional<VkExtent3D> in_extent,
         int src_aspects,
         int dst_aspects
     )
@@ -462,7 +462,7 @@ namespace my_vulkan
     void image_t::load_pixels(
         command_pool_t& command_pool,
         const void* pixels,
-        boost::optional<size_t> pitch
+        std::optional<size_t> pitch
     )
     {
         auto oneshot_scope = command_pool.begin_oneshot();

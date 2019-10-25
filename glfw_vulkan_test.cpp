@@ -494,7 +494,7 @@ private:
         }
     }
 
-    boost::optional<my_vulkan::acquisition_failure_t> try_draw_frame()
+    std::optional<my_vulkan::acquisition_failure_t> try_draw_frame()
     {
         auto outcome = swap_chain->acquire(
             {{0, 0}, swap_chain->extent()},

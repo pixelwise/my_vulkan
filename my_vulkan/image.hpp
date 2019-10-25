@@ -69,17 +69,17 @@ namespace my_vulkan
             VkBuffer buffer,
             command_buffer_t::scope_t& command_scope,
             uint32_t pitch = 0,
-            boost::optional<VkExtent3D> extent = boost::none
+            std::optional<VkExtent3D> extent = std::nullopt
         );
         void copy_from(
             VkBuffer buffer,
             command_pool_t& command_pool,
-            boost::optional<VkExtent3D> extent = boost::none
+            std::optional<VkExtent3D> extent = std::nullopt
         );
         void copy_from(
             VkImage image,
             command_buffer_t::scope_t& command_scope,
-            boost::optional<VkExtent3D> extent = boost::none,
+            std::optional<VkExtent3D> extent = std::nullopt,
             int src_aspects = VK_IMAGE_ASPECT_COLOR_BIT,
             int dst_aspects = VK_IMAGE_ASPECT_COLOR_BIT
         );
@@ -97,7 +97,7 @@ namespace my_vulkan
         void load_pixels(
             command_pool_t& commands,
             const void* pixels,
-            boost::optional<size_t> pitch = boost::none
+            std::optional<size_t> pitch = std::nullopt
         );
     private:
         void cleanup();
