@@ -155,7 +155,7 @@ namespace my_vulkan
 
     swap_chain_t::acquisition_outcome_t swap_chain_t::acquire_next_image(
         VkSemaphore semaphore,
-        boost::optional<uint64_t> timeout
+        std::optional<uint64_t> timeout
     )
     {
         return acquire_next_image(semaphore, 0, timeout);
@@ -163,7 +163,7 @@ namespace my_vulkan
 
     swap_chain_t::acquisition_outcome_t swap_chain_t::acquire_next_image(
         VkFence fence,
-        boost::optional<uint64_t> timeout
+        std::optional<uint64_t> timeout
     )
     {
         return acquire_next_image(0, fence, timeout);
@@ -172,7 +172,7 @@ namespace my_vulkan
     swap_chain_t::acquisition_outcome_t swap_chain_t::acquire_next_image(
         VkSemaphore semaphore,
         VkFence fence,
-        boost::optional<uint64_t> timeout
+        std::optional<uint64_t> timeout
     )
     {
         swap_chain_t::acquisition_outcome_t result;

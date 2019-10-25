@@ -47,7 +47,7 @@ namespace my_vulkan
             void bind_pipeline(
                 VkPipelineBindPoint bind_point,
                 VkPipeline pipeline,
-                boost::optional<VkRect2D> target_rect = boost::none
+                std::optional<VkRect2D> target_rect = std::nullopt
             );
             void bind_vertex_buffers(
                 std::vector<buffer_binding_t> bindings,

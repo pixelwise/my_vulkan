@@ -59,8 +59,8 @@ namespace my_vulkan
                 fence_t _fence;
                 command_pool_t _command_pool;
                 command_buffer_t _command_buffer;
-                boost::optional<command_buffer_t::scope_t> _commands;
-                boost::optional<device_memory_t::mapping_t> _mapping;
+                std::optional<command_buffer_t::scope_t> _commands;
+                std::optional<device_memory_t::mapping_t> _mapping;
                 begin_callback_t _begin_callback;
                 end_callback_t _end_callback;
             };
@@ -84,13 +84,13 @@ namespace my_vulkan
             render_target_t render_target();
             size_t depth() const;
             VkRenderPass render_pass();
-            phase_context_t begin_phase(boost::optional<VkRect2D> rect = boost::none);
+            phase_context_t begin_phase(std::optional<VkRect2D> rect = std::nullopt);
             void end_phase(
                 std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
                 std::vector<VkSemaphore> signals = {}
             );
-            boost::optional<size_t> consume_read_slot(bool flush = false);
-            boost::optional<cv::Mat4b> read_bgra(bool flush = false);
+            std::optional<size_t> consume_read_slot(bool flush = false);
+            std::optional<cv::Mat4b> read_bgra(bool flush = false);
             VkDescriptorImageInfo texture(size_t phase);
             VkExtent2D size();
         private:

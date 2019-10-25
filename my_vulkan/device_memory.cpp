@@ -60,7 +60,7 @@ namespace my_vulkan
     }
 
     device_memory_t::mapping_t device_memory_t::map(
-        boost::optional<region_t> region,
+        std::optional<region_t> region,
         VkMemoryMapFlags flags
     )
     {
@@ -88,7 +88,7 @@ namespace my_vulkan
 
     device_memory_t::mapping_t::mapping_t(
         device_memory_t& memory,
-        boost::optional<region_t> optional_region,
+        std::optional<region_t> optional_region,
         VkMemoryMapFlags flags
     )
     : _memory(memory._memory)

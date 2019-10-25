@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <vector>
 #include <mutex>
@@ -33,7 +33,7 @@ namespace my_vulkan
             VkSwapchainKHR swap_chain;
             uint32_t image_index;
         };
-        boost::optional<acquisition_failure_t> present(
+        std::optional<acquisition_failure_t> present(
             swapchain_target_t swap_chain_target,
             std::vector<VkSemaphore> semaphores = {}
         );

@@ -469,21 +469,21 @@ namespace my_vulkan
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 
-    boost::optional<uint32_t> find_graphics_queue(
+    std::optional<uint32_t> find_graphics_queue(
         VkPhysicalDevice device
     )
     {
         return find_queue(device, VK_QUEUE_GRAPHICS_BIT);
     }
 
-    boost::optional<uint32_t> find_transfer_queue(
+    std::optional<uint32_t> find_transfer_queue(
         VkPhysicalDevice device
     )
     {
         return find_queue(device, VK_QUEUE_TRANSFER_BIT);
     }
 
-    boost::optional<uint32_t> find_queue(
+    std::optional<uint32_t> find_queue(
         VkPhysicalDevice device,
         VkQueueFlags queue_type
     )
@@ -495,7 +495,7 @@ namespace my_vulkan
         for (uint32_t i = 0; i < num_queues; ++i)
             if (properties[i].queueFlags & queue_type)
                  return i;
-        return boost::none;       
+        return std::nullopt;       
     }
 
     static bool isDeviceSuitable(

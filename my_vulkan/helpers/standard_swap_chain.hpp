@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <vulkan/vulkan.h>
 
@@ -48,7 +48,7 @@ namespace my_vulkan
                 );
                 uint32_t phase() const;
                 command_buffer_t::scope_t& commands();
-                boost::optional<acquisition_failure_t> finish(
+                std::optional<acquisition_failure_t> finish(
                     std::vector<queue_reference_t::wait_semaphore_info_t> wait_semaphores = {},
                     std::vector<VkSemaphore> signal_semaphores = {}
                 );
@@ -60,8 +60,8 @@ namespace my_vulkan
             };
             struct acquisition_outcome_t
             {
-                boost::optional<working_set_t> working_set;
-                boost::optional<acquisition_failure_t> failure;
+                std::optional<working_set_t> working_set;
+                std::optional<acquisition_failure_t> failure;
             };
             standard_swap_chain_t(
                 device_t& logical_device,

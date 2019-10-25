@@ -514,7 +514,7 @@ namespace my_vulkan
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
         index_range_t range,
-        boost::optional<VkRect2D> target_rect
+        std::optional<VkRect2D> target_rect
     )
     {
         bind(buffer, command_scope, target_rect);
@@ -537,7 +537,7 @@ namespace my_vulkan
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
         index_range_t range,
-        boost::optional<VkRect2D> target_rect
+        std::optional<VkRect2D> target_rect
     )
     {
         bind(buffer, command_scope, target_rect);
@@ -559,7 +559,7 @@ namespace my_vulkan
     >::bind(
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
-        boost::optional<VkRect2D> target_rect
+        std::optional<VkRect2D> target_rect
     )
     {
         command_scope.bind_pipeline(

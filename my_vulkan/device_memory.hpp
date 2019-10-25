@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <boost/optional.hpp>
+#include <optional>
 #include <vector>
 
 namespace my_vulkan
@@ -17,7 +17,7 @@ namespace my_vulkan
         {
             mapping_t(
                 device_memory_t& memory,
-                boost::optional<region_t> region = boost::none,
+                std::optional<region_t> region = std::nullopt,
                 VkMemoryMapFlags flags = 0
             );
             void* data();
@@ -52,7 +52,7 @@ namespace my_vulkan
         device_memory_t& operator=(device_memory_t&& other) noexcept;
         ~device_memory_t(); 
         mapping_t map(
-            boost::optional<region_t> region = boost::none,
+            std::optional<region_t> region = std::nullopt,
             VkMemoryMapFlags flags = 0
         );
         size_t size() const;

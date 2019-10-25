@@ -155,8 +155,8 @@ namespace my_vulkan
             descriptor_pool_t _descriptor_pool;
             descriptor_set_t _descriptor_set;
             std::shared_ptr<buffer_t> _vertices;
-            boost::optional<buffer_t> _indices;
-            boost::optional<phase_t> _phase;
+            std::optional<buffer_t> _indices;
+            std::optional<phase_t> _phase;
             bool _pinned = false;
         };
         std::shared_ptr<buffer_t> upload_vertices(
@@ -172,13 +172,13 @@ namespace my_vulkan
             pipeline_buffer_t& buffer,
             command_buffer_t::scope_t& command_scope,
             index_range_t range,
-            boost::optional<VkRect2D> target_rect = boost::none
+            std::optional<VkRect2D> target_rect = std::nullopt
         );
         void execute_indexed_draw(
             pipeline_buffer_t& buffer,
             command_buffer_t::scope_t& command_scope,
             index_range_t range,
-            boost::optional<VkRect2D> target_rect = boost::none
+            std::optional<VkRect2D> target_rect = std::nullopt
         );
         pipeline_buffer_t& buffer();
         basic_renderer_t(basic_renderer_t&) = delete;
@@ -189,7 +189,7 @@ namespace my_vulkan
         void bind(
             pipeline_buffer_t& buffer,
             command_buffer_t::scope_t& command_scope,
-            boost::optional<VkRect2D> target_rect
+            std::optional<VkRect2D> target_rect
         );
         static VkVertexInputBindingDescription make_vertex_bindings_description();
         static std::vector<VkVertexInputAttributeDescription> make_attribute_descriptions();
