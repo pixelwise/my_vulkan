@@ -10,8 +10,6 @@ namespace my_vulkan
         VkImageLayout color_attachment_final_layout
     )
     : _device{device}
-    , _color_format{color_format}
-    , _depth_format{depth_format}
     {
         VkAttachmentDescription colorAttachment = {};
         colorAttachment.format = color_format;
@@ -74,13 +72,13 @@ namespace my_vulkan
         );
     }
 
-    render_pass_t::render_pass_t(render_pass_t&& other)
+    render_pass_t::render_pass_t(render_pass_t&& other) noexcept
     : _device{0}
     {
         *this = std::move(other);
     }
 
-    render_pass_t& render_pass_t::operator=(render_pass_t&& other)
+    render_pass_t& render_pass_t::operator=(render_pass_t&& other) noexcept
     {
         cleanup();
         _render_pass = other._render_pass;
@@ -111,15 +109,4 @@ namespace my_vulkan
     {
         return _device;
     }
-
-    VkFormat render_pass_t::color_format() const
-    {
-        return _color_format;
-    }
-
-    VkFormat render_pass_t::depth_format() const
-    {
-        return _depth_format;
-    }
-
 }
