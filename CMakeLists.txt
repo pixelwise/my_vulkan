@@ -133,15 +133,15 @@ if(glfw3_FOUND)
 
 endif()
 if(glfw3_FOUND)
-    add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
-    target_include_directories(
-        glfw_vulkan_test
-        PRIVATE
-    )
-    target_link_libraries (
-        glfw_vulkan_test
-        glfw
-        my_vulkan
-    )
-    add_dependencies(glfw_vulkan_test Shaders)
+#    add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
+#    target_include_directories(
+#        glfw_vulkan_test
+#        PRIVATE
+#    )
+#    target_link_libraries (
+#        glfw_vulkan_test
+#        glfw
+#        my_vulkan
+#    )
+#    add_dependencies(glfw_vulkan_test Shaders)
 endif(glfw3_FOUND)

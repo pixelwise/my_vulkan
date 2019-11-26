@@ -496,13 +496,7 @@ private:
 
     std::optional<my_vulkan::acquisition_failure_t> try_draw_frame()
     {
-        auto outcome = swap_chain->acquire(
-            {{0, 0}, swap_chain->extent()},
-            {
-                {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
-                {.depthStencil = {1.0f, 0}},
-            }
-        );
+        auto outcome = swap_chain->acquire();
         if (outcome.failure)
             return outcome.failure;
         auto& working_set = *outcome.working_set;

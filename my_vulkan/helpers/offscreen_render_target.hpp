@@ -17,7 +17,6 @@ namespace my_vulkan
             struct phase_context_t
             {
                 size_t index;
-                VkFramebuffer framebuffer;
                 command_buffer_t::scope_t* commands;
             };
         private:
@@ -33,11 +32,9 @@ namespace my_vulkan
                 )>;
                 slot_t(
                     VkDevice device,
-                    VkRenderPass render_pass,
                     queue_reference_t& queue,
                     VkExtent2D size,
                     VkImageView color_view,
-                    VkFormat depth_format,
                     bool need_readback,
                     VkPhysicalDevice physical_device,
                     begin_callback_t begin_callback = 0,
@@ -51,10 +48,6 @@ namespace my_vulkan
                 cv::Mat4b read_bgra();
             private:
                 queue_reference_t* _queue;
-                VkRenderPass _render_pass;
-                image_t _depth_image;
-                image_view_t _depth_view;
-                framebuffer_t _framebuffer;
                 std::unique_ptr<image_t> _readback_image;
                 fence_t _fence;
                 command_pool_t _command_pool;
@@ -67,23 +60,18 @@ namespace my_vulkan
         public:
             offscreen_render_target_t(
                 device_t& device,
-                VkRenderPass render_pass,
                 VkFormat color_format,
-                VkFormat depth_format,
                 VkExtent2D size,
                 bool need_readback = false,
                 size_t depth = 2
             );
             offscreen_render_target_t(
                 device_t& device,
-                VkRenderPass render_pass,
                 std::vector<VkImageView> color_views,
-                VkFormat depth_format,
                 VkExtent2D size
             );
             render_target_t render_target();
             size_t depth() const;
-            VkRenderPass render_pass();
             phase_context_t begin_phase(std::optional<VkRect2D> rect = std::nullopt);
             void end_phase(
                 std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
@@ -99,7 +87,6 @@ namespace my_vulkan
                 image_t image;
                 image_view_t view;
                 texture_sampler_t sampler;
-
                 color_buffer_t(
                     VkDevice device,
                     VkPhysicalDevice physical_device,
@@ -107,7 +94,6 @@ namespace my_vulkan
                     VkFormat color_format
                 );
             };
-            VkRenderPass _render_pass;
             VkExtent2D _size;
             std::vector<color_buffer_t> _color_buffers;
             std::vector<VkDescriptorImageInfo> _textures;

@@ -12,8 +12,6 @@
 #include "../command_buffer.hpp"
 #include "../swap_chain.hpp"
 #include "../image_view.hpp"
-#include "../framebuffer.hpp"
-#include "../render_pass.hpp"
 #include "../fence.hpp"
 #include "../semaphore.hpp"
 #include "../queue.hpp"
@@ -34,7 +32,6 @@ namespace my_vulkan
             struct pipeline_resources_t
             {
                 image_view_t image_view;
-                framebuffer_t framebuffer;
                 command_buffer_t command_buffer;
             };
         public:
@@ -68,18 +65,13 @@ namespace my_vulkan
                 VkSurfaceKHR surface,
                 VkExtent2D desired_extent
             );
-            VkRenderPass render_pass();
             size_t depth() const;
-            std::vector<VkFramebuffer> framebuffers();
-            acquisition_outcome_t acquire(
-                VkRect2D rect,
-                std::vector<VkClearValue> clear_values = {}
-            );
+            std::vector<VkImageView> output_buffers();
+            acquisition_outcome_t acquire();
             command_pool_t& command_pool();
             void wait_for_idle();
             render_target_t render_target();
             VkFormat color_format() const;
-            VkFormat depth_format() const;
             VkExtent2D extent() const;
             void update(VkExtent2D new_extent);
         private:
@@ -89,9 +81,6 @@ namespace my_vulkan
             std::unique_ptr<swap_chain_t> _swap_chain;
             queue_reference_t* _graphics_queue;
             queue_reference_t* _present_queue;
-            image_t _depth_image;
-            image_view_t _depth_view;
-            render_pass_t _render_pass;
             command_pool_t _command_pool;
             std::vector<pipeline_resources_t> _pipeline_resources;
             std::vector<frame_sync_points_t> _frame_sync_points;

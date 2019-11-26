@@ -21,6 +21,26 @@ namespace my_vulkan
         shader_module_t fragment_shader;
     };
 
+    struct basic_renderer_phase_t
+    {
+        size_t context_id;
+        size_t phase;
+        basic_renderer_phase_t(size_t context_id, size_t phase)
+        : context_id{context_id}
+        , phase{phase}
+        {}
+        basic_renderer_phase_t(size_t phase)
+        : context_id{0}
+        , phase{phase}
+        {}
+        bool operator==(basic_renderer_phase_t y) const
+        {
+            return 
+                context_id == y.context_id &&
+                phase == y.phase;
+        }
+    };
+
     template<
         typename in_vertex_uniforms_t,
         typename in_fragment_uniforms_t,
@@ -36,6 +56,8 @@ namespace my_vulkan
         using vertex_uniforms_t = in_vertex_uniforms_t;
         using fragment_uniforms_t = in_fragment_uniforms_t;
         using vertex_t = in_vertex_t;
+        using phase_t = basic_renderer_phase_t;
+
         typedef rendering_output_config_t output_config_t;
         basic_renderer_t(
             output_config_t output_config,
@@ -57,25 +79,6 @@ namespace my_vulkan
             const basic_renderer_shader_modules_t& shaders,
             render_settings_t render_settings = {}
         );
-        struct phase_t
-        {
-            size_t context_id;
-            size_t phase;
-            phase_t(size_t context_id, size_t phase)
-            : context_id{context_id}
-            , phase{phase}
-            {}
-            phase_t(size_t phase)
-            : context_id{0}
-            , phase{phase}
-            {}
-            bool operator==(phase_t y) const
-            {
-                return 
-                    context_id == y.context_id &&
-                    phase == y.phase;
-            }
-        };
         class pipeline_buffer_t
         {
         public:

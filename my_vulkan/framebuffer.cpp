@@ -8,7 +8,8 @@ namespace my_vulkan
         std::vector<VkImageView> attachments,
         VkExtent2D extent
     )
-    : _device{device}    
+    : _device{device} 
+    , _extent{extent}   
     {
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -41,6 +42,11 @@ namespace my_vulkan
     VkFramebuffer framebuffer_t::get()
     {
         return _framebuffer;
+    }
+
+    VkExtent2D framebuffer_t::extent() const
+    {
+        return _extent;
     }
 
     framebuffer_t::~framebuffer_t()

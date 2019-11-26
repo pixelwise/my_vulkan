@@ -18,10 +18,12 @@ namespace my_vulkan
         framebuffer_t& operator=(const framebuffer_t&) = delete;
         framebuffer_t& operator=(framebuffer_t&& other) noexcept;
         VkFramebuffer get();
+        VkExtent2D extent() const;
         ~framebuffer_t();
     private:
         void cleanup();
         VkDevice _device;
+        VkExtent2D _extent;
         VkFramebuffer _framebuffer;
     };
 }

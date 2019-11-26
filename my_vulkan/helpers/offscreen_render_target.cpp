@@ -6,15 +6,12 @@ namespace my_vulkan
     {
         offscreen_render_target_t::offscreen_render_target_t(
             device_t& device,
-            VkRenderPass render_pass,
             VkFormat color_format,
-            VkFormat depth_format,
             VkExtent2D size,
             bool need_readback,
             size_t depth
         )
-        : _render_pass{render_pass}
-        , _size{size}
+        : _size{size}
         {
 
             for (size_t i = 0; i < depth; ++i)
@@ -58,7 +55,8 @@ namespace my_vulkan
                     ](
                         command_buffer_t::scope_t &commands,
                         image_t* readback_image
-                    ) {
+                    )
+                    {
                         commands.pipeline_barrier(
                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                             VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -89,25 +87,10 @@ namespace my_vulkan
                                 VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
                             }}
                         );
-#if 0
-                        commands.blit(
-                            image.get(),
-                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                            readback_image->get(),
-                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                            {VkImageBlit{
-                                {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-                                {{0, 0, 0}, {int32_t(size.width), int32_t(size.height), 1}},
-                                {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-                                {{0, 0, 0}, {int32_t(size.width), int32_t(size.height), 1}},
-                            }}
-                        );
-#else
                         readback_image->copy_from(
                             image.get(),
                             commands
                         );
-#endif
                         commands.pipeline_barrier(
                             VK_PIPELINE_STAGE_TRANSFER_BIT,
                             VK_PIPELINE_STAGE_HOST_BIT,
@@ -127,6 +110,7 @@ namespace my_vulkan
                     };
                 }
                 else
+                {
                     end_callback =
                         [
                             &image = _color_buffers[i].image
@@ -140,13 +124,12 @@ namespace my_vulkan
                                 commands
                             );                        
                         };
+                }
                 _slots.emplace_back(
                     device.get(),
-                    _render_pass,
                     device.graphics_queue(),
                     size,
                     _color_buffers[i].view.get(),
-                    depth_format,
                     need_readback,
                     device.physical_device(),
                     begin_callback,
@@ -162,23 +145,18 @@ namespace my_vulkan
 
         offscreen_render_target_t::offscreen_render_target_t(
             device_t& device,
-            VkRenderPass render_pass,
             std::vector<VkImageView> color_views,
-            VkFormat depth_format,
             VkExtent2D size
         )
-        : _render_pass{render_pass}
-        , _size{size}
+        : _size{size}
         {
             for (size_t i = 0; i < color_views.size(); ++i)
             {
                 _slots.emplace_back(
                     device.get(),
-                    _render_pass,
                     device.graphics_queue(),
                     size,
                     color_views[i],
-                    depth_format,
                     false,
                     device.physical_device()
                 );
@@ -210,9 +188,14 @@ namespace my_vulkan
             return {
                 [&](VkRect2D rect){
                     auto scope = begin_phase(rect);
+                    std::vector<VkImageView> output_buffers;
+                    for (auto& color_buffer : _color_buffers)
+                        output_buffers.push_back(color_buffer.view.get());
                     return render_scope_t{
                         scope.commands,
-                        scope.index
+                        scope.index,
+                        std::move(output_buffers),
+                        _size,
                     };
                 },
                 [&](auto waits, auto signals){
@@ -227,11 +210,6 @@ namespace my_vulkan
         VkDescriptorImageInfo offscreen_render_target_t::texture(size_t phase)
         {
             return _textures.at(phase);
-        }
-
-        VkRenderPass offscreen_render_target_t::render_pass()
-        {
-            return _render_pass;
         }
 
         size_t offscreen_render_target_t::depth() const
@@ -283,49 +261,15 @@ namespace my_vulkan
 
         offscreen_render_target_t::slot_t::slot_t(
             VkDevice device,
-            VkRenderPass render_pass,
             queue_reference_t& queue,
             VkExtent2D size,
             VkImageView color_view,
-            VkFormat depth_format,
             bool need_readback,
             VkPhysicalDevice physical_device,
             begin_callback_t begin_callback,
             end_callback_t end_callback
         )
         : _queue{&queue}
-        , _render_pass{render_pass}
-        , _depth_image{
-            device,
-            physical_device,
-            {size.width, size.height, 1},
-            depth_format,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-        }
-        , _depth_view{_depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT)}
-        , _framebuffer{
-            device,
-            render_pass,
-            {color_view, _depth_view.get()},
-            size                
-        }
-        , _readback_image{
-            need_readback ?
-            new image_t{
-                device,
-                physical_device,
-                {size.width, size.height, 1},
-                VK_FORMAT_B8G8R8A8_UNORM,
-                VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_TILING_LINEAR,
-                //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                VK_MEMORY_PROPERTY_HOST_CACHED_BIT
-            } :
-            nullptr
-        }
         , _fence{device, VK_FENCE_CREATE_SIGNALED_BIT}
         , _command_pool{device, queue}
         , _command_buffer{_command_pool.make_buffer()}
@@ -364,15 +308,9 @@ namespace my_vulkan
             _commands = _command_buffer.begin(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
             if (_begin_callback)
                 _begin_callback(*_commands);
-            _commands->begin_render_pass(
-                _render_pass,
-                _framebuffer.get(),
-                rect
-            );
             return {
                 index,
-                _framebuffer.get(),
-                &*_commands
+                &*_commands,
             };
         }
 
@@ -385,7 +323,6 @@ namespace my_vulkan
                 throw std::runtime_error{
                     "finish before begin in vulkan::offscreen_render_target_t"
                 };
-            _commands->end_render_pass();
             _mapping.reset();
             if (_end_callback)
                 _end_callback(*_commands, _readback_image.get());
