@@ -188,13 +188,10 @@ namespace my_vulkan
             return {
                 [&](VkRect2D rect){
                     auto scope = begin_phase(rect);
-                    std::vector<VkImageView> output_buffers;
-                    for (auto& color_buffer : _color_buffers)
-                        output_buffers.push_back(color_buffer.view.get());
                     return render_scope_t{
                         scope.commands,
                         scope.index,
-                        std::move(output_buffers),
+                        _color_buffers[scope.index].view.get(),
                         _size,
                     };
                 },

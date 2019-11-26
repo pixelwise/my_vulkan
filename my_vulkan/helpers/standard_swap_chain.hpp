@@ -66,7 +66,6 @@ namespace my_vulkan
                 VkExtent2D desired_extent
             );
             size_t depth() const;
-            std::vector<VkImageView> output_buffers();
             acquisition_outcome_t acquire();
             command_pool_t& command_pool();
             void wait_for_idle();

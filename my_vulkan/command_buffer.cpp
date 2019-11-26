@@ -428,13 +428,16 @@ namespace my_vulkan
         end();
     }
 
-    void command_buffer_t::scope_t::end()
+    VkCommandBuffer command_buffer_t::scope_t::end()
     {
+        VkCommandBuffer result = 0;
         if (_command_buffer)
         {
             vkEndCommandBuffer(_command_buffer);
+            result = _command_buffer;
             _command_buffer = 0;
         }
+        return result;
     }
 
     void command_buffer_t::reset()

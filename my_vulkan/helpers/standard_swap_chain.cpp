@@ -69,7 +69,7 @@ namespace my_vulkan
             auto& sync_points = _frame_sync_points[_current_frame];
             _current_frame = (_current_frame + 1) % _frame_sync_points.size();
             sync_points.in_flight.wait();
-            auto parent_outcome = _swap_chain-> acquire_next_image(sync_points.image_available.get());
+            auto parent_outcome = _swap_chain->acquire_next_image(sync_points.image_available.get());
             outcome.failure = parent_outcome.failure;
             if (auto i = parent_outcome.image_index)
             {
@@ -112,15 +112,14 @@ namespace my_vulkan
             std::vector<VkSemaphore> signal_semaphores
         )
         {
-            commands().end();
-            auto& resources = _parent->_pipeline_resources[phase()];
+            auto command_buffer = commands().end();
             wait_semaphores.push_back({
                 _sync->image_available.get(),
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
             });
             signal_semaphores.push_back(_sync->render_finished.get());
             _parent->_graphics_queue->submit(
-                resources.command_buffer.get(),
+                command_buffer,
                 std::move(wait_semaphores),
                 std::move(signal_semaphores),
                 _sync->in_flight.get()
@@ -143,13 +142,6 @@ namespace my_vulkan
             return _command_pool;
         }
 
-        std::vector<VkImageView> standard_swap_chain_t::output_buffers()
-        {
-            std::vector<VkImageView> result(depth());
-            for (size_t i = 0; i < depth(); ++i)
-                result[i] = _pipeline_resources[i].image_view.get();
-            return result;
-        }
 
         void standard_swap_chain_t::wait_for_idle()
         {
@@ -171,15 +163,17 @@ namespace my_vulkan
                             to_string(*outcome.failure)
                         };
                     *working_set = std::move(*outcome.working_set);
+                    uint32_t phase = (*working_set)->phase();
                     return render_scope_t{
                         &(*working_set)->commands(),
-                        (*working_set)->phase(),
-                        output_buffers(),
+                        phase,
+                        _pipeline_resources[phase].image_view.get(),
                         extent()
                     };
                 },
                 [working_set](auto waits, auto signals){
-                    (*working_set)->finish(std::move(waits), std::move(signals));
+                    if (auto failure = (*working_set)->finish(std::move(waits), std::move(signals)))
+                        std::cout << "presentation failure: " << to_string(*failure) << std::endl;
                 },
                 {
                     extent().width,

@@ -35,6 +35,7 @@ namespace my_vulkan
     {
         cleanup();
         _framebuffer = other._framebuffer;
+        _extent = other._extent;
         std::swap(_device, other._device);
         return *this;
     }

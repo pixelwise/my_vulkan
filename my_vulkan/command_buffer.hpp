@@ -133,7 +133,7 @@ namespace my_vulkan
                 VkFilter filter = VK_FILTER_NEAREST
             );
 
-            void end();
+            VkCommandBuffer end();
             ~scope_t();
         private:
             VkCommandBuffer _command_buffer{0};
