@@ -8,6 +8,10 @@ namespace my_vulkan
     {
         render_pass_t(
             VkDevice device,
+            VkRenderPassCreateInfo info
+        );
+        render_pass_t(
+            VkDevice device,
             VkFormat color_format,
             VkFormat depth_format,
             VkImageLayout color_attachment_final_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR

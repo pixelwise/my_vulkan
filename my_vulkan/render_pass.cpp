@@ -5,6 +5,18 @@ namespace my_vulkan
 {
     render_pass_t::render_pass_t(
         VkDevice device,
+        VkRenderPassCreateInfo info
+    )
+    : _device{device}
+    {
+        vk_require(
+            vkCreateRenderPass(device, &info, nullptr, &_render_pass),
+            "creating render pass"
+        );        
+    }
+
+    render_pass_t::render_pass_t(
+        VkDevice device,
         VkFormat color_format,
         VkFormat depth_format,
         VkImageLayout color_attachment_final_layout
