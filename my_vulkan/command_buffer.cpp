@@ -115,6 +115,13 @@ namespace my_vulkan
         vkCmdBeginRenderPass(_command_buffer, &info, contents);
     }
 
+    void command_buffer_t::scope_t::next_subpass(
+        VkSubpassContents contents
+    )
+    {
+        vkCmdNextSubpass(_command_buffer, contents);
+    }
+
     void command_buffer_t::scope_t::set_viewport(
         std::vector<VkViewport> viewports,
         uint32_t first
