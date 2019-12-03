@@ -130,6 +130,7 @@ namespace my_vulkan
         output_config.device->get(),
         output_config.extent,
         output_config.render_pass,
+        output_config.subpass,
         _uniform_layout,
         make_vertex_layout(),
         shaders.vertex_shader,

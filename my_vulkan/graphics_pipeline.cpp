@@ -11,6 +11,7 @@ namespace my_vulkan
         VkDevice device,
         VkExtent2D extent,
         VkRenderPass render_pass,
+        uint32_t subpass,
         const std::vector<VkDescriptorSetLayoutBinding>& uniform_layout,
         vertex_layout_t vertex_layout,
         const std::vector<uint8_t>& vertex_shader,
@@ -22,6 +23,7 @@ namespace my_vulkan
         device,
         extent,
         render_pass,
+        subpass,
         uniform_layout,
         vertex_layout,
         shader_module_t{
@@ -42,6 +44,7 @@ namespace my_vulkan
         VkDevice device,
         VkExtent2D extent,
         VkRenderPass render_pass,
+        uint32_t subpass,
         const std::vector<VkDescriptorSetLayoutBinding>& uniform_layout,
         vertex_layout_t vertex_layout,
         const shader_module_t& vertex_shader,
@@ -214,7 +217,7 @@ namespace my_vulkan
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.layout = _layout;
         pipelineInfo.renderPass = render_pass;
-        pipelineInfo.subpass = 0;
+        pipelineInfo.subpass = subpass;
         pipelineInfo.pDynamicState = &dynamic_state_info;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 

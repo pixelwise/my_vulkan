@@ -12,6 +12,7 @@ namespace my_vulkan
         device_t* device;
         VkExtent2D extent;
         VkRenderPass render_pass;
+        uint32_t subpass = 0;
         bool dynamic_viewport = true;
     };
 
