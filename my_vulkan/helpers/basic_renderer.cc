@@ -111,12 +111,14 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     > basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::basic_renderer_t(
         output_config_t output_config,
         const basic_renderer_shader_modules_t& shaders,
@@ -145,17 +147,20 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
-    std::vector<VkDescriptorSetLayoutBinding> basic_renderer_t<
+    std::vector<VkDescriptorSetLayoutBinding>
+    basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::make_uniform_layout()
     {
         std::vector<VkDescriptorSetLayoutBinding> result;
-        uint32_t textures_location = 0;
+        uint32_t texture_location = 0;
         static_assert(
             boost::fusion::result_of::empty<vertex_uniforms_t>::value ==
             boost::fusion::result_of::empty<fragment_uniforms_t>::value,
@@ -164,7 +169,7 @@ namespace my_vulkan
         if (!boost::fusion::result_of::empty<vertex_uniforms_t>::value)
         {
             result.push_back({
-                textures_location++,
+                texture_location++,
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 1,
                 VK_SHADER_STAGE_VERTEX_BIT,
@@ -174,7 +179,7 @@ namespace my_vulkan
         if (!boost::fusion::result_of::empty<fragment_uniforms_t>::value)
         {
             result.push_back({
-                textures_location++,
+                texture_location++,
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 1,
                 VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -184,8 +189,18 @@ namespace my_vulkan
         for (auto i : boost::counting_range<uint32_t>(0, num_textures))
         {
             result.push_back({
-                textures_location + i,
+                texture_location + i,
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                1,
+                VK_SHADER_STAGE_FRAGMENT_BIT,
+                0
+            });
+        }
+        for (auto i : boost::counting_range<uint32_t>(0, num_input_attachments))
+        {
+            result.push_back({
+                uint32_t(texture_location + num_textures + i),
+                VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
                 1,
                 VK_SHADER_STAGE_FRAGMENT_BIT,
                 0
@@ -198,14 +213,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     vertex_layout_t
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::make_vertex_layout()
     {
         return {
@@ -218,14 +235,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     VkVertexInputBindingDescription
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::make_vertex_bindings_description()
     {
         VkVertexInputBindingDescription result = {};
@@ -239,14 +258,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     std::vector<VkVertexInputAttributeDescription>
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::make_attribute_descriptions()
     {
         return make_vertex_attribute_descriptions(vertex_t{});
@@ -256,13 +277,15 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::pipeline_buffer_t::pipeline_buffer_t(
         device_t* device,
         VkDescriptorSetLayout layout
@@ -302,14 +325,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     void
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::pipeline_buffer_t::update_vertices(
         std::shared_ptr<buffer_t> vertices
     )
@@ -321,14 +346,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     std::shared_ptr<buffer_t>
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::upload_vertices(
         const std::vector<vertex_t>& vertices
     )
@@ -351,14 +378,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     void
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::pipeline_buffer_t::update_indices(
         const std::vector<uint32_t> &indices
     )
@@ -381,14 +410,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     bool
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::pipeline_buffer_t::in_use() const
     {
         return !!_phase || _pinned;
@@ -398,14 +429,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     void
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::pipeline_buffer_t::update_uniforms(
         vertex_uniforms_t vertex_uniforms,
         fragment_uniforms_t fragment_uniforms
@@ -444,14 +477,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     void
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::pipeline_buffer_t::update_texture(
         size_t index,
         VkDescriptorImageInfo texture
@@ -460,7 +495,7 @@ namespace my_vulkan
         if (index >= num_textures)
             throw std::runtime_error{"invalid texture index"};
         _descriptor_set.update_combined_image_sampler_write(
-            uint32_t(2 + index),
+            uint32_t(texture_location_offset() + index),
             {texture}
         );
     }
@@ -469,14 +504,68 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     void
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
+    >::pipeline_buffer_t::update_input_attachment(
+        size_t index,
+        descriptor_set_t::image_info_t image
+    )
+    {
+        if (index >= num_textures)
+            throw std::runtime_error{"invalid texture index"};
+        _descriptor_set.update_image_write(
+            uint32_t(texture_location_offset() + num_textures + index),
+            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+            {image}
+        );
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures,
+        size_t num_input_attachments
+    >
+    size_t
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures,
+        num_input_attachments
+    >::pipeline_buffer_t::texture_location_offset()
+    {
+        size_t offset = 0;
+        if (!boost::fusion::result_of::empty<vertex_uniforms_t>::value)
+            ++offset;
+        if (!boost::fusion::result_of::empty<fragment_uniforms_t>::value)
+            ++offset;
+        return offset;        
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures,
+        size_t num_input_attachments
+    >
+    void
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures,
+        num_input_attachments
     >::pipeline_buffer_t::bind(
         command_buffer_t::scope_t& command_scope,
         VkPipelineLayout layout,
@@ -503,14 +592,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     void
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::execute_draw(
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
@@ -526,14 +617,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     void
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::execute_indexed_draw(
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
@@ -549,14 +642,16 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
     void
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
+        num_textures,
+        num_input_attachments
     >::bind(
         pipeline_buffer_t& buffer,
         command_buffer_t::scope_t& command_scope,
@@ -584,20 +679,17 @@ namespace my_vulkan
         typename vertex_uniforms_t,
         typename fragment_uniforms_t,
         typename vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments
     >
-    typename basic_renderer_t<
-        vertex_uniforms_t,
-        fragment_uniforms_t,
-        vertex_t,
-        num_textures
-    >::pipeline_buffer_t&
+    auto 
     basic_renderer_t<
         vertex_uniforms_t,
         fragment_uniforms_t,
         vertex_t,
-        num_textures
-    >::buffer()
+        num_textures,
+        num_input_attachments
+    >::buffer() -> pipeline_buffer_t&
     {
         for (auto& buffer_ptr : _pipeline_buffers)
             if (!buffer_ptr->in_use())

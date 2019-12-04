@@ -50,7 +50,8 @@ namespace my_vulkan
         // hint: use BOOST_FUSION_DEFINE_STRUCT for convenience
         // std::tuple should also work
         typename in_vertex_t,
-        size_t num_textures
+        size_t num_textures,
+        size_t num_input_attachments = 0
     > class basic_renderer_t
     {
     public:
@@ -140,6 +141,10 @@ namespace my_vulkan
                 size_t index,
                 VkDescriptorImageInfo texture
             );
+            void update_input_attachment(
+                size_t index,
+                descriptor_set_t::image_info_t image
+            );
             void begin_phase(phase_t i)
             {
                 if (_phase == i)
@@ -153,6 +158,7 @@ namespace my_vulkan
             bool in_use() const;
             pinned_t pin() {return pinned_t{*this};}
         private:
+            static size_t texture_location_offset();
             device_t* _device;
             buffer_t _vertex_uniforms;
             buffer_t _fragment_uniforms;
