@@ -267,6 +267,23 @@ namespace my_vulkan
             end_callback_t end_callback
         )
         : _queue{&queue}
+        , _readback_image{
+            need_readback ?
+            new image_t{
+                device,
+                physical_device,
+                {size.width, size.height, 1},
+                VK_FORMAT_B8G8R8A8_UNORM,
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_TILING_LINEAR,
+                //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+            } :
+            nullptr
+        }
         , _fence{device, VK_FENCE_CREATE_SIGNALED_BIT}
         , _command_pool{device, queue}
         , _command_buffer{_command_pool.make_buffer()}
