@@ -519,8 +519,8 @@ namespace my_vulkan
         descriptor_set_t::image_info_t image
     )
     {
-        if (index >= num_textures)
-            throw std::runtime_error{"invalid texture index"};
+        if (index >= num_input_attachments)
+            throw std::runtime_error{"invalid input attachment index"};
         _descriptor_set.update_image_write(
             uint32_t(texture_location_offset() + num_textures + index),
             VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
