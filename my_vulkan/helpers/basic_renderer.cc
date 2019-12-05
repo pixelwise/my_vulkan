@@ -309,7 +309,8 @@ namespace my_vulkan
         _device->get(),
         std::vector<VkDescriptorPoolSize>{
             {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uint32_t(2)},
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(num_textures)}
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(num_textures)},
+            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, uint32_t(num_input_attachments)},
         },
         1        
     }
