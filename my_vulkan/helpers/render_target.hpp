@@ -31,6 +31,7 @@ namespace my_vulkan
             bool flipped;
             rect_t rect;
             glm::vec2 ui_multiplier;
+            bool enabled = true;
             render_target_t(
                 begin_t in_begin,
                 end_t in_end,
