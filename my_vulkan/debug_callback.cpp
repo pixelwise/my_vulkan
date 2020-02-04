@@ -1,6 +1,6 @@
 #include "debug_callback.hpp"
 #include "utils.hpp"
-
+#include <cassert>
 namespace my_vulkan
 {
     debug_callback_t::debug_callback_t(

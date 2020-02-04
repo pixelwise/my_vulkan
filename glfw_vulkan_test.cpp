@@ -12,6 +12,7 @@
 #include "my_vulkan/my_vulkan.hpp"
 #include "my_vulkan/surface.hpp"
 #include "my_vulkan/helpers/standard_swap_chain.hpp"
+#include <my_vulkan/utils.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -114,6 +115,7 @@ public:
     HelloTriangleApplication()
     : window{initWindow(this)}
     , validationLayers{
+        "VK_LAYER_KHRONOS_validation"
         //"VK_LAYER_LUNARG_standard_validation"        
     }
     , deviceExtensions{ 
@@ -145,7 +147,8 @@ public:
         surface.get(),
         window_extent()
     }}
-
+    , _depth_format{my_vulkan::find_depth_format(physical_device)}
+    , _render_pass{logical_device.get(), swap_chain->color_format(), _depth_format}
     , vertex_buffer{createVertexBuffer(
         logical_device,
         swap_chain->command_pool()
@@ -176,7 +179,8 @@ public:
     , graphics_pipeline{
         logical_device.get(),
         swap_chain->extent(),
-        swap_chain->render_pass(),
+        _render_pass.get(),
+        0,
         uniform_layout,
         Vertex::layout(),
         readFile("shaders/26_shader_depth.vert.spv"),
@@ -231,11 +235,12 @@ private:
     my_vulkan::device_t logical_device;
     
     std::unique_ptr<my_vulkan::helpers::standard_swap_chain_t> swap_chain;
-
+    VkFormat _depth_format;
     my_vulkan::buffer_t vertex_buffer;
     my_vulkan::buffer_t index_buffer;    
     my_vulkan::image_t texture_image;
     std::vector<VkDescriptorSetLayoutBinding> uniform_layout;
+    my_vulkan::render_pass_t _render_pass;
     my_vulkan::graphics_pipeline_t graphics_pipeline;
     my_vulkan::image_view_t texture_view;
     my_vulkan::texture_sampler_t texture_sampler;
@@ -293,6 +298,16 @@ private:
         glfwDestroyWindow(window);
         glfwTerminate();
     }
+    VkRenderPass create_renderpass()
+    {
+        my_vulkan::render_pass_t ret{
+            logical_device.get(),
+            swap_chain->color_format(),
+            _depth_format
+        };
+        _render_pass = std::move(ret);
+        return _render_pass.get();
+    }
 
     void recreateSwapChain(my_vulkan::device_t& logical_device)
     {
@@ -308,10 +323,12 @@ private:
             surface.get(),
             window_extent()
         });
+        create_renderpass();
         graphics_pipeline = my_vulkan::graphics_pipeline_t{
             logical_device.get(),
             swap_chain->extent(),
-            swap_chain->render_pass(),
+            _render_pass.get(),
+            0,
             uniform_layout,
             Vertex::layout(),
             readFile("shaders/26_shader_depth.vert.spv"),
@@ -423,7 +440,7 @@ private:
         return result;
     }
 
-    static void draw_commands(
+    void draw_commands(
         my_vulkan::command_buffer_t::scope_t& command_scope,
         VkBuffer vertex_buffer, // vertex_buffer.buffer
         my_vulkan::graphics_pipeline_t& graphics_pipeline,
@@ -431,6 +448,16 @@ private:
         my_vulkan::descriptor_set_t& descriptor_set
     )
     {
+
+        command_scope.begin_render_pass(
+            _render_pass.get(),
+            nullptr,
+            VkRect2D {
+                .offset = {0, 0},
+                .extent = swap_chain->extent()
+            },
+            {{0.0f, 0.0f, 0.0f, 1.0f}}
+        );
         command_scope.bind_pipeline(
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             graphics_pipeline.get()
