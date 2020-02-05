@@ -29,12 +29,12 @@ namespace my_vulkan
                 semaphore_t render_finished;
                 fence_t in_flight;
             };
+        public:
             struct pipeline_resources_t
             {
                 image_view_t image_view;
                 command_buffer_t command_buffer;
             };
-        public:
             typedef swap_chain_t base_t;
             struct working_set_t
             {
@@ -73,6 +73,7 @@ namespace my_vulkan
             VkFormat color_format() const;
             VkExtent2D extent() const;
             void update(VkExtent2D new_extent);
+            [[nodiscard]] const std::vector<pipeline_resources_t> & pipeline_resources() const;
         private:
             device_t* _device;
             VkSurfaceKHR _surface;

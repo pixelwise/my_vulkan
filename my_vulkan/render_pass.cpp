@@ -19,14 +19,15 @@ namespace my_vulkan
         VkDevice device,
         VkFormat color_format,
         VkFormat depth_format,
-        VkImageLayout color_attachment_final_layout
+        VkImageLayout color_attachment_final_layout,
+        VkAttachmentLoadOp attachment_loadop
     )
     : _device{device}
     {
         VkAttachmentDescription colorAttachment = {};
         colorAttachment.format = color_format;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachment.loadOp = attachment_loadop;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -36,7 +37,7 @@ namespace my_vulkan
         VkAttachmentDescription depthAttachment = {};
         depthAttachment.format = depth_format;
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        depthAttachment.loadOp = attachment_loadop;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
