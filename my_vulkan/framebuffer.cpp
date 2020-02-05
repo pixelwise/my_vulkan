@@ -9,7 +9,7 @@ namespace my_vulkan
         VkExtent2D extent
     )
     : _device{device} 
-    , _extent{extent}   
+    , _extent{extent}
     {
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

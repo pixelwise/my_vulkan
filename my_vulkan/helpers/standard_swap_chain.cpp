@@ -193,5 +193,10 @@ namespace my_vulkan
         {
             return _swap_chain->extent();
         }
+
+        const std::vector<standard_swap_chain_t::pipeline_resources_t> &standard_swap_chain_t::pipeline_resources() const
+        {
+            return _pipeline_resources;
+        }
     }
 }

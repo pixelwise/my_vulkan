@@ -12,6 +12,7 @@
 #include "my_vulkan/my_vulkan.hpp"
 #include "my_vulkan/surface.hpp"
 #include "my_vulkan/helpers/standard_swap_chain.hpp"
+#include <memory>
 #include <my_vulkan/utils.hpp>
 
 #include <iostream>
@@ -110,6 +111,30 @@ const std::vector<uint16_t> indices = {
     4, 5, 6, 6, 7, 4
 };
 
+typedef std::vector<my_vulkan::framebuffer_t> framebuffer_list_t;
+framebuffer_list_t create_framebuffers(
+    VkDevice device,
+    VkRenderPass renderpass,
+    VkExtent2D extent,
+    const std::vector<my_vulkan::helpers::standard_swap_chain_t::pipeline_resources_t> & resources,
+    VkImageView depth_image_view
+)
+{
+    framebuffer_list_t ret;
+    for (auto & resource: resources)
+    {
+        // ?? does the array of VkImageView handles need to be always exist when the framebuffer exist?
+        my_vulkan::framebuffer_t framebuffer{
+            device,
+            renderpass,
+            {resource.image_view.get(), depth_image_view},
+            extent
+        };
+        ret.push_back(std::move(framebuffer));
+    }
+    return ret;
+}
+
 class HelloTriangleApplication {
 public:
     HelloTriangleApplication()
@@ -148,7 +173,38 @@ public:
         window_extent()
     }}
     , _depth_format{my_vulkan::find_depth_format(physical_device)}
-    , _render_pass{logical_device.get(), swap_chain->color_format(), _depth_format}
+    , _depth_image {
+        logical_device.get(),
+        physical_device,
+        VkExtent3D {
+            swap_chain->extent().width,
+            swap_chain->extent().height,
+            1
+        },
+        _depth_format,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+    }
+    , _depth_image_view{
+        _depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT)
+    }
+    , _render_pass{
+        logical_device.get(),
+        swap_chain->color_format(),
+        _depth_format,
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        VK_ATTACHMENT_LOAD_OP_CLEAR
+    }
+    , _frambuffers{
+        std::move(
+            create_framebuffers(
+                logical_device.get(),
+                _render_pass.get(),
+                swap_chain->extent(),
+                swap_chain->pipeline_resources(),
+                _depth_image_view.get()
+            )
+        )
+    }
     , vertex_buffer{createVertexBuffer(
         logical_device,
         swap_chain->command_pool()
@@ -197,8 +253,8 @@ public:
     , descriptor_pool{
         logical_device.get(),
         std::vector<VkDescriptorPoolSize>{
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2},
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(swap_chain->depth())},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(swap_chain->depth())}
         },
         swap_chain->depth()
     }
@@ -236,11 +292,14 @@ private:
     
     std::unique_ptr<my_vulkan::helpers::standard_swap_chain_t> swap_chain;
     VkFormat _depth_format;
+    my_vulkan::render_pass_t _render_pass;
+    my_vulkan::image_t _depth_image;
+    my_vulkan::image_view_t _depth_image_view;
+    std::vector<my_vulkan::framebuffer_t> _frambuffers;
     my_vulkan::buffer_t vertex_buffer;
     my_vulkan::buffer_t index_buffer;    
     my_vulkan::image_t texture_image;
     std::vector<VkDescriptorSetLayoutBinding> uniform_layout;
-    my_vulkan::render_pass_t _render_pass;
     my_vulkan::graphics_pipeline_t graphics_pipeline;
     my_vulkan::image_view_t texture_view;
     my_vulkan::texture_sampler_t texture_sampler;
@@ -303,10 +362,25 @@ private:
         my_vulkan::render_pass_t ret{
             logical_device.get(),
             swap_chain->color_format(),
-            _depth_format
+            _depth_format,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            VK_ATTACHMENT_LOAD_OP_CLEAR
         };
         _render_pass = std::move(ret);
         return _render_pass.get();
+    }
+
+    void recreate_framebuffer()
+    {
+        _frambuffers = std::move(
+            create_framebuffers(
+                logical_device.get(),
+                _render_pass.get(),
+                swap_chain->extent(),
+                swap_chain->pipeline_resources(),
+                _depth_image_view.get()
+            )
+        );
     }
 
     void recreateSwapChain(my_vulkan::device_t& logical_device)
@@ -317,12 +391,15 @@ private:
             glfwGetFramebufferSize(window, &width, &height);
             glfwWaitEvents();
         }
+        std::cout << "new extent: width=" << width << " height=" << height << ". Start vk wait idle.\n";
         logical_device.wait_idle();
-        swap_chain.reset(new my_vulkan::helpers::standard_swap_chain_t{
+        std::cout << "wait idle done.\n";
+        swap_chain = std::make_unique<my_vulkan::helpers::standard_swap_chain_t>(
             logical_device,
             surface.get(),
             window_extent()
-        });
+        );
+        recreate_depth_image();
         create_renderpass();
         graphics_pipeline = my_vulkan::graphics_pipeline_t{
             logical_device.get(),
@@ -334,8 +411,26 @@ private:
             readFile("shaders/26_shader_depth.vert.spv"),
             readFile("shaders/26_shader_depth.frag.spv")
         };
-    }
+        recreate_framebuffer();
 
+    }
+    void recreate_depth_image()
+    {
+        _depth_image = std::move (
+            my_vulkan::image_t {
+            logical_device.get(),
+            physical_device,
+            VkExtent3D {
+                swap_chain->extent().width,
+                swap_chain->extent().height,
+                1
+                },
+            _depth_format,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            }
+        );
+        _depth_image_view = std::move(_depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT));
+    }
     static my_vulkan::image_t createTextureImage(
         my_vulkan::device_t& logical_device,
         my_vulkan::command_pool_t& command_pool
@@ -355,7 +450,7 @@ private:
             logical_device,
             {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
             VK_FORMAT_R8G8B8A8_UNORM,
-            VK_IMAGE_USAGE_SAMPLED_BIT
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
         };
         result.load_pixels(command_pool, pixels);
         stbi_image_free(pixels);
@@ -445,18 +540,18 @@ private:
         VkBuffer vertex_buffer, // vertex_buffer.buffer
         my_vulkan::graphics_pipeline_t& graphics_pipeline,
         VkBuffer index_buffer, // index_buffer.buffer
-        my_vulkan::descriptor_set_t& descriptor_set
+        my_vulkan::descriptor_set_t& descriptor_set,
+        VkFramebuffer framebuffer
     )
     {
-
         command_scope.begin_render_pass(
             _render_pass.get(),
-            nullptr,
+            framebuffer,
             VkRect2D {
                 .offset = {0, 0},
                 .extent = swap_chain->extent()
             },
-            {{0.0f, 0.0f, 0.0f, 1.0f}}
+            {{0.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0}}
         );
         command_scope.bind_pipeline(
             VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -477,6 +572,7 @@ private:
         command_scope.draw_indexed(
             {0, static_cast<uint32_t>(indices.size())}
         );
+        command_scope.end_render_pass();
     }
 
     void updateUniformBuffer(VkDevice device, uint32_t currentImage)
@@ -527,13 +623,20 @@ private:
         if (outcome.failure)
             return outcome.failure;
         auto& working_set = *outcome.working_set;
+        //frame buffer need to be created after image view and render pass, before render pass start
+        // and destroyed before image view and render pass
+        // since the image view is reused, the frame buffer can be reused based on it.
+        // we only need to update frame buffer when render pass change
+        // to make sure the destroy order, framebuffer should hold a shared ptr of image view and render pass
+        // We probably should let acquire automatically update frame buffer
         updateUniformBuffer(logical_device.get(), working_set.phase());
         draw_commands(
             working_set.commands(),
             vertex_buffer.get(),
             graphics_pipeline,
             index_buffer.get(),
-            descriptor_sets[working_set.phase()]
+            descriptor_sets[working_set.phase()],
+            _frambuffers[working_set.phase()].get()
         );
         return working_set.finish();
     }
