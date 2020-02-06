@@ -240,7 +240,9 @@ public:
         uniform_layout,
         Vertex::layout(),
         readFile("shaders/26_shader_depth.vert.spv"),
-        readFile("shaders/26_shader_depth.frag.spv")
+        readFile("shaders/26_shader_depth.frag.spv"),
+            {},
+            true
     }
     , texture_view{texture_image.view(VK_IMAGE_ASPECT_COLOR_BIT)}
     , texture_sampler{
@@ -401,16 +403,6 @@ private:
         );
         recreate_depth_image();
         create_renderpass();
-        graphics_pipeline = my_vulkan::graphics_pipeline_t{
-            logical_device.get(),
-            swap_chain->extent(),
-            _render_pass.get(),
-            0,
-            uniform_layout,
-            Vertex::layout(),
-            readFile("shaders/26_shader_depth.vert.spv"),
-            readFile("shaders/26_shader_depth.frag.spv")
-        };
         recreate_framebuffer();
 
     }
@@ -544,18 +536,20 @@ private:
         VkFramebuffer framebuffer
     )
     {
+        VkRect2D target_rect{
+            .offset = {0, 0},
+            .extent = swap_chain->extent()
+        };
         command_scope.begin_render_pass(
             _render_pass.get(),
             framebuffer,
-            VkRect2D {
-                .offset = {0, 0},
-                .extent = swap_chain->extent()
-            },
+            target_rect,
             {{0.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0}}
         );
         command_scope.bind_pipeline(
             VK_PIPELINE_BIND_POINT_GRAPHICS,
-            graphics_pipeline.get()
+            graphics_pipeline.get(),
+            target_rect
         );
         command_scope.bind_vertex_buffers(
             {{vertex_buffer, 0}}
@@ -623,12 +617,6 @@ private:
         if (outcome.failure)
             return outcome.failure;
         auto& working_set = *outcome.working_set;
-        //frame buffer need to be created after image view and render pass, before render pass start
-        // and destroyed before image view and render pass
-        // since the image view is reused, the frame buffer can be reused based on it.
-        // we only need to update frame buffer when render pass change
-        // to make sure the destroy order, framebuffer should hold a shared ptr of image view and render pass
-        // We probably should let acquire automatically update frame buffer
         updateUniformBuffer(logical_device.get(), working_set.phase());
         draw_commands(
             working_set.commands(),
