@@ -308,7 +308,10 @@ private:
     std::vector<my_vulkan::buffer_t> uniform_buffers;
     my_vulkan::descriptor_pool_t descriptor_pool;
     std::vector<my_vulkan::descriptor_set_t> descriptor_sets;
-
+    std::string _title{"Vulkan-test"};
+    size_t _nbframes{0};
+    double  _lasttime{0.0f};
+    bool _show_fps{true};
     bool framebufferResized = false;
 
     static GLFWwindow* initWindow(void* userdata)
@@ -343,12 +346,32 @@ private:
             static_cast<uint32_t>(height)
         };        
     }
+    void show_fps()
+    {
+        // Measure speed
+        double current_time = glfwGetTime();
+        double delta = current_time - _lasttime;
+        _nbframes++;
+        if ( delta >= 1.0 ){ // If last cout was more than 1 sec ago
+
+            double fps = double(_nbframes) / delta;
+
+            std::stringstream ss;
+            ss << _title << " [" << fps << " FPS]";
+
+            glfwSetWindowTitle(window, ss.str().c_str());
+
+            _nbframes = 0;
+            _lasttime = current_time;
+        }
+    }
 
     void mainLoop()
     {
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
+            show_fps();
             draw_frame();
         }
         logical_device.wait_idle();
