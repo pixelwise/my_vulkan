@@ -14,7 +14,7 @@ namespace my_vulkan
         {
             command_buffer_t::scope_t* commands;
             size_t phase;
-            VkImageView output_buffer;
+            VkImageView output_buffer; //this is better a shared ptr
             VkExtent2D extent;
         };
         struct render_target_t
