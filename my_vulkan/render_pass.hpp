@@ -13,7 +13,7 @@ namespace my_vulkan
         render_pass_t(
             VkDevice device,
             VkFormat color_format,
-            VkFormat depth_format,
+            VkFormat depth_format = VK_FORMAT_UNDEFINED,
             VkImageLayout color_attachment_final_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VkAttachmentLoadOp attachment_loadop = VK_ATTACHMENT_LOAD_OP_DONT_CARE
         );
