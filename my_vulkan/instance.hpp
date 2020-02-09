@@ -2,14 +2,14 @@
 
 #include <string>
 #include <vector>
-
+#include <boost/format.hpp>
 #include <vulkan/vulkan.h>
 
 namespace my_vulkan
 {
     struct instance_t
     {
-        instance_t(
+        explicit instance_t(
             const std::string& name = "vulkan",
             std::vector<const char*> extensions = {},
             std::vector<const char*> validation_layers = {}
@@ -21,6 +21,18 @@ namespace my_vulkan
         VkInstance get();
         std::vector<VkPhysicalDevice> physical_devices();
         ~instance_t();
+        template <typename T>
+        T get_proc(const std::string & proc_name)
+        {
+            auto ret =(T)vkGetInstanceProcAddr(_instance, proc_name.c_str());
+            if (ret == nullptr) {
+                auto msg = boost::format(
+                    "Vulkan instance(%p): Proc address for \"%s\" not "
+                    "found.\n"
+                )%_instance%proc_name;
+                throw std::runtime_error(msg.str());
+            }
+        }
     private:
         void cleanup();
         VkInstance _instance{0};
