@@ -2,6 +2,8 @@
 #include "utils.hpp"
 
 #include <boost/range/algorithm/find.hpp>
+#include <iostream>
+#include <boost/format.hpp>
 
 namespace my_vulkan
 {
@@ -136,5 +138,48 @@ namespace my_vulkan
             vkDeviceWaitIdle(get()),
             "waiting for device to be idle"
         );
+    }
+
+    void device_t::fetch_physical_device_ID()
+    {
+        if (fpGetPhysicalDeviceProperties2 == nullptr)
+        {
+            std::cerr << "WARNING: this device does not support GetPhysicalDeviceProperties2.\n";
+            return;
+        }
+        VkPhysicalDeviceIDProperties vkPhysicalDeviceIDProperties{};
+        vkPhysicalDeviceIDProperties.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
+        vkPhysicalDeviceIDProperties.pNext = NULL;
+
+        VkPhysicalDeviceProperties2 vkPhysicalDeviceProperties2 = {};
+        vkPhysicalDeviceProperties2.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        vkPhysicalDeviceProperties2.pNext = &vkPhysicalDeviceIDProperties;
+
+        fpGetPhysicalDeviceProperties2(_physical_device,
+            &vkPhysicalDeviceProperties2);
+        _maybe_vkPhysicalDeviceIDProperties = vkPhysicalDeviceIDProperties;
+    }
+
+    std::optional<VkPhysicalDeviceIDProperties> device_t::physcial_device_id_properties()
+    {
+        return _maybe_vkPhysicalDeviceIDProperties;
+    }
+
+    std::optional<vk_uuid_t> device_t::physical_device_uuid()
+    {
+        if (_maybe_vkPhysicalDeviceIDProperties)
+        {
+            auto & device_id = (*_maybe_vkPhysicalDeviceIDProperties);
+            vk_uuid_t ret;
+            std::copy(
+                std::begin(device_id.deviceUUID),
+                std::end(device_id.deviceUUID),
+                ret.begin()
+            );
+            return ret;
+        }
+        return std::nullopt;
     }
 }

@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <optional>
 #include <vector>
+#include <array>
 
 namespace my_vulkan
 {
@@ -91,5 +92,8 @@ namespace my_vulkan
         const char*                                 pLayerPrefix,
         const char*                                 pMessage,
         void*                                       pUserData);
+
+    typedef std::array<uint8_t, VK_UUID_SIZE> vk_uuid_t;
+
 }
 
