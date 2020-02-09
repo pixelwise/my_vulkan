@@ -26,7 +26,7 @@
 #include <cstdlib>
 #include <array>
 #include <set>
-
+#include <filesystem>
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
@@ -137,10 +137,10 @@ framebuffer_list_t create_framebuffers(
 
 class HelloTriangleApplication {
 public:
-    HelloTriangleApplication()
+    HelloTriangleApplication(std::string texture_file_path)
     : window{initWindow(this)}
     , validationLayers{
-        "VK_LAYER_KHRONOS_validation"
+//        "VK_LAYER_KHRONOS_validation"
         //"VK_LAYER_LUNARG_standard_validation"        
     }
     , deviceExtensions{ 
@@ -213,9 +213,11 @@ public:
         logical_device,
         swap_chain->command_pool()
     )}
+    , _texture_file_path{std::move(texture_file_path)}
     , texture_image{createTextureImage(
         logical_device,
-        swap_chain->command_pool()
+        swap_chain->command_pool(),
+        _texture_file_path
     )}
     , uniform_layout{
         {
@@ -299,7 +301,8 @@ private:
     my_vulkan::image_view_t _depth_image_view;
     std::vector<my_vulkan::framebuffer_t> _frambuffers;
     my_vulkan::buffer_t vertex_buffer;
-    my_vulkan::buffer_t index_buffer;    
+    my_vulkan::buffer_t index_buffer;
+    std::string _texture_file_path;
     my_vulkan::image_t texture_image;
     std::vector<VkDescriptorSetLayoutBinding> uniform_layout;
     my_vulkan::graphics_pipeline_t graphics_pipeline;
@@ -448,12 +451,15 @@ private:
     }
     static my_vulkan::image_t createTextureImage(
         my_vulkan::device_t& logical_device,
-        my_vulkan::command_pool_t& command_pool
+        my_vulkan::command_pool_t& command_pool,
+        const std::string & filename = "texture.jpg"
     )
     {
         int texWidth, texHeight, texChannels;
+        std::filesystem::path filepath{filename};
+        std::cout << "filepath=" << std::filesystem::absolute(filepath) << std::endl;
         stbi_uc* pixels = stbi_load(
-            "texture.jpg",
+            filename.c_str(),
             &texWidth,
             &texHeight,
             &texChannels,
@@ -672,8 +678,11 @@ private:
     }
 };
 
-int main() {
-    HelloTriangleApplication app;
+int main(int argc, char** argv) {
+    std::string texture_file_path = argv[1];
+    if (texture_file_path.empty())
+        texture_file_path = "texture.jpg";
+    HelloTriangleApplication app{texture_file_path};
 
     try {
         app.run();
