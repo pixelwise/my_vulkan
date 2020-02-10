@@ -41,6 +41,7 @@ namespace my_vulkan
         {
             VkDeviceSize size;
             uint32_t type_index;
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type;
         };
         device_memory_t(
             VkDevice device,

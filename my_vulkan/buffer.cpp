@@ -1,4 +1,5 @@
 #include "buffer.hpp"
+ #include <memory>
 
 #include "utils.hpp"
 
@@ -8,14 +9,16 @@ namespace my_vulkan
         device_t& device,
         VkDeviceSize size,
         VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties
+        VkMemoryPropertyFlags properties,
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
     )
     : buffer_t{
         device.get(),
         device.physical_device(),
         size,
         usage,
-        properties
+        properties,
+        external_handle_type
     }
     {
     }
@@ -25,7 +28,8 @@ namespace my_vulkan
         VkPhysicalDevice physical_device,
         VkDeviceSize size,
         VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties
+        VkMemoryPropertyFlags properties,
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
     )
     : _device{device}
     , _physical_device{physical_device}
@@ -42,17 +46,18 @@ namespace my_vulkan
         );
         VkMemoryRequirements memRequirements;
         vkGetBufferMemoryRequirements(_device, _buffer, &memRequirements);
-        _memory.reset(new device_memory_t{
+        _memory = std::make_unique<device_memory_t>(
             _device,
-            {
-                memRequirements.size,
-                findMemoryType(
+            device_memory_t::config_t {
+                .size = memRequirements.size,
+                .type_index = findMemoryType(
                     physical_device,
                     memRequirements.memoryTypeBits,
                     properties
-                )                
+                ),
+                .external_handle_type=external_handle_type,
             }
-        });
+        );
         vkBindBufferMemory(_device, _buffer, _memory->get(), 0);
     }
 

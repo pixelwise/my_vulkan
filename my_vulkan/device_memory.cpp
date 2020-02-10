@@ -20,6 +20,19 @@ namespace my_vulkan
             config.size,
             config.type_index
         };
+        if (config.external_handle_type)
+        {
+            VkExportMemoryAllocateInfoKHR vulkanExportMemoryAllocateInfoKHR = {};
+            vulkanExportMemoryAllocateInfoKHR.sType =
+                VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
+
+            vulkanExportMemoryAllocateInfoKHR.pNext = NULL;
+
+            vulkanExportMemoryAllocateInfoKHR.handleTypes =
+                *(config.external_handle_type);
+            info.pNext = &vulkanExportMemoryAllocateInfoKHR;
+        }
+
         vk_require(
             vkAllocateMemory(
                 device,
