@@ -14,14 +14,16 @@ namespace my_vulkan
             device_t& device,
             VkDeviceSize size,
             VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties
+            VkMemoryPropertyFlags properties,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
         );
         buffer_t(
             VkDevice device,
             VkPhysicalDevice physical_device,
             VkDeviceSize size,
             VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties
+            VkMemoryPropertyFlags properties,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
         );
         buffer_t(const buffer_t&) = delete;
         buffer_t(buffer_t&& other) noexcept;
