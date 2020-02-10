@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "utils.hpp"
+#include "device.hpp"
 
 namespace my_vulkan
 {
@@ -31,6 +32,8 @@ namespace my_vulkan
             vulkanExportMemoryAllocateInfoKHR.handleTypes =
                 *(config.external_handle_type);
             info.pNext = &vulkanExportMemoryAllocateInfoKHR;
+            _fpGetMemoryFdKHR = device_t::get_proc<PFN_vkGetMemoryFdKHR>(_device, "vkGetMemoryFdKHR");
+            //maybe better to let device_memory hold a shared ptr of device?
         }
 
         vk_require(
@@ -57,6 +60,7 @@ namespace my_vulkan
         cleanup();
         _memory = other._memory;
         _size = other._size;
+        _fpGetMemoryFdKHR = other._fpGetMemoryFdKHR;
         std::swap(_device, other._device);
         return *this;
     }
@@ -97,6 +101,23 @@ namespace my_vulkan
             vkFreeMemory(_device, _memory, 0);
             _device = 0;
         }
+    }
+
+    std::optional<int> device_memory_t::get_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType)
+    {
+        if (! _fpGetMemoryFdKHR)
+            return std::nullopt;
+        int fd;
+
+        VkMemoryGetFdInfoKHR vkMemoryGetFdInfoKHR = {};
+        vkMemoryGetFdInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
+        vkMemoryGetFdInfoKHR.pNext = NULL;
+        vkMemoryGetFdInfoKHR.memory = _memory;
+        vkMemoryGetFdInfoKHR.handleType = externalHandleType;
+
+        _fpGetMemoryFdKHR(_device, &vkMemoryGetFdInfoKHR, &fd);
+
+        return fd;
     }
 
     device_memory_t::mapping_t::mapping_t(

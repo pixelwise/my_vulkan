@@ -32,6 +32,7 @@ namespace my_vulkan
                 )%_instance%proc_name;
                 throw std::runtime_error(msg.str());
             }
+            return ret;
         }
     private:
         void cleanup();

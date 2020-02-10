@@ -30,16 +30,22 @@ namespace my_vulkan
         std::optional<VkPhysicalDeviceIDProperties> physcial_device_id_properties();
         std::optional<vk_uuid_t> physical_device_uuid();
         template <typename T>
-        T get_proc(const std::string & proc_name)
+        static T get_proc(VkDevice device, const std::string & proc_name)
         {
-            auto ret =(T)vkGetDeviceProcAddr(_device, proc_name.c_str());
+            auto ret =(T)vkGetDeviceProcAddr(device, proc_name.c_str());
             if (ret == nullptr) {
                 auto msg = boost::format(
                     "Vulkan logical device(%p): Proc address for \"%s\" not "
                     "found.\n"
-                )%_device%proc_name;
+                )%device%proc_name;
                 throw std::runtime_error(msg.str());
             }
+            return ret;
+        }
+        template <typename T>
+        T get_proc(const std::string & proc_name)
+        {
+            return get_proc<T>(_device, proc_name);
         }
     private:
         VkPhysicalDevice _physical_device;
