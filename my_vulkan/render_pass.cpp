@@ -47,10 +47,18 @@ namespace my_vulkan
         VkAttachmentReference colorAttachmentRef = {};
         colorAttachmentRef.attachment = 0;
         colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
+        std::vector<VkAttachmentDescription> attachments{
+            colorAttachment
+        };
         VkAttachmentReference depthAttachmentRef = {};
-        depthAttachmentRef.attachment = 1;
+        depthAttachmentRef.attachment = VK_ATTACHMENT_UNUSED;
         depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        if (depthAttachment.format != VK_FORMAT_UNDEFINED)
+        {
+            attachments.push_back(depthAttachment);
+            depthAttachmentRef.attachment = 1;
+        }
+
 
         VkSubpassDescription subpass = {};
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -67,11 +75,7 @@ namespace my_vulkan
         dependency.dstAccessMask =
             VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        std::vector<VkAttachmentDescription> attachments{
-            colorAttachment
-        };
-        if (depthAttachment.format != VK_FORMAT_UNDEFINED)
-            attachments.push_back(depthAttachment);
+
 
         VkRenderPassCreateInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
