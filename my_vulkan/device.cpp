@@ -13,7 +13,23 @@ namespace my_vulkan
         std::vector<const char*> validation_layers,
         std::vector<const char*> device_extensions        
     );
-
+    device_t::device_t(
+        VkPhysicalDevice physical_device,
+        const instance_t& instance,
+        queue_family_indices_t queue_indices,
+        std::vector<const char*> validation_layers,
+        std::vector<const char*> device_extensions
+    )
+    : device_t{
+        physical_device,
+        queue_indices,
+        std::move(validation_layers),
+        std::move(device_extensions)
+    }
+    {
+        _fpGetPhysicalDeviceProperties2 = fetch_fpGetPhysicalDeviceProperties2(instance);
+        fetch_physical_device_ID();
+    }
     device_t::device_t(
         VkPhysicalDevice physical_device,
         queue_family_indices_t queue_indices,
@@ -28,6 +44,7 @@ namespace my_vulkan
         device_extensions
     )}
     , _queue_indices{queue_indices}
+    , _fpGetPhysicalDeviceProperties2{nullptr}
     {
         auto unique_queue_indices = _queue_indices.unique_indices();
         for (auto i : unique_queue_indices)
@@ -142,7 +159,7 @@ namespace my_vulkan
 
     void device_t::fetch_physical_device_ID()
     {
-        if (fpGetPhysicalDeviceProperties2 == nullptr)
+        if (_fpGetPhysicalDeviceProperties2 == nullptr)
         {
             std::cerr << "WARNING: this device does not support GetPhysicalDeviceProperties2.\n";
             return;
@@ -157,7 +174,7 @@ namespace my_vulkan
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
         vkPhysicalDeviceProperties2.pNext = &vkPhysicalDeviceIDProperties;
 
-        fpGetPhysicalDeviceProperties2(_physical_device,
+        _fpGetPhysicalDeviceProperties2(_physical_device,
             &vkPhysicalDeviceProperties2);
         _maybe_vkPhysicalDeviceIDProperties = vkPhysicalDeviceIDProperties;
     }
@@ -180,6 +197,11 @@ namespace my_vulkan
             );
             return ret;
         }
+        else
+        {
+            std::cerr << "WARNING: this device does not support GetPhysicalDeviceProperties2, or it is initialized without giving vulkan instance. Call physical_device_uuid() with an instance argument instead.\n";
+        }
         return std::nullopt;
     }
+
 }

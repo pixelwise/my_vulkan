@@ -7,6 +7,7 @@
 
 #include "queue.hpp"
 #include "utils.hpp"
+#include "instance.hpp"
 
 namespace my_vulkan
 {
@@ -17,6 +18,13 @@ namespace my_vulkan
             queue_family_indices_t queue_indices,
             std::vector<const char*> validation_layers,
             std::vector<const char*> device_extensions        
+        );
+        device_t(
+            VkPhysicalDevice physical_device,
+            const instance_t & instance,
+            queue_family_indices_t queue_indices,
+            std::vector<const char*> validation_layers,
+            std::vector<const char*> device_extensions
         );
         device_t(const device_t&) = delete;
         ~device_t();
@@ -47,10 +55,16 @@ namespace my_vulkan
         {
             return get_proc<T>(_device, proc_name);
         }
+        std::optional<vk_uuid_t> physical_device_uuid(const instance_t& instance)
+        {
+            _fpGetPhysicalDeviceProperties2 = fetch_fpGetPhysicalDeviceProperties2(instance);
+            fetch_physical_device_ID();
+            return physical_device_uuid();
+        }
     private:
         VkPhysicalDevice _physical_device;
-        PFN_vkGetPhysicalDeviceProperties2 fpGetPhysicalDeviceProperties2 {nullptr};
-        std::optional<VkPhysicalDeviceIDProperties> _maybe_vkPhysicalDeviceIDProperties;
+        PFN_vkGetPhysicalDeviceProperties2 _fpGetPhysicalDeviceProperties2 {nullptr};
+        std::optional<VkPhysicalDeviceIDProperties> _maybe_vkPhysicalDeviceIDProperties{std::nullopt};
         VkDevice _device;
         queue_family_indices_t _queue_indices;
         std::vector<queue_reference_t> _queues;
@@ -58,5 +72,9 @@ namespace my_vulkan
         queue_reference_t* _present_queue{0};
         queue_reference_t* _transfer_queue{0};
         void fetch_physical_device_ID();
+        static PFN_vkGetPhysicalDeviceProperties2 fetch_fpGetPhysicalDeviceProperties2(const instance_t& instance)
+        {
+            return instance.get_proc<PFN_vkGetPhysicalDeviceProperties2>("vkGetPhysicalDeviceProperties2");
+        }
     };
 }
