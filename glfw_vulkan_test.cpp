@@ -241,8 +241,13 @@ public:
         0,
         uniform_layout,
         Vertex::layout(),
+#if 1
         readFile("shaders/26_shader_depth.vert.spv"),
         readFile("shaders/26_shader_depth.frag.spv"),
+#else
+            readFile("26_shader_depth.vert"),
+            readFile("26_shader_depth.frag"),
+#endif
             {},
             true
     }
