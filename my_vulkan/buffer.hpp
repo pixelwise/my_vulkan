@@ -29,7 +29,8 @@ namespace my_vulkan
         buffer_t(buffer_t&& other) noexcept;
         buffer_t& operator=(const buffer_t&) = delete;
         buffer_t& operator=(buffer_t&& other) noexcept;
-        device_memory_t* memory();
+        device_memory_t * memory() const;
+        device_memory_t * memory();
         VkBuffer get();
         VkDeviceSize size() const;
         void load_data(command_pool_t& command_pool, const void* data);

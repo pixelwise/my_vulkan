@@ -61,7 +61,12 @@ namespace my_vulkan
         vkBindBufferMemory(_device, _buffer, _memory->get(), 0);
     }
 
-    device_memory_t* buffer_t::memory()
+    device_memory_t * buffer_t::memory() const
+    {
+        return _memory.get();
+    }
+
+    device_memory_t * buffer_t::memory()
     {
         return _memory.get();
     }
