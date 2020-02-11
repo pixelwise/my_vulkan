@@ -35,8 +35,8 @@ namespace my_vulkan
         queue_reference_t& transfer_queue();
         queue_family_indices_t queue_indices();
         VkDevice get() const;
-        std::optional<VkPhysicalDeviceIDProperties> physcial_device_id_properties();
-        std::optional<vk_uuid_t> physical_device_uuid();
+        [[nodiscard]] std::optional<VkPhysicalDeviceIDProperties> physcial_device_id_properties() const;
+        [[nodiscard]] std::optional<vk_uuid_t> physical_device_uuid() const;
         template <typename T>
         static T get_proc(VkDevice device, const std::string & proc_name)
         {
@@ -51,16 +51,11 @@ namespace my_vulkan
             return ret;
         }
         template <typename T>
-        T get_proc(const std::string & proc_name)
+        T get_proc(const std::string & proc_name) const
         {
             return get_proc<T>(_device, proc_name);
         }
-        std::optional<vk_uuid_t> physical_device_uuid(const instance_t& instance)
-        {
-            _fpGetPhysicalDeviceProperties2 = fetch_fpGetPhysicalDeviceProperties2(instance);
-            fetch_physical_device_ID();
-            return physical_device_uuid();
-        }
+        std::optional<vk_uuid_t> physical_device_uuid(const instance_t& instance);
     private:
         VkPhysicalDevice _physical_device;
         PFN_vkGetPhysicalDeviceProperties2 _fpGetPhysicalDeviceProperties2 {nullptr};

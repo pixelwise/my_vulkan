@@ -179,12 +179,12 @@ namespace my_vulkan
         _maybe_vkPhysicalDeviceIDProperties = vkPhysicalDeviceIDProperties;
     }
 
-    std::optional<VkPhysicalDeviceIDProperties> device_t::physcial_device_id_properties()
+    std::optional<VkPhysicalDeviceIDProperties> device_t::physcial_device_id_properties() const
     {
         return _maybe_vkPhysicalDeviceIDProperties;
     }
 
-    std::optional<vk_uuid_t> device_t::physical_device_uuid()
+    std::optional<vk_uuid_t> device_t::physical_device_uuid() const
     {
         if (_maybe_vkPhysicalDeviceIDProperties)
         {
@@ -202,6 +202,13 @@ namespace my_vulkan
             std::cerr << "WARNING: this device does not support GetPhysicalDeviceProperties2, or it is initialized without giving vulkan instance. Call physical_device_uuid() with an instance argument instead.\n";
         }
         return std::nullopt;
+    }
+
+    std::optional<vk_uuid_t> device_t::physical_device_uuid(const instance_t &instance)
+    {
+        _fpGetPhysicalDeviceProperties2 = fetch_fpGetPhysicalDeviceProperties2(instance);
+        fetch_physical_device_ID();
+        return physical_device_uuid();
     }
 
 }
