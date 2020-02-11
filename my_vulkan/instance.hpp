@@ -22,7 +22,7 @@ namespace my_vulkan
         std::vector<VkPhysicalDevice> physical_devices();
         ~instance_t();
         template <typename T>
-        T get_proc(const std::string & proc_name)
+        T get_proc(const std::string & proc_name) const
         {
             auto ret =(T)vkGetInstanceProcAddr(_instance, proc_name.c_str());
             if (ret == nullptr) {
