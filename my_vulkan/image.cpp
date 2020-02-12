@@ -12,7 +12,8 @@ namespace my_vulkan
         VkPhysicalDevice physical_device,
         VkDevice logical_device,
         VkImage image,
-        VkMemoryPropertyFlags properties
+        VkMemoryPropertyFlags properties,
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
     )
     {
         VkMemoryRequirements requirements;
@@ -24,7 +25,8 @@ namespace my_vulkan
         );
         return {
             requirements.size,
-            type
+            type,
+            external_handle_type
         };
     }
 
@@ -64,7 +66,8 @@ namespace my_vulkan
         VkImageUsageFlags usage,
         VkImageLayout initial_layout,
         VkImageTiling tiling,
-        VkMemoryPropertyFlags properties
+        VkMemoryPropertyFlags properties,
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
     )
     : image_t{
         device.get(),
@@ -74,7 +77,8 @@ namespace my_vulkan
         usage,
         initial_layout,
         tiling,
-        properties
+        properties,
+        external_handle_type
     }
     {
     }
@@ -87,7 +91,8 @@ namespace my_vulkan
         VkImageUsageFlags usage,
         VkImageLayout initial_layout,
         VkImageTiling tiling,
-        VkMemoryPropertyFlags properties
+        VkMemoryPropertyFlags properties,
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
     )
     : _device{device}
     , _physical_device{physical_device}
@@ -109,7 +114,8 @@ namespace my_vulkan
             physical_device,
             _device,
             _image,
-            properties
+            properties,
+            external_handle_type
         )
     }}
     {

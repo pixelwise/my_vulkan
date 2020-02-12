@@ -20,7 +20,8 @@ namespace my_vulkan
             VkImageUsageFlags usage,
             VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
-            VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
         );
         image_t(
             device_t& device,
@@ -29,7 +30,8 @@ namespace my_vulkan
             VkImageUsageFlags usage,
             VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
-            VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
         );
         image_t(
             VkDevice device,
@@ -52,19 +54,19 @@ namespace my_vulkan
         image_t& operator=(const image_t&) = delete;
         image_t& operator=(image_t&& other) noexcept;
         ~image_t();
-        image_view_t view(
+        [[nodiscard]] image_view_t view(
             int aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT
         ) const;
-        VkSubresourceLayout memory_layout(
+        [[nodiscard]] VkSubresourceLayout memory_layout(
             int aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT,
             uint32_t mipLevel = 0,
             uint32_t arrayLayer = 0
         ) const;
         VkImage get();
         device_memory_t* memory();
-        VkFormat format() const;
-        VkExtent3D extent() const;
-        VkImageLayout layout() const;
+        [[nodiscard]] VkFormat format() const;
+        [[nodiscard]] VkExtent3D extent() const;
+        [[nodiscard]] VkImageLayout layout() const;
         void copy_from(
             VkBuffer buffer,
             command_buffer_t::scope_t& command_scope,

@@ -103,7 +103,7 @@ namespace my_vulkan
         }
     }
 
-    std::optional<int> device_memory_t::get_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType)
+    std::optional<int> device_memory_t::get_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType) const
     {
         if (! _fpGetMemoryFdKHR)
             return std::nullopt;
