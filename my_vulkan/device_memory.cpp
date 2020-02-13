@@ -115,7 +115,7 @@ namespace my_vulkan
         vkMemoryGetFdInfoKHR.memory = _memory;
         vkMemoryGetFdInfoKHR.handleType = externalHandleType;
 
-        _fpGetMemoryFdKHR(_device, &vkMemoryGetFdInfoKHR, &fd);
+        vk_require(_fpGetMemoryFdKHR(_device, &vkMemoryGetFdInfoKHR, &fd), "_fpGetMemoryFdKHR");
 
         return fd;
     }
