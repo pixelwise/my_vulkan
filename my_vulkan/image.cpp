@@ -36,7 +36,8 @@ namespace my_vulkan
         VkFormat format,
         VkImageUsageFlags usage,
         VkImageTiling tiling,
-        VkImageLayout initial_layout
+        VkImageLayout initial_layout,
+        bool use_in_compute
     )
     {
         VkImageCreateInfo imageInfo = {};
@@ -49,6 +50,8 @@ namespace my_vulkan
         imageInfo.tiling = tiling;
         imageInfo.initialLayout = initial_layout;
         imageInfo.usage = usage;
+        if (use_in_compute)
+            imageInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         VkImage result;
@@ -102,7 +105,8 @@ namespace my_vulkan
         format,
         usage,
         tiling,
-        initial_layout
+        initial_layout,
+        bool(external_handle_type)
     )}
     , _format{format}
     , _extent{extent}
