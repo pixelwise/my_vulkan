@@ -1,6 +1,5 @@
-function(compile_shader in_file out_var)
+function(compile_shader in_file shaders_dir out_var)
   get_filename_component(file_name ${in_file} NAME)
-  set(shaders_dir "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders")
   set(SPIRV "${shaders_dir}/${file_name}.spv")
   add_custom_command(
     OUTPUT ${SPIRV}
