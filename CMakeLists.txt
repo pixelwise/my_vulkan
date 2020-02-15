@@ -24,9 +24,8 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
     "*.frag"
     "*.vert"
     )
-
 foreach(GLSL ${GLSL_SOURCE_FILES})
-  compile_shader(${GLSL} SPIRV)
+  compile_shader(${GLSL} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} SPIRV)
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 
