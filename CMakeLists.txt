@@ -11,7 +11,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Vulkan REQUIRED)
 find_package(glfw3 3.2)
-find_package(Boost 1.64 REQUIRED)
+find_package(boost REQUIRED)
 
 if (USE_ASAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
@@ -78,7 +78,7 @@ target_link_libraries(
     my_vulkan_offscreen
     PUBLIC
     Vulkan::Vulkan
-    Boost::boost
+    boost::boost
     dl
 )
 
@@ -117,7 +117,7 @@ if(glfw3_FOUND)
         glfw
         PUBLIC
         Vulkan::Vulkan
-        Boost::boost
+        boost::boost
 	dl
     )
 
