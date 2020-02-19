@@ -7,6 +7,7 @@
 #include <set>
 
 #include <boost/stacktrace.hpp>
+#include <boost/format.hpp>
 
 namespace my_vulkan
 {
@@ -54,6 +55,11 @@ namespace my_vulkan
         return {index_set.begin(), index_set.end()};
     }
 
+    bool queue_family_indices_t::isComplete_offscreen() const
+    {
+        return graphics && transfer;
+    }
+
     queue_family_indices_t find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface)
     {
         queue_family_indices_t indices;
@@ -72,16 +78,21 @@ namespace my_vulkan
 
             if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
                 indices.transfer = i;
+            if (surface)
+            {
+                VkBool32 presentSupport = false;
+                vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-            VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+                if (queueFamily.queueCount > 0 && presentSupport)
+                    indices.present = i;
 
-            if (queueFamily.queueCount > 0 && presentSupport)
-                indices.present = i;
-
-            if (indices.isComplete())
-                break;
-
+                if (indices.isComplete())
+                    break;
+            }
+            else
+            {
+                indices.isComplete_offscreen();
+            }
             i++;
         }
 
@@ -505,13 +516,29 @@ namespace my_vulkan
     )
     {
         auto indices = my_vulkan::find_queue_families(device, surface);
-        if (!indices.isComplete())
-            return false;
+        if (surface)
+        {
+            if (!indices.isComplete())
+                return false;
+        }
+        else
+        {
+            if (!indices.isComplete_offscreen())
+                return false;
+        }
+
         if (checkDeviceExtensionSupport(device, deviceExtensions))
         {
-            auto swapChainSupport = query_swap_chain_support(device, surface);
-            if (swapChainSupport.formats.empty() || swapChainSupport.presentModes.empty())
-                return false;
+            if (surface)
+            {
+                auto swapChainSupport = query_swap_chain_support(device, surface);
+                if (swapChainSupport.formats.empty() || swapChainSupport.presentModes.empty())
+                    return false;
+            }
+        }
+        else
+        {
+            return false;
         }
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
@@ -606,5 +633,30 @@ namespace my_vulkan
             throw std::runtime_error{message};
         return true;
     }
+
+    VkPhysicalDevice my_vulkan::pick_physical_device(
+        uint32_t device_index,
+        VkInstance instance,
+        VkSurfaceKHR surface,
+        const std::vector<const char *>& deviceExtensions
+    )
+    {
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+        if (deviceCount == 0) {
+            throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        if (isDeviceSuitable(devices[device_index], surface, deviceExtensions))
+        {
+            return devices[device_index];
+        }
+        throw std::runtime_error(str(boost::format("device %d is NOT a suitable GPU!")%device_index));
+    }
+
 
 }
