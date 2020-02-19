@@ -17,7 +17,7 @@ if (USE_ASAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
 
-find_package(OpenCV REQUIRED)
+find_package(opencv REQUIRED)
 find_package(glm 0.9.8 REQUIRED)
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
@@ -62,12 +62,12 @@ add_library(my_vulkan_offscreen
 )
 message("CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
 
-target_include_directories(
-    my_vulkan_offscreen
-    PUBLIC
-    ${OpenCV_INCLUDE_DIRS}
-    ${GLM_INCLUDE_DIRS}
-)
+#target_include_directories(
+#    my_vulkan_offscreen
+#    PUBLIC
+#    ${OpenCV_INCLUDE_DIRS}
+#    ${GLM_INCLUDE_DIRS}
+#)
 target_include_directories(
     my_vulkan_offscreen
     INTERFACE
@@ -80,6 +80,8 @@ target_link_libraries(
     Vulkan::Vulkan
     boost::boost
     dl
+    glm::glm
+    opencv::opencv
 )
 
 if(glfw3_FOUND)
@@ -118,14 +120,13 @@ if(glfw3_FOUND)
         PUBLIC
         Vulkan::Vulkan
         boost::boost
-	dl
+        dl
+        opencv::opencv
+        glm::glm
     )
 
     target_include_directories(
         my_vulkan
-        PUBLIC
-        ${OpenCV_INCLUDE_DIRS}
-        ${GLM_INCLUDE_DIRS}
         INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
     )
