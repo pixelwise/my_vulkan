@@ -26,6 +26,7 @@ namespace my_vulkan
         std::optional<uint32_t> present;
         std::optional<uint32_t> transfer;
         bool isComplete() const;
+        bool isComplete_offscreen() const;
         std::vector<uint32_t> unique_indices() const;
         std::vector<queue_request_t> request_one_each()
         {
@@ -78,11 +79,20 @@ namespace my_vulkan
         VkPhysicalDevice device,
         VkSurfaceKHR surface
     );
+
     VkPhysicalDevice pick_physical_device(
         VkInstance instance,
         VkSurfaceKHR surface,
         std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME}
     );
+
+    VkPhysicalDevice pick_physical_device(
+        uint32_t device_index,
+        VkInstance instance,
+        VkSurfaceKHR surface,
+        const std::vector<const char*>& deviceExtensions
+    );
+
     VkBool32 error_throw_callback(
         VkDebugReportFlagsEXT                       flags,
         VkDebugReportObjectTypeEXT                  objectType,
