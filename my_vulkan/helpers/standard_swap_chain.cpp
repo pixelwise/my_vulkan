@@ -168,7 +168,8 @@ namespace my_vulkan
                         &(*working_set)->commands(),
                         phase,
                         _pipeline_resources[phase].image_view.get(),
-                        extent()
+                        extent(),
+                        *(_swap_chain->images()[phase].memory())
                     };
                 },
                 [working_set](auto waits, auto signals){
