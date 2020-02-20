@@ -9,7 +9,8 @@ namespace my_vulkan
             VkFormat color_format,
             VkExtent2D size,
             bool need_readback,
-            size_t depth
+            size_t depth,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
         )
         : _size{size}
         {
@@ -19,7 +20,8 @@ namespace my_vulkan
                     device.get(),
                     device.physical_device(),
                     size,
-                    color_format
+                    color_format,
+                    external_handle_type
                 );
             for (size_t i = 0; i < depth; ++i)
             {
@@ -146,10 +148,19 @@ namespace my_vulkan
         offscreen_render_target_t::offscreen_render_target_t(
             device_t& device,
             std::vector<VkImageView> color_views,
-            VkExtent2D size
+            VkExtent2D size,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
         )
         : _size{size}
         {
+            if (external_handle_type)
+            {
+                throw std::runtime_error{
+                    "Construct offscreen_render_target_t"
+                    " from Image View only mode. This "
+                    "does not support exporting memory."
+                };
+            }
             for (size_t i = 0; i < color_views.size(); ++i)
             {
                 _slots.emplace_back(
@@ -167,7 +178,8 @@ namespace my_vulkan
             VkDevice device,
             VkPhysicalDevice physical_device,
             VkExtent2D size,
-            VkFormat color_format
+            VkFormat color_format,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
         )
         : image{
             device,
@@ -177,6 +189,10 @@ namespace my_vulkan
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
             VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            external_handle_type
         }
         , view{image.view()}
         , sampler{device}

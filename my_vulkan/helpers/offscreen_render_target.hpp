@@ -63,12 +63,17 @@ namespace my_vulkan
                 VkFormat color_format,
                 VkExtent2D size,
                 bool need_readback = false,
-                size_t depth = 2
+                size_t depth = 2,
+                std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
             );
             offscreen_render_target_t(
+                //this does not support export memory,
+                // but we keep the external handle type
+                // to throw an error when activated.
                 device_t& device,
                 std::vector<VkImageView> color_views,
-                VkExtent2D size
+                VkExtent2D size,
+                std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
             );
             render_target_t render_target();
             size_t depth() const;
@@ -91,7 +96,8 @@ namespace my_vulkan
                     VkDevice device,
                     VkPhysicalDevice physical_device,
                     VkExtent2D size,
-                    VkFormat color_format
+                    VkFormat color_format,
+                    std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
                 );
             };
             VkExtent2D _size;
