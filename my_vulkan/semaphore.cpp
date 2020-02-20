@@ -45,6 +45,7 @@ namespace my_vulkan
         cleanup();
         _semaphore = other._semaphore;
         std::swap(_device, other._device);
+        _fpGetSemaphoreFdKHR = other._fpGetSemaphoreFdKHR;
         return *this;
     }
 
@@ -64,6 +65,8 @@ namespace my_vulkan
         {
             vkDestroySemaphore(_device, _semaphore, 0);
             _device = 0;
+            _fpGetSemaphoreFdKHR = nullptr;
+            _semaphore = nullptr;
         }
     }
 
