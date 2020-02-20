@@ -193,6 +193,7 @@ namespace my_vulkan
                         scope.index,
                         _color_buffers[scope.index].view.get(),
                         _size,
+                        *_color_buffers[scope.index].image.memory()
                     };
                 },
                 [&](auto waits, auto signals){

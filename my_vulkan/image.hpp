@@ -64,6 +64,7 @@ namespace my_vulkan
         ) const;
         VkImage get();
         device_memory_t* memory();
+        device_memory_t* memory() const;
         [[nodiscard]] VkFormat format() const;
         [[nodiscard]] VkExtent3D extent() const;
         [[nodiscard]] VkImageLayout layout() const;

@@ -233,6 +233,11 @@ namespace my_vulkan
         return _memory.get();
     }
 
+    device_memory_t* image_t::memory() const
+    {
+        return _memory.get();
+    }
+
     VkFormat image_t::format() const
     {
         return _format;

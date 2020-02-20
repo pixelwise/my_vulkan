@@ -16,6 +16,7 @@ namespace my_vulkan
             size_t phase;
             VkImageView output_buffer; //this is better a shared ptr
             VkExtent2D extent;
+            const device_memory_t& memory;
         };
         struct render_target_t
         {
