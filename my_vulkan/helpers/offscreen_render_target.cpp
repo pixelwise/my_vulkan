@@ -363,7 +363,7 @@ namespace my_vulkan
                 std::move(waits),
                 std::move(signals),
                 _fence.get()
-            );               
+            );
         }
     }
 }

@@ -37,7 +37,7 @@ namespace my_vulkan
         VkImageUsageFlags usage,
         VkImageTiling tiling,
         VkImageLayout initial_layout,
-        bool use_in_compute
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
     )
     {
         VkImageCreateInfo imageInfo = {};
@@ -50,8 +50,18 @@ namespace my_vulkan
         imageInfo.tiling = tiling;
         imageInfo.initialLayout = initial_layout;
         imageInfo.usage = usage;
-        if (use_in_compute)
+        if (external_handle_type)
+        {
+            VkExternalMemoryImageCreateInfo vkExternalMemImageCreateInfo = {};
+            vkExternalMemImageCreateInfo.sType =
+                VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
+            vkExternalMemImageCreateInfo.pNext = NULL;
+            vkExternalMemImageCreateInfo.handleTypes =
+                external_handle_type.value();
             imageInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+            imageInfo.pNext = &vkExternalMemImageCreateInfo;
+        }
+
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         VkImage result;
@@ -106,7 +116,7 @@ namespace my_vulkan
         usage,
         tiling,
         initial_layout,
-        bool(external_handle_type)
+        external_handle_type
     )}
     , _format{format}
     , _extent{extent}
