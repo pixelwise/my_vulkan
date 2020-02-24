@@ -59,6 +59,7 @@ add_library(my_vulkan_offscreen
     my_vulkan/debug_callback.cpp
     my_vulkan/helpers/standard_swap_chain.cpp
     my_vulkan/helpers/offscreen_render_target.cpp
+    my_vulkan/interop_utils.cpp
 )
 message("CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -111,6 +112,7 @@ if(glfw3_FOUND)
         my_vulkan/debug_callback.cpp
         my_vulkan/helpers/standard_swap_chain.cpp
         my_vulkan/helpers/offscreen_render_target.cpp
+        my_vulkan/interop_utils.cpp
     )
 
     target_link_libraries(
