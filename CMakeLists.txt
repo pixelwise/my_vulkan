@@ -63,12 +63,6 @@ add_library(my_vulkan_offscreen
 )
 message("CMAKE_CURRENT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
 
-#target_include_directories(
-#    my_vulkan_offscreen
-#    PUBLIC
-#    ${OpenCV_INCLUDE_DIRS}
-#    ${GLM_INCLUDE_DIRS}
-#)
 target_include_directories(
     my_vulkan_offscreen
     INTERFACE
