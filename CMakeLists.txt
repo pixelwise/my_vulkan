@@ -1,3 +1,4 @@
+cmake_policy(SET CMP0025 NEW) # needed for conan.cmake to work right
 project(my_vulkan)
 cmake_minimum_required(VERSION 3.10)
 
@@ -14,10 +15,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 if (_is_top_project)
-    message(
-        STATUS
-        "-- my_vulkan is top project."
-    )
+    message(STATUS "my_vulkan is top project.")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -DDEBUG")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -Werror=return-type")
@@ -257,7 +255,6 @@ if(glfw3_FOUND)
         glfw_vulkan_test
         glfw
         my_vulkan
-        c++fs
     )
     add_dependencies(glfw_vulkan_test Shaders)
 endif(glfw3_FOUND)
