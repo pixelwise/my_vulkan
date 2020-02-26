@@ -255,6 +255,7 @@ if(glfw3_FOUND)
         glfw_vulkan_test
         glfw
         my_vulkan
+        c++fs
     )
     add_dependencies(glfw_vulkan_test Shaders)
 endif(glfw3_FOUND)
