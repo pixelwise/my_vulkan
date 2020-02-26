@@ -4,11 +4,130 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(shaders)
-
+if(CMAKE_PROJECT_NAME STREQUAL "my_vulkan")
+    set(
+        _is_top_project
+        TRUE
+    )
+endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+if (_is_top_project)
+    message(
+        STATUS
+        "-- my_vulkan is top project."
+    )
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -DDEBUG")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -Werror=return-type")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -Werror=return-type")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
+    set(
+        conan_compiler_libcxx
+        "compiler.libcxx=libc++"
+    )
+
+    # --- conan ---
+    include(conan)
+    find_program(CONAN conan)
+    if(NOT CONAN)
+        message(FATAL_ERROR "conan not found!")
+    endif()
+    set(
+        CONAN_PACKAGES
+        ${CONAN_PACKAGES}
+        boost/1.71.0@conan/stable
+        glm/0.9.8.5@g-truc/stable
+        # these are overrides due to different package sources
+        libpng/1.6.37@bincrafters/stable
+        zlib/1.2.11@
+        bzip2/1.0.8@conan/stable
+    )
+    set(
+        opencv_conan_options
+        opencv:freetype=True
+        opencv:png=True
+        opencv:jpeg=True
+        # switch off everything we dont need to reduce dependencies
+        opencv:shared=False
+        opencv:fPIC=True
+        opencv:contrib=False
+        opencv:jpegturbo=False
+        opencv:tiff=False
+        opencv:webp=False
+        opencv:jasper=False
+        opencv:openexr=False
+        opencv:nonfree=False
+        opencv:dc1394=False
+        opencv:carotene=False
+        opencv:cuda=False
+        opencv:eigen=False
+        opencv:protobuf=False
+        opencv:harfbuzz=False
+        opencv:glog=False
+        opencv:gflags=False
+        opencv:gstreamer=False
+        opencv:openblas=False
+        opencv:ffmpeg=False
+        opencv:lapack=False
+        opencv:quirc=False
+    )
+    list(
+        APPEND
+        CONAN_PACKAGES
+        opencv/4.1.1@conan/stable
+    )
+
+    conan_add_remote(
+        NAME bincrafters INDEX 1
+        URL https://api.bintray.com/conan/bincrafters/public-conan
+    )
+    set(
+        CONAN_OPTIONS
+        ${opencv_conan_options}
+    )
+    if(DEBUG_CONAN)
+        set(
+            ENV{CONAN_TRACE_FILE}
+            "${CMAKE_CURRENT_BINARY_DIR}/conan-trace.log"
+        )
+        set(
+            ENV{CONAN_LOGGING_LEVEL}
+            debug
+        )
+        set(
+            ENV{CONAN_LOG_RUN_TO_FILE}
+            1
+        )
+        set(
+            ENV{CONAN_PRINT_RUN_COMMANDS}
+            1
+        )
+    endif()
+    message(STATUS "conan options ${CONAN_OPTIONS}")
+    conan_cmake_run(
+        BUILD_TYPE Release
+        REQUIRES
+        ${CONAN_PACKAGES}
+        OPTIONS
+        ${CONAN_OPTIONS}
+        BASIC_SETUP
+        CMAKE_TARGETS
+        BUILD missing
+        SETTINGS
+        ${conan_compiler_libcxx}
+        GENERATORS
+        cmake_find_package #create FindXXX.cmake
+        cmake_paths #create conan_paths.cmake
+    )
+
+    include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
+
+endif()
 find_package(Vulkan REQUIRED)
 find_package(glfw3 3.2)
 find_package(boost REQUIRED)
@@ -138,6 +257,7 @@ if(glfw3_FOUND)
         glfw_vulkan_test
         glfw
         my_vulkan
+        c++fs
     )
     add_dependencies(glfw_vulkan_test Shaders)
 endif(glfw3_FOUND)

@@ -1,5 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
-
+#endif
 #include "utils.hpp"
 
 #include <iostream>
@@ -133,6 +134,10 @@ namespace my_vulkan
             case 2: return VK_FORMAT_R8G8_UNORM;
             case 3: return VK_FORMAT_R8G8B8_UNORM;
             case 4: return VK_FORMAT_R8G8B8A8_UNORM;
+            default:
+                std::cerr << "Does not support depth =" << n << "\n";
+                break;
+
         }
         return VK_FORMAT_UNDEFINED;
     }
@@ -395,6 +400,8 @@ namespace my_vulkan
             case VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG:
             case VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG:
                 return 0;
+            default:
+                break;
         }
         return 0;
     }
@@ -457,7 +464,7 @@ namespace my_vulkan
     VkPhysicalDevice pick_physical_device(
         VkInstance instance,
         VkSurfaceKHR surface,
-        std::vector<const char*> deviceExtensions
+        const std::vector<const char*>& deviceExtensions
     )
     {
         uint32_t deviceCount = 0;
@@ -634,7 +641,7 @@ namespace my_vulkan
         return true;
     }
 
-    VkPhysicalDevice my_vulkan::pick_physical_device(
+    VkPhysicalDevice pick_physical_device(
         uint32_t device_index,
         VkInstance instance,
         VkSurfaceKHR surface,
