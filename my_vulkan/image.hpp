@@ -54,10 +54,10 @@ namespace my_vulkan
         image_t& operator=(const image_t&) = delete;
         image_t& operator=(image_t&& other) noexcept;
         ~image_t();
-        [[nodiscard]] image_view_t view(
+        image_view_t view(
             int aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT
         ) const;
-        [[nodiscard]] VkSubresourceLayout memory_layout(
+        VkSubresourceLayout memory_layout(
             int aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT,
             uint32_t mipLevel = 0,
             uint32_t arrayLayer = 0
@@ -65,9 +65,9 @@ namespace my_vulkan
         VkImage get();
         device_memory_t* memory();
         device_memory_t* memory() const;
-        [[nodiscard]] VkFormat format() const;
-        [[nodiscard]] VkExtent3D extent() const;
-        [[nodiscard]] VkImageLayout layout() const;
+        VkFormat format() const;
+        VkExtent3D extent() const;
+        VkImageLayout layout() const;
         void copy_from(
             VkBuffer buffer,
             command_buffer_t::scope_t& command_scope,
