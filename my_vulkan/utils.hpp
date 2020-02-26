@@ -83,7 +83,7 @@ namespace my_vulkan
     VkPhysicalDevice pick_physical_device(
         VkInstance instance,
         VkSurfaceKHR surface,
-        std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME}
+        const std::vector<const char*>& deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME}
     );
 
     VkPhysicalDevice pick_physical_device(
