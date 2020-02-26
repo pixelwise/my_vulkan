@@ -61,7 +61,7 @@ namespace my_vulkan
         void set_data(const std::vector<T>& data);
         void set_data(const void* data, size_t size);
         VkDeviceMemory get();
-        [[nodiscard]] std::optional<int> get_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType) const;
+        std::optional<int> get_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType) const;
     private:
         void cleanup();
         VkDevice _device{0};

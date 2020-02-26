@@ -18,7 +18,7 @@ namespace my_vulkan
         semaphore_t& operator=(semaphore_t&& other) noexcept;
         VkSemaphore get();
         ~semaphore_t();
-        [[nodiscard]] std::optional<int> get_external_handle(VkExternalSemaphoreHandleTypeFlagBits externalHandleType) const;
+        std::optional<int> get_external_handle(VkExternalSemaphoreHandleTypeFlagBits externalHandleType) const;
     private:
         void cleanup();
         VkDevice _device;

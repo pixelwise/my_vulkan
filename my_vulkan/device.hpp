@@ -35,8 +35,8 @@ namespace my_vulkan
         queue_reference_t& transfer_queue();
         queue_family_indices_t queue_indices();
         VkDevice get() const;
-        [[nodiscard]] std::optional<VkPhysicalDeviceIDProperties> physcial_device_id_properties() const;
-        [[nodiscard]] std::optional<vk_uuid_t> physical_device_uuid() const;
+        std::optional<VkPhysicalDeviceIDProperties> physcial_device_id_properties() const;
+        std::optional<vk_uuid_t> physical_device_uuid() const;
         template <typename T>
         static T get_proc(VkDevice device, const std::string & proc_name)
         {

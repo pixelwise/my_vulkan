@@ -73,7 +73,7 @@ namespace my_vulkan
             VkFormat color_format() const;
             VkExtent2D extent() const;
             void update(VkExtent2D new_extent);
-            [[nodiscard]] const std::vector<pipeline_resources_t> & pipeline_resources() const;
+            const std::vector<pipeline_resources_t> & pipeline_resources() const;
         private:
             device_t* _device;
             VkSurfaceKHR _surface;
