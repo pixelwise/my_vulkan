@@ -245,6 +245,12 @@ if(glfw3_FOUND)
     )
 
 endif()
+
+if(APPLE)
+else(APPLE)
+    set(CXX_FILESYSTEM_LIB c++fs)
+endif(APPLE)
+
 if(glfw3_FOUND)
     add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
     target_include_directories(
@@ -255,7 +261,7 @@ if(glfw3_FOUND)
         glfw_vulkan_test
         glfw
         my_vulkan
-        c++fs
+        ${CXX_FILESYSTEM_LIB}
     )
     add_dependencies(glfw_vulkan_test Shaders)
 endif(glfw3_FOUND)
