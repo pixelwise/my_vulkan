@@ -2,6 +2,7 @@
 
 #include "../command_buffer.hpp"
 #include "../queue.hpp"
+#include "../device_memory.hpp"
 #include <glm/vec2.hpp>
 #include <functional>
 #include <stdexcept>
