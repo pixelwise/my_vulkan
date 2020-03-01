@@ -75,7 +75,10 @@ namespace my_vulkan
                 VkExtent2D size,
                 std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
             );
-            render_target_t render_target();
+            render_target_t render_target(
+                std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
+                std::vector<VkSemaphore> signals = {}
+            );
             size_t depth() const;
             phase_context_t begin_phase(std::optional<VkRect2D> rect = std::nullopt);
             void end_phase(

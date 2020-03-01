@@ -4,7 +4,6 @@
 #include <optional>
 #include <vector>
 #include <array>
-
 namespace my_vulkan
 {
     enum class acquisition_failure_t {

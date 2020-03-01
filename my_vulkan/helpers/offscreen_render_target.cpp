@@ -1,5 +1,5 @@
 #include "offscreen_render_target.hpp"
-
+#include "../vector_helpers.hpp"
 namespace my_vulkan
 {
     namespace helpers
@@ -199,7 +199,10 @@ namespace my_vulkan
         {
         }
 
-        render_target_t offscreen_render_target_t::render_target()
+        render_target_t offscreen_render_target_t::render_target(
+            std::vector<queue_reference_t::wait_semaphore_info_t> waits,
+            std::vector<VkSemaphore> signals
+        )
         {
             return {
                 [&](VkRect2D rect){
@@ -212,8 +215,11 @@ namespace my_vulkan
                         *_color_buffers[scope.index].image.memory()
                     };
                 },
-                [&](auto waits, auto signals){
-                    end_phase(std::move(waits), std::move(signals));
+                [&, waits_{std::move(waits)}, signals_{std::move(signals)}](auto in_ws, auto in_sigs) mutable {
+                    //maybe better to hold waits and signals as member? mutable labmda is tricky to use.
+                    extend_vector(waits_, std::move(in_ws));
+                    extend_vector(signals_, std::move(in_sigs));
+                    end_phase(std::move(waits_), std::move(signals_));
                 },
                 _size,
                 depth(),
