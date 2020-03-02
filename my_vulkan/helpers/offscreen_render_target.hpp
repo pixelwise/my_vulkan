@@ -11,6 +11,7 @@ namespace my_vulkan
 {
     namespace helpers
     {
+
         class offscreen_render_target_t
         {
         public:
@@ -75,10 +76,24 @@ namespace my_vulkan
                 VkExtent2D size,
                 std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
             );
-            render_target_t render_target(
-                std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
-                std::vector<VkSemaphore> signals = {}
-            );
+            // target need to hold a set of refs of waits, signals and fences
+            // it can be done by passing getters into render target
+            // then in the render target use getter(phase) to
+            // get semaphores and fences after begin_phase
+            // we won't know the phase before begin() get called
+            // thus the getter need to be in render_target_t
+            // to automatically get the sync points and pass them to end_phase
+            // we have to hold the getter and the phase in render_target_t
+            // we can actually create render_finish and render_start semaphore
+            // member as the swap chain
+            struct sync_points_t
+            {
+                std::vector<queue_reference_t::wait_semaphore_info_t> waits;
+                std::vector<VkSemaphore> signals;
+//                std::vector<fence_t> fences;
+            };
+            typedef std::function<sync_points_t(size_t)> sync_points_getter_t;
+            render_target_t render_target(sync_points_getter_t getter);
             size_t depth() const;
             phase_context_t begin_phase(std::optional<VkRect2D> rect = std::nullopt);
             void end_phase(
