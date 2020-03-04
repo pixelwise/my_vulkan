@@ -10,10 +10,15 @@ namespace my_vulkan
             VkExtent2D size,
             bool need_readback,
             size_t depth,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type,
+            std::vector<sync_points_t> sync_points_list
         )
         : _size{size}
         {
+            bool has_sync_points = !sync_points_list.empty();
+            if (has_sync_points && sync_points_list.size() != depth)
+                throw std::runtime_error("Number of input sync points must equal to depth.");
+            auto in_sync_points_list = std::move(sync_points_list);
 
             for (size_t i = 0; i < depth; ++i)
                 _color_buffers.emplace_back(
@@ -135,7 +140,10 @@ namespace my_vulkan
                     need_readback,
                     device.physical_device(),
                     begin_callback,
-                    end_callback
+                    end_callback,
+                    has_sync_points ?
+                        std::move(in_sync_points_list[i])
+                        : sync_points_t{{}, {}}
                 );
                 _textures.push_back({
                     _color_buffers[i].sampler.get(),
@@ -199,7 +207,7 @@ namespace my_vulkan
         {
         }
 
-        render_target_t offscreen_render_target_t::render_target(sync_points_getter_t getter)
+        render_target_t offscreen_render_target_t::render_target()
         {
             return {
                 [&](VkRect2D rect){
@@ -281,7 +289,8 @@ namespace my_vulkan
             bool need_readback,
             VkPhysicalDevice physical_device,
             begin_callback_t begin_callback,
-            end_callback_t end_callback
+            end_callback_t end_callback,
+            sync_points_t sync_points
         )
         : _queue{&queue}
         , _readback_image{
@@ -306,6 +315,7 @@ namespace my_vulkan
         , _command_buffer{_command_pool.make_buffer()}
         , _begin_callback{std::move(begin_callback)}
         , _end_callback{std::move(end_callback)}
+        , _sync_points{std::move(sync_points)}
         {
         }
 
@@ -358,10 +368,14 @@ namespace my_vulkan
             if (_end_callback)
                 _end_callback(*_commands, _readback_image.get());
             _commands.reset();
+            auto in_waits = std::move(waits);
+            auto in_signals = std::move(signals);
+            extend_vector(in_waits, _sync_points.waits);
+            extend_vector(in_signals, _sync_points.signals);
             _queue->submit(
                 _command_buffer.get(),
-                std::move(waits),
-                std::move(signals),
+                std::move(in_waits),
+                std::move(in_signals),
                 _fence.get()
             );
         }

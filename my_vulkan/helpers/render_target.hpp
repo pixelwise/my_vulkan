@@ -15,40 +15,25 @@ namespace my_vulkan
         {
             command_buffer_t::scope_t* commands;
             size_t phase;
-            VkImageView output_buffer; //this is better a shared ptr
+            VkImageView output_buffer;
             VkExtent2D extent;
             const device_memory_t& memory;
         };
         struct render_target_t
         {
-            // each target can have set of extra sync points
-            // which can be used as waits before the draw start
-            // and as signal after the draw done
-            // to reuse the sync points, we need getter(phase)
             using begin_t = std::function<render_scope_t(VkRect2D)>;
             using end_t = std::function<void(
                 std::vector<queue_reference_t::wait_semaphore_info_t>,
                 std::vector<VkSemaphore>
             )>;
-            // it is probably very bad to always copy the functors
-            // all the capture inside will be copied too
             using rect_t = std::function<VkRect2D()>;
+            begin_t begin;
+            end_t end;
             size_t depth;
             bool flipped;
             rect_t rect;
             glm::vec2 ui_multiplier;
             bool enabled = true;
-            render_scope_t begin(VkRect2D extent)
-            {
-                return _begin(extent);
-            }
-            void end(
-                std::vector<queue_reference_t::wait_semaphore_info_t> waits,
-                std::vector<VkSemaphore> signals
-            )
-            {
-                return _end(std::move(waits), std::move(signals));
-            }
             render_target_t(
                 begin_t in_begin,
                 end_t in_end,
@@ -110,17 +95,14 @@ namespace my_vulkan
                 rect_t in_rect,
                 glm::vec2 in_ui_multiplier
             )
-            : _begin{std::move(in_begin)}
-            , _end{std::move(in_end)}
+            : begin{std::move(in_begin)}
+            , end{std::move(in_end)}
             , depth{in_depth}
             , flipped{in_flipped}
             , rect{in_rect}
             , ui_multiplier{in_ui_multiplier}
             {
             }
-            begin_t _begin;
-            end_t _end;
-
         };
     }
 }
