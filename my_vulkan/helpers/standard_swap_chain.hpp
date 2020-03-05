@@ -69,7 +69,7 @@ namespace my_vulkan
             acquisition_outcome_t acquire();
             command_pool_t& command_pool();
             void wait_for_idle();
-            render_target_t render_target();
+            render_target_t render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
             VkFormat color_format() const;
             VkExtent2D extent() const;
             void update(VkExtent2D new_extent);

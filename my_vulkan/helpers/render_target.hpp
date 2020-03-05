@@ -17,7 +17,7 @@ namespace my_vulkan
             size_t phase;
             VkImageView output_buffer;
             VkExtent2D extent;
-            const device_memory_t& memory;
+            std::optional<device_memory_t::external_memory_info_t> mem_info;
         };
         struct render_target_t
         {

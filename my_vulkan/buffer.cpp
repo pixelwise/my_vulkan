@@ -55,7 +55,7 @@ namespace my_vulkan
                     memRequirements.memoryTypeBits,
                     properties
                 ),
-                .external_handle_type=external_handle_type,
+                .external_handle_types=external_handle_type,
             }
         );
         vkBindBufferMemory(_device, _buffer, _memory->get(), 0);

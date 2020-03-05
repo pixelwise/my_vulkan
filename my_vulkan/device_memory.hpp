@@ -13,6 +13,11 @@ namespace my_vulkan
             VkDeviceSize offset;
             VkDeviceSize size;
         };
+        struct external_memory_info_t
+        {
+            size_t size;
+            int fd;
+        };
         struct mapping_t
         {
             mapping_t(
@@ -41,7 +46,7 @@ namespace my_vulkan
         {
             VkDeviceSize size;
             uint32_t type_index;
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type;
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types;
         };
         device_memory_t(
             VkDevice device,
@@ -62,6 +67,7 @@ namespace my_vulkan
         void set_data(const void* data, size_t size);
         VkDeviceMemory get();
         std::optional<int> get_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType) const;
+        std::optional<external_memory_info_t> external_info(VkExternalMemoryHandleTypeFlagBits externalHandleType) const;
     private:
         void cleanup();
         VkDevice _device{0};

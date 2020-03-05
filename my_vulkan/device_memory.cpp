@@ -21,7 +21,7 @@ namespace my_vulkan
             config.size,
             config.type_index
         };
-        if (config.external_handle_type)
+        if (config.external_handle_types)
         {
             VkExportMemoryAllocateInfoKHR vulkanExportMemoryAllocateInfoKHR = {};
             vulkanExportMemoryAllocateInfoKHR.sType =
@@ -30,7 +30,7 @@ namespace my_vulkan
             vulkanExportMemoryAllocateInfoKHR.pNext = NULL;
 
             vulkanExportMemoryAllocateInfoKHR.handleTypes =
-                *(config.external_handle_type);
+                *(config.external_handle_types);
             info.pNext = &vulkanExportMemoryAllocateInfoKHR;
             _fpGetMemoryFdKHR = device_t::get_proc<PFN_vkGetMemoryFdKHR>(_device, "vkGetMemoryFdKHR");
             //maybe better to let device_memory hold a shared ptr of device?
@@ -119,7 +119,17 @@ namespace my_vulkan
 
         return fd;
     }
-
+    std::optional<my_vulkan::device_memory_t::external_memory_info_t>
+    device_memory_t::external_info(VkExternalMemoryHandleTypeFlagBits externalHandleType) const
+    {
+        auto maybe_fd = get_external_handle(externalHandleType);
+        if (!maybe_fd)
+        return std::nullopt;
+        return {{
+        size(),
+            maybe_fd.value()
+    }};
+    }
     device_memory_t::mapping_t::mapping_t(
         device_memory_t& memory,
         std::optional<region_t> optional_region,

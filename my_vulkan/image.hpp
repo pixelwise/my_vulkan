@@ -21,7 +21,7 @@ namespace my_vulkan
             VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
             VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
         );
         image_t(
             device_t& device,
@@ -31,7 +31,7 @@ namespace my_vulkan
             VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
             VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
         );
         image_t(
             VkDevice device,

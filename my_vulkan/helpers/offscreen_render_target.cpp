@@ -10,10 +10,11 @@ namespace my_vulkan
             VkExtent2D size,
             bool need_readback,
             size_t depth,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types,
             std::vector<sync_points_t> sync_points_list
         )
         : _size{size}
+        , _external_mem_handle_types{external_handle_types}
         {
             bool has_sync_points = !sync_points_list.empty();
             if (has_sync_points && sync_points_list.size() != depth)
@@ -26,7 +27,7 @@ namespace my_vulkan
                     device.physical_device(),
                     size,
                     color_format,
-                    external_handle_type
+                    _external_mem_handle_types
                 );
             for (size_t i = 0; i < depth; ++i)
             {
@@ -157,11 +158,12 @@ namespace my_vulkan
             device_t& device,
             std::vector<VkImageView> color_views,
             VkExtent2D size,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
         )
         : _size{size}
+        , _external_mem_handle_types{external_handle_types}
         {
-            if (external_handle_type)
+            if (external_handle_types)
             {
                 throw std::runtime_error{
                     "Construct offscreen_render_target_t"
@@ -187,7 +189,7 @@ namespace my_vulkan
             VkPhysicalDevice physical_device,
             VkExtent2D size,
             VkFormat color_format,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
         )
         : image{
             device,
@@ -200,15 +202,17 @@ namespace my_vulkan
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_TILING_OPTIMAL,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            external_handle_type
+            external_handle_types
         }
         , view{image.view()}
         , sampler{device}
         {
         }
 
-        render_target_t offscreen_render_target_t::render_target()
+        render_target_t offscreen_render_target_t::render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type)
         {
+            if (!(_external_mem_handle_types && (external_mem_type & _external_mem_handle_types.value())))
+                throw std::runtime_error("render target does not initialized with any external memory handle types. Wanted external memory type does not match the ones used for initialization.");
             return {
                 [&](VkRect2D rect){
                     auto scope = begin_phase(rect);
@@ -217,7 +221,7 @@ namespace my_vulkan
                         scope.index,
                         _color_buffers[scope.index].view.get(),
                         _size,
-                        *_color_buffers[scope.index].image.memory()
+                        _external_mem_handle_types ? _color_buffers[scope.index].image.memory()->external_info(external_mem_type) : std::nullopt
                     };
                 },
                 [&](auto waits, auto signals) {

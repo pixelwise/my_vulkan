@@ -149,13 +149,13 @@ namespace my_vulkan
                 sync.in_flight.wait();
         }
 
-        render_target_t standard_swap_chain_t::render_target()
+        render_target_t standard_swap_chain_t::render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type)
         {
             std::shared_ptr<std::optional<working_set_t>> working_set{
                 new std::optional<working_set_t>{}
             };
             return {
-                [working_set, this](VkRect2D rect){
+                [external_mem_type, working_set, this](VkRect2D rect){
                     auto outcome = acquire();
                     if (outcome.failure)
                         throw std::runtime_error{
@@ -169,7 +169,7 @@ namespace my_vulkan
                         phase,
                         _pipeline_resources[phase].image_view.get(),
                         extent(),
-                        *(_swap_chain->images()[phase].memory())
+                        _swap_chain->images()[phase].memory()->external_info(external_mem_type)
                     };
                 },
                 [working_set](auto waits, auto signals){
