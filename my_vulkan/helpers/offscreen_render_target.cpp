@@ -214,7 +214,7 @@ namespace my_vulkan
             if (!(_external_mem_handle_types && (external_mem_type & _external_mem_handle_types.value())))
                 throw std::runtime_error("render target does not initialized with any external memory handle types. Wanted external memory type does not match the ones used for initialization.");
             return {
-                [&](VkRect2D rect){
+                [external_mem_type, this](VkRect2D rect){
                     auto scope = begin_phase(rect);
                     return render_scope_t{
                         scope.commands,

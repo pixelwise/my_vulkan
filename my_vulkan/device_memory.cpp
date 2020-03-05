@@ -114,7 +114,7 @@ namespace my_vulkan
         vkMemoryGetFdInfoKHR.pNext = NULL;
         vkMemoryGetFdInfoKHR.memory = _memory;
         vkMemoryGetFdInfoKHR.handleType = externalHandleType;
-
+        //TODO: fix the throw, it seems cannot throw here when err is VK_ERROR_INITIALIZATION_FAILED
         vk_require(_fpGetMemoryFdKHR(_device, &vkMemoryGetFdInfoKHR, &fd), "_fpGetMemoryFdKHR");
 
         return fd;
