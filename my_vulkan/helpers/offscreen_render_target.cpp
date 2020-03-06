@@ -1,3 +1,4 @@
+#include <iostream>
 #include "offscreen_render_target.hpp"
 #include "../vector_helpers.hpp"
 namespace my_vulkan
@@ -16,6 +17,7 @@ namespace my_vulkan
         : _size{size}
         , _external_mem_handle_types{external_handle_types}
         {
+            std::cerr << "offscreen_render_target_t()" << this << " with device_t:" << &device << "\n";
             bool has_sync_points = !sync_points_list.empty();
             if (has_sync_points && sync_points_list.size() != depth)
                 throw std::runtime_error("Number of input sync points must equal to depth.");

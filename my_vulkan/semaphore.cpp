@@ -1,3 +1,4 @@
+#include <iostream>
 #include "semaphore.hpp"
 
 #include "utils.hpp"
@@ -12,6 +13,7 @@ namespace my_vulkan
     )
     : _device{device}
     {
+        std::cerr << "semaphore_t()"<< this << "\n";
         VkSemaphoreCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         info.flags = flags;
@@ -37,11 +39,13 @@ namespace my_vulkan
     semaphore_t::semaphore_t(semaphore_t&& other) noexcept
     : _device{0}
     {
+        std::cerr << "semaphore_t(&&)"<< this << "\n";
         *this = std::move(other);
     }
 
     semaphore_t& semaphore_t::operator=(semaphore_t&& other) noexcept
     {
+        std::cerr << "semaphore_t.move_assign()"<< this << "\n";
         cleanup();
         _semaphore = other._semaphore;
         std::swap(_device, other._device);
@@ -56,6 +60,7 @@ namespace my_vulkan
 
     semaphore_t::~semaphore_t()
     {
+        std::cerr << "~semaphore_t()"<< this << "\n";
         cleanup();
     }
 

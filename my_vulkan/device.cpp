@@ -145,6 +145,7 @@ namespace my_vulkan
 
     device_t::~device_t()
     {
+        std::cerr << "~device_t()" << this << "\n";
         if (auto device = get())
             vkDestroyDevice(device, 0);
     }
