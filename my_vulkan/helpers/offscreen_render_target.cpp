@@ -211,10 +211,13 @@ namespace my_vulkan
         {
         }
 
+        render_target_t offscreen_render_target_t::render_target()
+        {
+            return render_target(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
+        }
+
         render_target_t offscreen_render_target_t::render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type)
         {
-            if (!(_external_mem_handle_types && (external_mem_type & _external_mem_handle_types.value())))
-                throw std::runtime_error("render target does not initialized with any external memory handle types. Wanted external memory type does not match the ones used for initialization.");
             return {
                 [external_mem_type, this](VkRect2D rect){
                     auto scope = begin_phase(rect);

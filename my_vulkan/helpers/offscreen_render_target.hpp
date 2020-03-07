@@ -67,6 +67,7 @@ namespace my_vulkan
                 sync_points_t _sync_points;
             };
         public:
+            // it is better to store the color format and create a getter.
             offscreen_render_target_t(
                 device_t& device,
                 VkFormat color_format,
@@ -86,7 +87,8 @@ namespace my_vulkan
                 std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
             );
             typedef std::function<sync_points_t(size_t)> sync_points_getter_t;
-            render_target_t render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
+            render_target_t render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type);
+            render_target_t render_target();
             size_t depth() const;
             phase_context_t begin_phase(std::optional<VkRect2D> rect = std::nullopt);
             void end_phase(
@@ -113,6 +115,7 @@ namespace my_vulkan
             };
             VkExtent2D _size;
             std::optional<VkExternalMemoryHandleTypeFlags> _external_mem_handle_types;
+            VkExternalMemoryHandleTypeFlagBits _external_mem_type = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
             std::vector<color_buffer_t> _color_buffers;
             std::vector<VkDescriptorImageInfo> _textures;
             std::vector<slot_t> _slots;
