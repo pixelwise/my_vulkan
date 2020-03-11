@@ -45,6 +45,8 @@ namespace my_vulkan
             "creating buffer"
         );
         VkMemoryRequirements memRequirements;
+        // according to https://devblogs.nvidia.com/vulkan-dos-donts/
+        // VK_KHR_get_memory_requirements2 is preferred
         vkGetBufferMemoryRequirements(_device, _buffer, &memRequirements);
         _memory = std::make_unique<device_memory_t>(
             _device,
