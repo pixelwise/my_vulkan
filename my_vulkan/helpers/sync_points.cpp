@@ -1,4 +1,5 @@
 #include "sync_points.hpp"
+#include <sstream>
 namespace my_vulkan
 {
 
@@ -19,5 +20,23 @@ namespace my_vulkan
     void sync_point_refs_t::extend_signals(sync_point_refs_t::signals_t o)
     {
         extend_vector(signals, std::move(o));
+    }
+
+    std::string sync_point_refs_t::to_string()
+    {
+        std::ostringstream ss;
+        ss << "waits=[";
+        for (auto &wait: waits)
+        {
+            ss << wait.semaphore << ", ";
+        }
+        ss << "]";
+        ss << "signals=[";
+        for (auto &signal: signals)
+        {
+            ss << signal << ", ";
+        }
+        ss << "]";
+        return ss.str();
     }
 }

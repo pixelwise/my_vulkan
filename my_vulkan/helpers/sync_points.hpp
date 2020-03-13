@@ -15,5 +15,6 @@ namespace my_vulkan
         void extend(sync_point_refs_t o);
         void extend_waits(waits_t o);
         void extend_signals(signals_t o);
+        std::string to_string();
     };
 }
