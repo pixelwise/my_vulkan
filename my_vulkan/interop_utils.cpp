@@ -34,8 +34,8 @@ int my_vulkan::get_vk_semaphore_fd(const my_vulkan::semaphore_t &vksem)
 
 int my_vulkan::get_vk_memory_fd(const my_vulkan::device_memory_t &vkmem)
 {
-    auto fd = vkmem.get_external_handle(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
-    if (!fd)
+    auto ext_info = vkmem.external_info(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
+    if (!ext_info)
         throw std::runtime_error("cannot get external handle from vulkan.\n");
-    return fd.value();
+    return ext_info->fd;
 }

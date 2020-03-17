@@ -48,7 +48,7 @@ namespace my_vulkan
         {
             VkDeviceSize size;
             uint32_t type_index;
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types;
+            std::vector<VkExternalMemoryHandleTypeFlagBits> external_handle_types;
         };
         device_memory_t(
             VkDevice device,
@@ -68,8 +68,8 @@ namespace my_vulkan
         void set_data(const std::vector<T>& data);
         void set_data(const void* data, size_t size);
         VkDeviceMemory get();
-        std::optional<int> get_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType) const;
-        std::optional<external_memory_info_t> external_info(VkExternalMemoryHandleTypeFlagBits externalHandleType);
+        std::optional<int> create_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType);
+        std::optional<external_memory_info_t> external_info(VkExternalMemoryHandleTypeFlagBits externalHandleType) const;
     private:
         void cleanup();
         VkDevice _device{0};
@@ -77,7 +77,9 @@ namespace my_vulkan
         VkDeviceMemory _memory{0};
         size_t _size;
         mutable std::mutex _mutex;
-        std::map<VkExternalMemoryHandleTypeFlagBits, external_memory_info_t> _external_infos;
+        std::map<VkExternalMemoryHandleTypeFlagBits, int> _external_handles;
+        std::optional<int> create_ext_fd(VkExternalMemoryHandleTypeFlagBits externalHandleType);
+
     };
 
     template<typename T>

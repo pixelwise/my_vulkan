@@ -665,5 +665,17 @@ namespace my_vulkan
         throw std::runtime_error(str(boost::format("device %d is NOT a suitable GPU!")%device_index));
     }
 
+    std::optional<VkExternalSemaphoreHandleTypeFlags>
+    to_vkflags(std::vector<VkExternalMemoryHandleTypeFlagBits> types)
+    {
+        if (types.empty())
+            return std::nullopt;
+        VkExternalSemaphoreHandleTypeFlags ret;
+        for (auto & type : types)
+        {
+            ret |= type;
+        }
+        return ret;
+    }
 
 }
