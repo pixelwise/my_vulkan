@@ -31,8 +31,8 @@ namespace my_vulkan
                 );
                 _frame_sync_points.push_back(
                     frame_sync_points_t{
-                        semaphore_t{device.get()},
-                        semaphore_t{device.get()},
+                        semaphore_t{device},
+                        semaphore_t{device},
                         fence_t{
                             device.get(),
                             VK_FENCE_CREATE_SIGNALED_BIT

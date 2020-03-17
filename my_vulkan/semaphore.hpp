@@ -16,9 +16,9 @@ namespace my_vulkan
 
         explicit semaphore_t(
             VkDevice device,
+            PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR,
             VkSemaphoreCreateFlags flags = 0,
-            std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types = std::nullopt,
-            PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR = nullptr
+            std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types = std::nullopt
         );
         semaphore_t(const semaphore_t&) = delete;
         semaphore_t& operator=(const semaphore_t&) = delete;

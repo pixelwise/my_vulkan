@@ -13,18 +13,18 @@ namespace my_vulkan
     )
     : semaphore_t(
         device.get(),
+        device.get_proc_record_if_needed<PFN_vkGetSemaphoreFdKHR>("vkGetSemaphoreFdKHR"),
         flags,
-        external_handle_types,
-        device.get_proc_record_if_needed<PFN_vkGetSemaphoreFdKHR>("vkGetSemaphoreFdKHR")
+        external_handle_types
     )
     {
 
     }
     semaphore_t::semaphore_t(
         VkDevice device,
+        PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR,
         VkSemaphoreCreateFlags flags,
-        std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types,
-        PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR
+        std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types
     )
     : _device{device}
     , _fpGetSemaphoreFdKHR {fpGetSemaphoreFdKHR}
