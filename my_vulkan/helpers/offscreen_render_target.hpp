@@ -38,12 +38,11 @@ namespace my_vulkan
                     image_t*
                 )>;
                 slot_t(
-                    VkDevice device,
+                    device_t& device,
                     queue_reference_t& queue,
                     VkExtent2D size,
                     VkImageView color_view,
                     bool need_readback,
-                    VkPhysicalDevice physical_device,
                     begin_callback_t begin_callback = 0,
                     end_callback_t end_callback = 0,
                     sync_points_t sync_points = {{},{}}
@@ -106,8 +105,7 @@ namespace my_vulkan
                 image_view_t view;
                 texture_sampler_t sampler;
                 color_buffer_t(
-                    VkDevice device,
-                    VkPhysicalDevice physical_device,
+                    device_t& device,
                     VkExtent2D size,
                     VkFormat color_format,
                     std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types

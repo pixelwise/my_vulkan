@@ -18,6 +18,7 @@ namespace my_vulkan
         size,
         usage,
         properties,
+        device.get_proc_record_if_needed<PFN_vkGetMemoryFdKHR>("vkGetMemoryFdKHR"),
         external_handle_type
     }
     {
@@ -29,11 +30,13 @@ namespace my_vulkan
         VkDeviceSize size,
         VkBufferUsageFlags usage,
         VkMemoryPropertyFlags properties,
+        PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR,
         std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type
     )
     : _device{device}
     , _physical_device{physical_device}
     , _size{size}
+    , _fpGetMemoryFdKHR {pfn_vkGetMemoryFdKHR}
     {
         VkBufferCreateInfo bufferInfo = {};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -58,6 +61,7 @@ namespace my_vulkan
                     properties
                 ),
                 .external_handle_types=external_handle_type,
+                .pfn_vkGetMemoryFdKHR=_fpGetMemoryFdKHR
             }
         );
         vkBindBufferMemory(_device, _buffer, _memory->get(), 0);
@@ -74,7 +78,7 @@ namespace my_vulkan
     }
 
     buffer_t::buffer_t(buffer_t&& other) noexcept
-    : _device{0}
+    : _device{nullptr}
     {
         *this = std::move(other);
     }
@@ -101,7 +105,8 @@ namespace my_vulkan
             _physical_device,
             _size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            nullptr
         };
         staging_buffer.memory()->set_data(data, _size);
         my_vulkan::buffer_t result{
@@ -109,7 +114,8 @@ namespace my_vulkan
             _physical_device,
             _size,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            nullptr
         };
         auto oneshot_scope = command_pool.begin_oneshot();
         oneshot_scope.commands().copy(staging_buffer.get(), get(), {{0, 0, _size}});

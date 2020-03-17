@@ -18,6 +18,7 @@ namespace my_vulkan
             VkExtent3D extent,
             VkFormat format,
             VkImageUsageFlags usage,
+            PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR,
             VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
             VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,

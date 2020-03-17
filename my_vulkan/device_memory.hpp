@@ -49,12 +49,8 @@ namespace my_vulkan
             VkDeviceSize size;
             uint32_t type_index;
             std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types;
+            PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR {nullptr};
         };
-        device_memory_t(
-            VkDevice device,
-            config_t config,
-            PFN_vkGetMemoryFdKHR pfn
-        );
         device_memory_t(
             VkDevice device,
             config_t config

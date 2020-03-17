@@ -13,6 +13,7 @@ namespace my_vulkan
         VkDevice logical_device,
         VkImage image,
         VkMemoryPropertyFlags properties,
+        PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR,
         std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
     )
     {
@@ -26,7 +27,8 @@ namespace my_vulkan
         return {
             requirements.size,
             type,
-            external_handle_types
+            external_handle_types,
+            pfn_vkGetMemoryFdKHR
         };
     }
 
@@ -88,6 +90,7 @@ namespace my_vulkan
         extent,
         format,
         usage,
+        device.get_proc_record_if_needed<PFN_vkGetMemoryFdKHR>("vkGetMemoryFdKHR"),
         initial_layout,
         tiling,
         properties,
@@ -102,6 +105,7 @@ namespace my_vulkan
         VkExtent3D extent,
         VkFormat format,
         VkImageUsageFlags usage,
+        PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR,
         VkImageLayout initial_layout,
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties,
@@ -129,6 +133,7 @@ namespace my_vulkan
             _device,
             _image,
             properties,
+            pfn_vkGetMemoryFdKHR,
             external_handle_types
         )
     }}
@@ -173,7 +178,7 @@ namespace my_vulkan
     }
 
     image_t::image_t(image_t&& other) noexcept
-    : _device{0}
+    : _device{nullptr}
     , _borrowed{false}
     {
         *this = std::move(other);
@@ -499,7 +504,8 @@ namespace my_vulkan
             _physical_device,
             image_size,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            nullptr
         };
         staging_buffer.memory()->set_data(pixels, image_size);
         transition_layout(

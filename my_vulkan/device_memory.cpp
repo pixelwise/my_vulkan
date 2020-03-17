@@ -8,14 +8,22 @@
 
 namespace my_vulkan
 {
+    static device_memory_t::config_t set_fpGetMemoryFdKHR_if_needed(device_t & device, const device_memory_t::config_t& config)
+    {
+        auto ret = config;
+        if(!ret.pfn_vkGetMemoryFdKHR)
+        {
+            ret.pfn_vkGetMemoryFdKHR = device.get_proc_record_if_needed<PFN_vkGetMemoryFdKHR>("vkGetMemoryFdKHR");
+        }
+        return ret;
+    }
     device_memory_t::device_memory_t(
         VkDevice device,
-        config_t config,
-        PFN_vkGetMemoryFdKHR pfn
+        config_t config
     )
     : _device {device}
+    , _fpGetMemoryFdKHR {config.pfn_vkGetMemoryFdKHR}
     , _size{config.size}
-    , _fpGetMemoryFdKHR{pfn}
     {
         VkMemoryAllocateInfo info{
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -34,6 +42,11 @@ namespace my_vulkan
             vulkanExportMemoryAllocateInfoKHR.handleTypes =
                 *(config.external_handle_types);
             info.pNext = &vulkanExportMemoryAllocateInfoKHR;
+            if (!_fpGetMemoryFdKHR)
+            {
+                // if there is no _fpGetMemoryFdKHR, try to obtain it
+                _fpGetMemoryFdKHR = device_t::get_proc<PFN_vkGetMemoryFdKHR>(device, "vkGetMemoryFdKHR");
+            }
         }
 
         vk_require(
@@ -50,17 +63,6 @@ namespace my_vulkan
             record_external_handle(type);
         }
     }
-    device_memory_t::device_memory_t(
-        VkDevice device,
-        device_memory_t::config_t config
-    )
-    : device_memory_t(
-        device,
-        config,
-        device_t::get_proc<PFN_vkGetMemoryFdKHR>(device, "vkGetMemoryFdKHR")
-    )
-    {
-    }
 
     device_memory_t::device_memory_t(
         device_t& device,
@@ -68,8 +70,7 @@ namespace my_vulkan
     )
     : device_memory_t(
         device.get(),
-        config,
-        device.get_proc_record_if_needed<PFN_vkGetMemoryFdKHR>("vkGetMemoryFdKHR")
+        set_fpGetMemoryFdKHR_if_needed(device, config)
     )
     {
     }

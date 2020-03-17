@@ -25,8 +25,7 @@ namespace my_vulkan
 
             for (size_t i = 0; i < depth; ++i)
                 _color_buffers.emplace_back(
-                    device.get(),
-                    device.physical_device(),
+                    device,
                     size,
                     color_format,
                     _external_mem_handle_types
@@ -136,12 +135,11 @@ namespace my_vulkan
                         };
                 }
                 _slots.emplace_back(
-                    device.get(),
+                    device,
                     device.graphics_queue(),
                     size,
                     _color_buffers[i].view.get(),
                     need_readback,
-                    device.physical_device(),
                     begin_callback,
                     end_callback,
                     has_sync_points ?
@@ -176,26 +174,23 @@ namespace my_vulkan
             for (size_t i = 0; i < color_views.size(); ++i)
             {
                 _slots.emplace_back(
-                    device.get(),
+                    device,
                     device.graphics_queue(),
                     size,
                     color_views[i],
-                    false,
-                    device.physical_device()
+                    false
                 );
             }            
         }
 
         offscreen_render_target_t::color_buffer_t::color_buffer_t(
-            VkDevice device,
-            VkPhysicalDevice physical_device,
+            device_t& device,
             VkExtent2D size,
             VkFormat color_format,
             std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
         )
         : image{
             device,
-            physical_device,
             {size.width, size.height, 1},
             color_format,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
@@ -207,7 +202,7 @@ namespace my_vulkan
             external_handle_types
         }
         , view{image.view()}
-        , sampler{device}
+        , sampler{device.get()}
         {
         }
 
@@ -291,12 +286,11 @@ namespace my_vulkan
         }
 
         offscreen_render_target_t::slot_t::slot_t(
-            VkDevice device,
+            device_t& device,
             queue_reference_t& queue,
             VkExtent2D size,
             VkImageView color_view,
             bool need_readback,
-            VkPhysicalDevice physical_device,
             begin_callback_t begin_callback,
             end_callback_t end_callback,
             sync_points_t sync_points
@@ -306,7 +300,6 @@ namespace my_vulkan
             need_readback ?
             new image_t{
                 device,
-                physical_device,
                 {size.width, size.height, 1},
                 VK_FORMAT_B8G8R8A8_UNORM,
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -319,8 +312,8 @@ namespace my_vulkan
             } :
             nullptr
         }
-        , _fence{device, VK_FENCE_CREATE_SIGNALED_BIT}
-        , _command_pool{device, queue}
+        , _fence{device.get(), VK_FENCE_CREATE_SIGNALED_BIT}
+        , _command_pool{device.get(), queue}
         , _command_buffer{_command_pool.make_buffer()}
         , _begin_callback{std::move(begin_callback)}
         , _end_callback{std::move(end_callback)}

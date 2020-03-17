@@ -23,6 +23,7 @@ namespace my_vulkan
             VkDeviceSize size,
             VkBufferUsageFlags usage,
             VkMemoryPropertyFlags properties,
+            PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR,
             std::optional<VkExternalMemoryHandleTypeFlags> external_handle_type = std::nullopt
         );
         buffer_t(const buffer_t&) = delete;
@@ -41,6 +42,7 @@ namespace my_vulkan
         VkPhysicalDevice _physical_device;
         VkDeviceSize _size;
         VkBuffer _buffer;
+        PFN_vkGetMemoryFdKHR _fpGetMemoryFdKHR;
         std::unique_ptr<device_memory_t> _memory;
     };
 }
