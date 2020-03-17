@@ -174,8 +174,7 @@ public:
     }}
     , _depth_format{my_vulkan::find_depth_format(physical_device)}
     , _depth_image {
-        logical_device.get(),
-        physical_device,
+        logical_device,
         VkExtent3D {
             swap_chain->extent().width,
             swap_chain->extent().height,
@@ -441,8 +440,7 @@ private:
     {
         _depth_image = std::move (
             my_vulkan::image_t {
-            logical_device.get(),
-            physical_device,
+            logical_device,
             VkExtent3D {
                 swap_chain->extent().width,
                 swap_chain->extent().height,
