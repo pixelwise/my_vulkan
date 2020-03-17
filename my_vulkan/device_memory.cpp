@@ -21,7 +21,7 @@ namespace my_vulkan
             config.size,
             config.type_index
         };
-        if (!config.external_handle_types.empty())
+        if (config.external_handle_types)
         {
             VkExportMemoryAllocateInfoKHR vulkanExportMemoryAllocateInfoKHR = {};
             vulkanExportMemoryAllocateInfoKHR.sType =
@@ -30,14 +30,10 @@ namespace my_vulkan
             vulkanExportMemoryAllocateInfoKHR.pNext = NULL;
 
             vulkanExportMemoryAllocateInfoKHR.handleTypes =
-                *(to_vkflags(config.external_handle_types));
+                *(config.external_handle_types);
             info.pNext = &vulkanExportMemoryAllocateInfoKHR;
             _fpGetMemoryFdKHR = device_t::get_proc<PFN_vkGetMemoryFdKHR>(_device, "vkGetMemoryFdKHR");
             //maybe better to let device_memory hold a shared ptr of device?
-            for (auto const & type: config.external_handle_types)
-            {
-                create_ext_fd(type);
-            }
         }
 
         vk_require(
@@ -49,6 +45,10 @@ namespace my_vulkan
             ),
             "allocating device memory"
         );
+        for (auto const &type: from_vkflag(config.external_handle_types))
+        {
+            record_external_handle(type);
+        }
     }
 
     device_memory_t::device_memory_t(device_memory_t&& other) noexcept
@@ -118,24 +118,23 @@ namespace my_vulkan
         }
     }
 
-    std::optional<int> device_memory_t::create_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType)
+    void device_memory_t::record_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType)
     {
         std::unique_lock<std::mutex> lock{_mutex};
         auto search = _external_handles.find(externalHandleType);
         if (search != _external_handles.end())
         {
-            return search->second;
+            close(search->second);
         }
 
         auto maybe_fd = create_ext_fd(externalHandleType);
         if (!maybe_fd)
         {
-            return std::nullopt;
+            return;
         }
         _external_handles[externalHandleType] = {
             maybe_fd.value()
         };
-        return _external_handles[externalHandleType];
     }
 
     std::optional<my_vulkan::device_memory_t::external_memory_info_t>

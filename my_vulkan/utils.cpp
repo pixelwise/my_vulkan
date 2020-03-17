@@ -665,15 +665,44 @@ namespace my_vulkan
         throw std::runtime_error(str(boost::format("device %d is NOT a suitable GPU!")%device_index));
     }
 
-    std::optional<VkExternalSemaphoreHandleTypeFlags>
-    to_vkflags(std::vector<VkExternalMemoryHandleTypeFlagBits> types)
+    std::optional<VkExternalMemoryHandleTypeFlags>
+    to_vkflags(const std::vector<VkExternalMemoryHandleTypeFlagBits>& types)
     {
         if (types.empty())
             return std::nullopt;
-        VkExternalSemaphoreHandleTypeFlags ret;
+        VkExternalMemoryHandleTypeFlags ret{0};
         for (auto & type : types)
         {
             ret |= type;
+        }
+        return ret;
+    }
+
+    std::vector<VkExternalMemoryHandleTypeFlagBits> from_vkflag(std::optional<VkExternalMemoryHandleTypeFlags> flag)
+    {
+        static const std::vector<VkExternalMemoryHandleTypeFlagBits> supported {
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+            VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT,
+        };
+        std::vector<VkExternalMemoryHandleTypeFlagBits> ret;
+        if(flag)
+        {
+            for (auto const & type: supported)
+            {
+                if(type & *flag)
+                {
+                    ret.push_back(type);
+                }
+            }
         }
         return ret;
     }

@@ -104,7 +104,11 @@ namespace my_vulkan
 
     typedef std::array<uint8_t, VK_UUID_SIZE> vk_uuid_t;
 
-    std::optional<VkExternalSemaphoreHandleTypeFlags> to_vkflags(std::vector<VkExternalMemoryHandleTypeFlagBits> types);
+    std::optional<VkExternalMemoryHandleTypeFlags> to_vkflags(const std::vector<VkExternalMemoryHandleTypeFlagBits>& types);
+
+    std::vector<VkExternalMemoryHandleTypeFlagBits> from_vkflag(std::optional<VkExternalMemoryHandleTypeFlags> flag);
+
+
 
 }
 
