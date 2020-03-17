@@ -665,20 +665,7 @@ namespace my_vulkan
         throw std::runtime_error(str(boost::format("device %d is NOT a suitable GPU!")%device_index));
     }
 
-    std::optional<VkExternalMemoryHandleTypeFlags>
-    to_vkflags(const std::vector<VkExternalMemoryHandleTypeFlagBits>& types)
-    {
-        if (types.empty())
-            return std::nullopt;
-        VkExternalMemoryHandleTypeFlags ret{0};
-        for (auto & type : types)
-        {
-            ret |= type;
-        }
-        return ret;
-    }
-
-    std::vector<VkExternalMemoryHandleTypeFlagBits> from_vkflag(std::optional<VkExternalMemoryHandleTypeFlags> flag)
+    std::vector<VkExternalMemoryHandleTypeFlagBits> vk_ext_mem_handle_types_from_vkflag(std::optional<VkExternalMemoryHandleTypeFlags> flag)
     {
         static const std::vector<VkExternalMemoryHandleTypeFlagBits> supported {
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
@@ -694,17 +681,9 @@ namespace my_vulkan
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT,
         };
         std::vector<VkExternalMemoryHandleTypeFlagBits> ret;
-        if(flag)
-        {
-            for (auto const & type: supported)
-            {
-                if(type & *flag)
-                {
-                    ret.push_back(type);
-                }
-            }
-        }
-        return ret;
+        return from_vkflag(flag, supported);
     }
+
+
 
 }

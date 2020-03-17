@@ -104,11 +104,37 @@ namespace my_vulkan
 
     typedef std::array<uint8_t, VK_UUID_SIZE> vk_uuid_t;
 
-    std::optional<VkExternalMemoryHandleTypeFlags> to_vkflags(const std::vector<VkExternalMemoryHandleTypeFlagBits>& types);
+    template <typename T>
+    inline std::optional<VkFlags> to_vkflag(const std::vector<T>& enums)
+    {
+        if (enums.empty())
+            return std::nullopt;
+        VkExternalMemoryHandleTypeFlags ret{0};
+        for (auto & type : enums)
+        {
+            ret |= type;
+        }
+        return ret;
+    }
 
-    std::vector<VkExternalMemoryHandleTypeFlagBits> from_vkflag(std::optional<VkExternalMemoryHandleTypeFlags> flag);
+    template <typename T>
+    inline std::vector<T> from_vkflag(std::optional<VkFlags> flag, const std::vector<T> &supported_bits)
+    {
+        std::vector<T> ret;
+        if(flag)
+        {
+            for (auto const & type: supported_bits)
+            {
+                if(type & *flag)
+                {
+                    ret.push_back(type);
+                }
+            }
+        }
+        return ret;
+    }
 
-
+    std::vector<VkExternalMemoryHandleTypeFlagBits> vk_ext_mem_handle_types_from_vkflag(std::optional<VkExternalMemoryHandleTypeFlags> flag);
 
 }
 

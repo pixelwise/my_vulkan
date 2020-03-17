@@ -45,7 +45,7 @@ namespace my_vulkan
             ),
             "allocating device memory"
         );
-        for (auto const &type: from_vkflag(config.external_handle_types))
+        for (auto const &type: vk_ext_mem_handle_types_from_vkflag(config.external_handle_types))
         {
             record_external_handle(type);
         }
