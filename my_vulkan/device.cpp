@@ -212,4 +212,24 @@ namespace my_vulkan
         return physical_device_uuid();
     }
 
+    PFN_vkVoidFunction device_t::record_proc(const std::string &proc_name)
+    {
+        auto ret = get_proc_voidp(_device, proc_name);
+        _loaded_procs[proc_name] = ret;
+        return ret;
+    }
+
+    PFN_vkVoidFunction device_t::get_proc_voidp(VkDevice device, const std::string &proc_name)
+    {
+        auto ret =vkGetDeviceProcAddr(device, proc_name.c_str());
+        if (ret == nullptr) {
+            auto msg = boost::format(
+                "Vulkan logical device(%p): Proc address for \"%s\" not "
+                "found.\n"
+            )%device%proc_name;
+            throw std::runtime_error(msg.str());
+        }
+        return ret;
+    }
+
 }

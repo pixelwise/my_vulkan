@@ -8,6 +8,7 @@
 #include "queue.hpp"
 #include "utils.hpp"
 #include "instance.hpp"
+#include <map>
 
 namespace my_vulkan
 {
@@ -37,24 +38,34 @@ namespace my_vulkan
         VkDevice get() const;
         std::optional<VkPhysicalDeviceIDProperties> physcial_device_id_properties() const;
         std::optional<vk_uuid_t> physical_device_uuid() const;
+        static PFN_vkVoidFunction get_proc_voidp(VkDevice device, const std::string & proc_name);
         template <typename T>
         static T get_proc(VkDevice device, const std::string & proc_name)
         {
-            auto ret =(T)vkGetDeviceProcAddr(device, proc_name.c_str());
-            if (ret == nullptr) {
-                auto msg = boost::format(
-                    "Vulkan logical device(%p): Proc address for \"%s\" not "
-                    "found.\n"
-                )%device%proc_name;
-                throw std::runtime_error(msg.str());
-            }
-            return ret;
+            return (T)get_proc_voidp(device, proc_name);
         }
         template <typename T>
         T get_proc(const std::string & proc_name) const
         {
-            return get_proc<T>(_device, proc_name);
+            return (T)_loaded_procs.at(proc_name);
         }
+
+        PFN_vkVoidFunction record_proc(const std::string & proc_name);
+
+        template <typename T>
+        T get_proc_record_if_needed(const std::string & proc_name)
+        {
+            auto search = _loaded_procs.find(proc_name);
+            if (search == _loaded_procs.end())
+            {
+                return (T)record_proc(proc_name);
+            }
+            else
+            {
+                return (T)(search->second);
+            }
+        }
+
         std::optional<vk_uuid_t> physical_device_uuid(const instance_t& instance);
     private:
         VkPhysicalDevice _physical_device;
@@ -71,5 +82,6 @@ namespace my_vulkan
         {
             return instance.get_proc<PFN_vkGetPhysicalDeviceProperties2>("vkGetPhysicalDeviceProperties2");
         }
+        std::map<std::string, PFN_vkVoidFunction> _loaded_procs;
     };
 }

@@ -5,7 +5,7 @@
 #include <vector>
 #include <mutex>
 #include <map>
-
+#include "device.hpp"
 namespace my_vulkan
 {
     struct device_memory_t
@@ -52,6 +52,15 @@ namespace my_vulkan
         };
         device_memory_t(
             VkDevice device,
+            config_t config,
+            PFN_vkGetMemoryFdKHR pfn
+        );
+        device_memory_t(
+            VkDevice device,
+            config_t config
+        );
+        device_memory_t(
+            device_t& device,
             config_t config
         );
         device_memory_t(const device_memory_t&) = delete;

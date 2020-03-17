@@ -10,10 +10,12 @@ namespace my_vulkan
 {
     device_memory_t::device_memory_t(
         VkDevice device,
-        config_t config
+        config_t config,
+        PFN_vkGetMemoryFdKHR pfn
     )
-    : _device{device}
+    : _device {device}
     , _size{config.size}
+    , _fpGetMemoryFdKHR{pfn}
     {
         VkMemoryAllocateInfo info{
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -32,13 +34,11 @@ namespace my_vulkan
             vulkanExportMemoryAllocateInfoKHR.handleTypes =
                 *(config.external_handle_types);
             info.pNext = &vulkanExportMemoryAllocateInfoKHR;
-            _fpGetMemoryFdKHR = device_t::get_proc<PFN_vkGetMemoryFdKHR>(_device, "vkGetMemoryFdKHR");
-            //maybe better to let device_memory hold a shared ptr of device?
         }
 
         vk_require(
             vkAllocateMemory(
-                device,
+                _device,
                 &info,
                 0,
                 &_memory
@@ -49,6 +49,29 @@ namespace my_vulkan
         {
             record_external_handle(type);
         }
+    }
+    device_memory_t::device_memory_t(
+        VkDevice device,
+        device_memory_t::config_t config
+    )
+    : device_memory_t(
+        device,
+        config,
+        device_t::get_proc<PFN_vkGetMemoryFdKHR>(device, "vkGetMemoryFdKHR")
+    )
+    {
+    }
+
+    device_memory_t::device_memory_t(
+        device_t& device,
+        config_t config
+    )
+    : device_memory_t(
+        device.get(),
+        config,
+        device.get_proc_record_if_needed<PFN_vkGetMemoryFdKHR>("vkGetMemoryFdKHR")
+    )
+    {
     }
 
     device_memory_t::device_memory_t(device_memory_t&& other) noexcept
