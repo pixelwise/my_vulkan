@@ -13,18 +13,6 @@ namespace my_vulkan
     struct image_t
     {
         image_t(
-            VkDevice device,
-            VkPhysicalDevice physical_device,
-            VkExtent3D extent,
-            VkFormat format,
-            VkImageUsageFlags usage,
-            PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR,
-            VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
-            VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
-            VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
-        );
-        image_t(
             device_t& device,
             VkExtent3D extent,
             VkFormat format,
@@ -104,6 +92,19 @@ namespace my_vulkan
             std::optional<size_t> pitch = std::nullopt
         );
     private:
+        image_t(
+            VkDevice device,
+            VkPhysicalDevice physical_device,
+            VkExtent3D extent,
+            VkFormat format,
+            VkImageUsageFlags usage,
+            PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR,
+            VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
+            VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
+            VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
+        );
+
         void cleanup();
         VkDevice _device;
         VkPhysicalDevice _physical_device;
