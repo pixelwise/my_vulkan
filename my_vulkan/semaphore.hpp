@@ -14,12 +14,6 @@ namespace my_vulkan
             std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types = std::nullopt
         );
 
-        explicit semaphore_t(
-            VkDevice device,
-            PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR,
-            VkSemaphoreCreateFlags flags = 0,
-            std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types = std::nullopt
-        );
         semaphore_t(const semaphore_t&) = delete;
         semaphore_t& operator=(const semaphore_t&) = delete;
         semaphore_t(semaphore_t&& other) noexcept;
@@ -29,6 +23,12 @@ namespace my_vulkan
         std::optional<int> get_external_handle(VkExternalSemaphoreHandleTypeFlagBits externalHandleType) const;
         void record_external_handle(VkExternalSemaphoreHandleTypeFlagBits externalHandleType);
     private:
+        explicit semaphore_t(
+            VkDevice device,
+            PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR,
+            VkSemaphoreCreateFlags flags = 0,
+            std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types = std::nullopt
+        );
         void cleanup();
         VkDevice _device;
         PFN_vkGetSemaphoreFdKHR _fpGetSemaphoreFdKHR;
