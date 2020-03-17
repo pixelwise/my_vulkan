@@ -105,6 +105,7 @@ namespace my_vulkan
 
     std::optional<int> device_memory_t::get_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType) const
     {
+        std::unique_lock<std::mutex> lock{_mutex};
         if (! _fpGetMemoryFdKHR)
             return std::nullopt;
         int fd;
@@ -120,15 +121,24 @@ namespace my_vulkan
         return fd;
     }
     std::optional<my_vulkan::device_memory_t::external_memory_info_t>
-    device_memory_t::external_info(VkExternalMemoryHandleTypeFlagBits externalHandleType) const
+    device_memory_t::external_info(VkExternalMemoryHandleTypeFlagBits externalHandleType)
     {
+        auto search = _external_infos.find(externalHandleType);
+        if (search != _external_infos.end())
+        {
+            return search->second;
+        }
+
         auto maybe_fd = get_external_handle(externalHandleType);
         if (!maybe_fd)
-        return std::nullopt;
-        return {{
-        size(),
+        {
+            return std::nullopt;
+        }
+        _external_infos[externalHandleType] = {
+            size(),
             maybe_fd.value()
-    }};
+        };
+        return _external_infos[externalHandleType];
     }
     device_memory_t::mapping_t::mapping_t(
         device_memory_t& memory,

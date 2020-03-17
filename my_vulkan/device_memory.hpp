@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.h>
 #include <optional>
 #include <vector>
+#include <mutex>
+#include <map>
 
 namespace my_vulkan
 {
@@ -67,13 +69,15 @@ namespace my_vulkan
         void set_data(const void* data, size_t size);
         VkDeviceMemory get();
         std::optional<int> get_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType) const;
-        std::optional<external_memory_info_t> external_info(VkExternalMemoryHandleTypeFlagBits externalHandleType) const;
+        std::optional<external_memory_info_t> external_info(VkExternalMemoryHandleTypeFlagBits externalHandleType);
     private:
         void cleanup();
         VkDevice _device{0};
         PFN_vkGetMemoryFdKHR _fpGetMemoryFdKHR{nullptr};
         VkDeviceMemory _memory{0};
         size_t _size;
+        mutable std::mutex _mutex;
+        std::map<VkExternalMemoryHandleTypeFlagBits, external_memory_info_t> _external_infos;
     };
 
     template<typename T>
