@@ -3,15 +3,22 @@
 #include <vulkan/vulkan.h>
 #include <optional>
 #include <map>
-
+#include "device.hpp"
 namespace my_vulkan
 {
     struct semaphore_t
     {
         explicit semaphore_t(
-            VkDevice device,
+            device_t& device,
             VkSemaphoreCreateFlags flags = 0,
             std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types = std::nullopt
+        );
+
+        explicit semaphore_t(
+            VkDevice device,
+            VkSemaphoreCreateFlags flags = 0,
+            std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types = std::nullopt,
+            PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR = nullptr
         );
         semaphore_t(const semaphore_t&) = delete;
         semaphore_t& operator=(const semaphore_t&) = delete;

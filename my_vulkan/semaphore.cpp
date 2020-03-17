@@ -7,11 +7,27 @@
 namespace my_vulkan
 {
     semaphore_t::semaphore_t(
-        VkDevice device,
+        device_t& device,
         VkSemaphoreCreateFlags flags,
         std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types
     )
+    : semaphore_t(
+        device.get(),
+        flags,
+        external_handle_types,
+        device.get_proc_record_if_needed<PFN_vkGetSemaphoreFdKHR>("vkGetSemaphoreFdKHR")
+    )
+    {
+
+    }
+    semaphore_t::semaphore_t(
+        VkDevice device,
+        VkSemaphoreCreateFlags flags,
+        std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types,
+        PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR
+    )
     : _device{device}
+    , _fpGetSemaphoreFdKHR {fpGetSemaphoreFdKHR}
     {
         VkSemaphoreCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -27,7 +43,12 @@ namespace my_vulkan
                 *external_handle_types;
 
             info.pNext = &vulkanExportSemaphoreCreateInfo;
-            _fpGetSemaphoreFdKHR = device_t::get_proc<PFN_vkGetSemaphoreFdKHR>(_device, "vkGetSemaphoreFdKHR");
+            if (!_fpGetSemaphoreFdKHR)
+            {
+//                _fpGetSemaphoreFdKHR = device_t::get_proc<PFN_vkGetSemaphoreFdKHR>(_device, "vkGetSemaphoreFdKHR");
+                throw std::runtime_error("does not have vkGetSemaphoreFdKHR.");
+            }
+
         }
         vk_require(
             vkCreateSemaphore(device, &info, nullptr, &_semaphore), 
