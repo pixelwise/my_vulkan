@@ -136,5 +136,6 @@ namespace my_vulkan
 
     std::vector<VkExternalMemoryHandleTypeFlagBits> vk_ext_mem_handle_types_from_vkflag(std::optional<VkExternalMemoryHandleTypeFlags> flag);
 
+    std::vector<VkExternalSemaphoreHandleTypeFlagBits> vk_ext_semaphore_handle_types_from_vkflag(std::optional<VkExternalSemaphoreHandleTypeFlags> flag);
 }
 

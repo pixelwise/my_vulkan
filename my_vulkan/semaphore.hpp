@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include <optional>
+#include <map>
 
 namespace my_vulkan
 {
@@ -10,7 +11,7 @@ namespace my_vulkan
         explicit semaphore_t(
             VkDevice device,
             VkSemaphoreCreateFlags flags = 0,
-            std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_type = std::nullopt
+            std::optional<VkExternalSemaphoreHandleTypeFlags> external_handle_types = std::nullopt
         );
         semaphore_t(const semaphore_t&) = delete;
         semaphore_t& operator=(const semaphore_t&) = delete;
@@ -19,10 +20,13 @@ namespace my_vulkan
         VkSemaphore get();
         ~semaphore_t();
         std::optional<int> get_external_handle(VkExternalSemaphoreHandleTypeFlagBits externalHandleType) const;
+        void record_external_handle(VkExternalSemaphoreHandleTypeFlagBits externalHandleType);
     private:
         void cleanup();
         VkDevice _device;
         PFN_vkGetSemaphoreFdKHR _fpGetSemaphoreFdKHR;
         VkSemaphore _semaphore;
+        std::map<VkExternalSemaphoreHandleTypeFlagBits, int> _external_handles;
+        std::optional<int> create_ext_fd(VkExternalSemaphoreHandleTypeFlagBits externalHandleType) const;
     };
 }

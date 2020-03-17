@@ -680,10 +680,21 @@ namespace my_vulkan
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT,
         };
-        std::vector<VkExternalMemoryHandleTypeFlagBits> ret;
         return from_vkflag(flag, supported);
     }
 
+    std::vector<VkExternalSemaphoreHandleTypeFlagBits>
+    vk_ext_semaphore_handle_types_from_vkflag(std::optional<VkExternalSemaphoreHandleTypeFlags> flag)
+    {
+        static const std::vector<VkExternalSemaphoreHandleTypeFlagBits> supported {
+            VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
+            VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+            VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
+            VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT,
+            VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT
+        };
+        return from_vkflag(flag, supported);
+    }
 
 
 }
