@@ -18,7 +18,7 @@ namespace my_vulkan
         size,
         usage,
         properties,
-        device.get_proc_record_if_needed<PFN_vkGetMemoryFdKHR>("vkGetMemoryFdKHR"),
+        external_handle_type ? device.get_proc_record_if_needed<PFN_vkGetMemoryFdKHR>("vkGetMemoryFdKHR") : nullptr,
         external_handle_type
     }
     {

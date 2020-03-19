@@ -90,7 +90,7 @@ namespace my_vulkan
         extent,
         format,
         usage,
-        device.get_proc_record_if_needed<PFN_vkGetMemoryFdKHR>("vkGetMemoryFdKHR"),
+        external_handle_types ? device.get_proc_record_if_needed<PFN_vkGetMemoryFdKHR>("vkGetMemoryFdKHR") : nullptr,
         initial_layout,
         tiling,
         properties,

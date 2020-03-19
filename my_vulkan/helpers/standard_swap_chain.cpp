@@ -169,7 +169,9 @@ namespace my_vulkan
                         phase,
                         _pipeline_resources[phase].image_view.get(),
                         extent(),
-                        _swap_chain->images()[phase].memory()->external_info(external_mem_type)
+                        _swap_chain->images()[phase].memory() ?
+                            _swap_chain->images()[phase].memory()->external_info(external_mem_type) :
+                            std::nullopt
                     };
                 },
                 [working_set](auto waits, auto signals){

@@ -13,7 +13,7 @@ namespace my_vulkan
     )
     : semaphore_t(
         device.get(),
-        device.get_proc_record_if_needed<PFN_vkGetSemaphoreFdKHR>("vkGetSemaphoreFdKHR"),
+        external_handle_types ? device.get_proc_record_if_needed<PFN_vkGetSemaphoreFdKHR>("vkGetSemaphoreFdKHR") : nullptr,
         flags,
         external_handle_types
     )
