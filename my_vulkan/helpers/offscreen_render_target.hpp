@@ -19,6 +19,7 @@ namespace my_vulkan
             {
                 size_t index;
                 command_buffer_t::scope_t* commands;
+                VkImageView color_view;
             };
             struct sync_points_t
             {
@@ -64,6 +65,7 @@ namespace my_vulkan
                 begin_callback_t _begin_callback;
                 end_callback_t _end_callback;
                 sync_points_t _sync_points;
+                VkImageView _color_view;
             };
         public:
             // it is better to store the color format and create a getter.
@@ -77,13 +79,9 @@ namespace my_vulkan
                 std::vector<sync_points_t> sync_points_list = {}
             );
             offscreen_render_target_t(
-                //this does not support export memory,
-                // but we keep the external handle type
-                // to throw an error when activated.
                 device_t& device,
                 std::vector<VkImageView> color_views,
-                VkExtent2D size,
-                std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
+                VkExtent2D size
             );
             typedef std::function<sync_points_t(size_t)> sync_points_getter_t;
             render_target_t render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type);

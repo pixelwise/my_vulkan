@@ -157,20 +157,10 @@ namespace my_vulkan
         offscreen_render_target_t::offscreen_render_target_t(
             device_t& device,
             std::vector<VkImageView> color_views,
-            VkExtent2D size,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
+            VkExtent2D size
         )
         : _size{size}
-        , _external_mem_handle_types{external_handle_types}
         {
-            if (external_handle_types)
-            {
-                throw std::runtime_error{
-                    "Construct offscreen_render_target_t"
-                    " from Image View only mode. This "
-                    "does not support exporting memory."
-                };
-            }
             for (size_t i = 0; i < color_views.size(); ++i)
             {
                 _slots.emplace_back(
@@ -219,7 +209,7 @@ namespace my_vulkan
                     return render_scope_t{
                         scope.commands,
                         scope.index,
-                        _color_buffers[scope.index].view.get(),
+                        scope.color_view,
                         _size,
                         _external_mem_handle_types ? _color_buffers[scope.index].image.memory()->external_info(external_mem_type) : std::nullopt
                     };
@@ -318,6 +308,7 @@ namespace my_vulkan
         , _begin_callback{std::move(begin_callback)}
         , _end_callback{std::move(end_callback)}
         , _sync_points{std::move(sync_points)}
+        , _color_view{color_view}
         {
         }
 
@@ -354,6 +345,7 @@ namespace my_vulkan
             return {
                 index,
                 &*_commands,
+                _color_view,
             };
         }
 
