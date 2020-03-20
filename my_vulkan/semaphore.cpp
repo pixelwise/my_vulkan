@@ -32,9 +32,9 @@ namespace my_vulkan
         VkSemaphoreCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         info.flags = flags;
+        VkExportSemaphoreCreateInfoKHR vulkanExportSemaphoreCreateInfo = {};
         if (external_handle_types)
         {
-            VkExportSemaphoreCreateInfoKHR vulkanExportSemaphoreCreateInfo = {};
             vulkanExportSemaphoreCreateInfo.sType =
                 VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR;
 
