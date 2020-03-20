@@ -52,9 +52,9 @@ namespace my_vulkan
         imageInfo.tiling = tiling;
         imageInfo.initialLayout = initial_layout;
         imageInfo.usage = usage;
+        VkExternalMemoryImageCreateInfo vkExternalMemImageCreateInfo = {};
         if (external_handle_types)
         {
-            VkExternalMemoryImageCreateInfo vkExternalMemImageCreateInfo = {};
             vkExternalMemImageCreateInfo.sType =
                 VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
             vkExternalMemImageCreateInfo.pNext = NULL;

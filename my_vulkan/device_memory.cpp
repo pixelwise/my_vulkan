@@ -31,9 +31,9 @@ namespace my_vulkan
             config.size,
             config.type_index
         };
+        VkExportMemoryAllocateInfoKHR vulkanExportMemoryAllocateInfoKHR = {};
         if (config.external_handle_types)
         {
-            VkExportMemoryAllocateInfoKHR vulkanExportMemoryAllocateInfoKHR = {};
             vulkanExportMemoryAllocateInfoKHR.sType =
                 VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
 
