@@ -105,6 +105,11 @@ namespace glm
     }
 }
 
+static size_t round_to_multiple_of_16(size_t n)
+{
+    return 16 * ((n + 15) / 16);
+}
+
 namespace my_vulkan
 {
     template<
@@ -293,14 +298,14 @@ namespace my_vulkan
     : _device{device}
     , _vertex_uniforms{
         *_device,
-        to_std140(vertex_uniforms_t{}).data.size(),
+        round_to_multiple_of_16(to_std140(vertex_uniforms_t{}).data.size()),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
     }
     , _fragment_uniforms{
         *_device,
-        to_std140(fragment_uniforms_t{}).data.size(),
+        round_to_multiple_of_16(to_std140(fragment_uniforms_t{}).data.size()),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT  
