@@ -194,14 +194,12 @@ public:
         VK_ATTACHMENT_LOAD_OP_CLEAR
     }
     , _frambuffers{
-        std::move(
-            create_framebuffers(
-                logical_device.get(),
-                _render_pass.get(),
-                swap_chain->extent(),
-                swap_chain->pipeline_resources(),
-                _depth_image_view.get()
-            )
+        create_framebuffers(
+            logical_device.get(),
+            _render_pass.get(),
+            swap_chain->extent(),
+            swap_chain->pipeline_resources(),
+            _depth_image_view.get()
         )
     }
     , vertex_buffer{createVertexBuffer(
@@ -300,9 +298,9 @@ private:
     
     std::unique_ptr<my_vulkan::helpers::standard_swap_chain_t> swap_chain;
     VkFormat _depth_format;
-    my_vulkan::render_pass_t _render_pass;
     my_vulkan::image_t _depth_image;
     my_vulkan::image_view_t _depth_image_view;
+    my_vulkan::render_pass_t _render_pass;
     std::vector<my_vulkan::framebuffer_t> _frambuffers;
     my_vulkan::buffer_t vertex_buffer;
     my_vulkan::buffer_t index_buffer;

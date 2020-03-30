@@ -111,7 +111,6 @@ namespace my_vulkan
             };
             VkExtent2D _size;
             std::optional<VkExternalMemoryHandleTypeFlags> _external_mem_handle_types;
-            VkExternalMemoryHandleTypeFlagBits _external_mem_type = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
             std::vector<color_buffer_t> _color_buffers;
             std::vector<VkDescriptorImageInfo> _textures;
             std::vector<slot_t> _slots;
