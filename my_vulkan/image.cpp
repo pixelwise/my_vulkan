@@ -79,6 +79,31 @@ namespace my_vulkan
         VkExtent3D extent,
         VkFormat format,
         VkImageUsageFlags usage,
+        dont_bind_memory_t,
+        VkImageLayout initial_layout,
+        VkImageTiling tiling
+    )
+    : image_t{
+        device.get(),
+        device.physical_device(),
+        extent,
+        format,
+        usage,
+        nullptr,
+        initial_layout,
+        tiling,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        std::nullopt,
+        false
+    }
+    {
+    }
+
+    image_t::image_t(
+        device_t& device,
+        VkExtent3D extent,
+        VkFormat format,
+        VkImageUsageFlags usage,
         VkImageLayout initial_layout,
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties,
@@ -109,7 +134,8 @@ namespace my_vulkan
         VkImageLayout initial_layout,
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties,
-        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types,
+        bool bind_memory
     )
     : _device{device}
     , _physical_device{physical_device}
@@ -126,19 +152,23 @@ namespace my_vulkan
     , _extent{extent}
     , _layout{initial_layout}
     , _borrowed{false}
-    , _memory{new device_memory_t{
-        _device,
-        find_image_memory_config(
-            physical_device,
+    , _memory{bind_memory ?
+        new device_memory_t{
             _device,
-            _image,
-            properties,
-            pfn_vkGetMemoryFdKHR,
-            external_handle_types
-        )
-    }}
+            find_image_memory_config(
+                physical_device,
+                _device,
+                _image,
+                properties,
+                pfn_vkGetMemoryFdKHR,
+                external_handle_types
+            )
+        } :
+        nullptr
+    }
     {
-        vkBindImageMemory(_device, _image, _memory->get(), 0);
+        if (_memory)
+            vkBindImageMemory(_device, _image, _memory->get(), 0);
     }
 
     image_t::image_t(
