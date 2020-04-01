@@ -574,7 +574,7 @@ private:
             _render_pass.get(),
             framebuffer,
             target_rect,
-            {{0.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0}}
+            {{{0.0f, 0.0f, 0.0f, 1.0f}}, {{1.0f, 0}}}
         );
         command_scope.bind_pipeline(
             VK_PIPELINE_BIND_POINT_GRAPHICS,
