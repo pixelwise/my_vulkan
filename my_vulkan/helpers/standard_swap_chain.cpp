@@ -44,7 +44,9 @@ namespace my_vulkan
 
         void standard_swap_chain_t::update(VkExtent2D new_extent)
         {
-            wait_for_idle();
+            // otherwise get weird crashes at least on ios
+            _device->wait_idle();
+            wait_for_idle();            
             _swap_chain.reset(new swap_chain_t{
                 *_device,
                 _surface,
@@ -158,10 +160,12 @@ namespace my_vulkan
                 [external_mem_type, working_set, this](VkRect2D rect){
                     auto outcome = acquire();
                     if (outcome.failure)
+                    {
                         throw std::runtime_error{
                             std::string{"swap chaing acquisition failed: "} +
                             to_string(*outcome.failure)
                         };
+                    }
                     *working_set = std::move(*outcome.working_set);
                     uint32_t phase = (*working_set)->phase();
                     return render_scope_t{
