@@ -211,6 +211,7 @@ namespace my_vulkan
                         scope.index,
                         scope.color_view,
                         _size,
+                        rect,
                         _external_mem_handle_types ? _color_buffers[scope.index].image.memory()->external_info(external_mem_type) : std::nullopt
                     };
                 },
