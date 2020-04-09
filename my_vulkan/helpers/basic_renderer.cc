@@ -700,7 +700,7 @@ namespace my_vulkan
         for (auto& buffer_ptr : _pipeline_buffers)
             if (!buffer_ptr->in_use())
                 return *buffer_ptr;
-         _pipeline_buffers.push_back(
+        _pipeline_buffers.push_back(
             std::make_unique<pipeline_buffer_t>(
                 _device,
                 _graphics_pipeline.uniform_layout()
