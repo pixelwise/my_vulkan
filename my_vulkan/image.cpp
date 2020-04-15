@@ -14,7 +14,7 @@ namespace my_vulkan
         VkImage image,
         VkMemoryPropertyFlags properties,
         PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR,
-        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
+        std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt
     )
     {
         VkMemoryRequirements requirements;
@@ -39,7 +39,7 @@ namespace my_vulkan
         VkImageUsageFlags usage,
         VkImageTiling tiling,
         VkImageLayout initial_layout,
-        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
+        std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt
     )
     {
         VkImageCreateInfo imageInfo = {};
@@ -107,7 +107,7 @@ namespace my_vulkan
         VkImageLayout initial_layout,
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties,
-        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
+        std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types
     )
     : image_t{
         device.get(),
@@ -134,11 +134,12 @@ namespace my_vulkan
         VkImageLayout initial_layout,
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties,
-        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types,
+        std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types,
         bool bind_memory
     )
     : _device{device}
     , _physical_device{physical_device}
+    , _external_handle_types{external_handle_types}
     , _image{make_image(
         _device,
         extent,
@@ -553,5 +554,10 @@ namespace my_vulkan
             oneshot_scope.commands()
         );
         oneshot_scope.execute_and_wait();
+    }
+
+    std::optional<device_memory_t::external_memory_info_t> image_t::external_memory_info()
+    {
+        return memory()->external_info(*_external_handle_types);
     }
 }

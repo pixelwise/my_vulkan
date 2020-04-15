@@ -75,7 +75,7 @@ namespace my_vulkan
                 VkExtent2D size,
                 bool need_readback = false,
                 size_t depth = 2,
-                std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt,
+                std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt,
                 std::vector<sync_points_t> sync_points_list = {}
             );
             offscreen_render_target_t(
@@ -106,11 +106,11 @@ namespace my_vulkan
                     device_t& device,
                     VkExtent2D size,
                     VkFormat color_format,
-                    std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
+                    std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types
                 );
             };
             VkExtent2D _size;
-            std::optional<VkExternalMemoryHandleTypeFlags> _external_mem_handle_types;
+            std::optional<VkExternalMemoryHandleTypeFlagBits> _external_mem_handle_types;
             std::vector<color_buffer_t> _color_buffers;
             std::vector<VkDescriptorImageInfo> _textures;
             std::vector<slot_t> _slots;

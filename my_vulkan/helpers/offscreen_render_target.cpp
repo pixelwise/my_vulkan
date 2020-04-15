@@ -11,7 +11,7 @@ namespace my_vulkan
             VkExtent2D size,
             bool need_readback,
             size_t depth,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types,
+            std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types,
             std::vector<sync_points_t> sync_points_list
         )
         : _size{size}
@@ -177,7 +177,7 @@ namespace my_vulkan
             device_t& device,
             VkExtent2D size,
             VkFormat color_format,
-            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
+            std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types
         )
         : image{
             device,

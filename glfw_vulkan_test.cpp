@@ -316,7 +316,6 @@ private:
     std::string _title{"Vulkan-test"};
     size_t _nbframes{0};
     double  _lasttime{0.0f};
-    bool _show_fps{true};
     bool framebufferResized = false;
 
     static GLFWwindow* initWindow(void* userdata)
@@ -402,14 +401,12 @@ private:
 
     void recreate_framebuffer()
     {
-        _frambuffers = std::move(
-            create_framebuffers(
-                logical_device.get(),
-                _render_pass.get(),
-                swap_chain->extent(),
-                swap_chain->pipeline_resources(),
-                _depth_image_view.get()
-            )
+        _frambuffers =  create_framebuffers(
+            logical_device.get(),
+            _render_pass.get(),
+            swap_chain->extent(),
+            swap_chain->pipeline_resources(),
+            _depth_image_view.get()
         );
     }
 
@@ -436,8 +433,7 @@ private:
     }
     void recreate_depth_image()
     {
-        _depth_image = std::move (
-            my_vulkan::image_t {
+        _depth_image = my_vulkan::image_t {
             logical_device,
             VkExtent3D {
                 swap_chain->extent().width,
@@ -446,9 +442,8 @@ private:
                 },
             _depth_format,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-            }
-        );
-        _depth_image_view = std::move(_depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT));
+        };
+        _depth_image_view = _depth_image.view(VK_IMAGE_ASPECT_DEPTH_BIT);
     }
     static my_vulkan::image_t createTextureImage(
         my_vulkan::device_t& logical_device,
@@ -574,7 +569,7 @@ private:
             _render_pass.get(),
             framebuffer,
             target_rect,
-            {{{0.0f, 0.0f, 0.0f, 1.0f}}, {{1.0f, 0}}}
+            {{{{{0.0f, 0.0f, 0.0f, 1.0f}}}, {{{1.0f, 0}}}}}
         );
         command_scope.bind_pipeline(
             VK_PIPELINE_BIND_POINT_GRAPHICS,
