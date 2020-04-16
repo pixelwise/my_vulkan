@@ -21,7 +21,7 @@ namespace my_vulkan::helpers
         VkExtent2D size,
         size_t num_components,
         size_t pitch,
-        std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
     )
     : _device{&device}
     , _pitch{pitch}
@@ -83,14 +83,13 @@ namespace my_vulkan::helpers
     void texture_image_t::prepare_for_shader(my_vulkan::command_pool_t& command_pool)
     {
         auto oneshot_scope = command_pool.begin_oneshot();
-        prepare_for_transfer(oneshot_scope.commands());
+        prepare_for_shader(oneshot_scope.commands());
         oneshot_scope.execute_and_wait();
     }
 
     void texture_image_t::prepare_for_transfer(command_buffer_t::scope_t& commands)
     {
         _image.transition_layout(
-            VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             commands
         );        
@@ -99,7 +98,6 @@ namespace my_vulkan::helpers
     void texture_image_t::prepare_for_shader(command_buffer_t::scope_t& commands)
     {
         _image.transition_layout(
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             commands
         );
@@ -124,8 +122,8 @@ namespace my_vulkan::helpers
         return _image.format();
     }
 
-    std::optional<device_memory_t::external_memory_info_t> texture_image_t::external_memory_info()
+    std::optional<device_memory_t::external_memory_info_t> texture_image_t::external_memory_info(VkExternalMemoryHandleTypeFlagBits externalHandleType)
     {
-        return _image.external_memory_info();
+        return _image.external_memory_info(externalHandleType);
     }
 }

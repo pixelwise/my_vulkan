@@ -15,7 +15,7 @@ namespace my_vulkan::helpers
             VkExtent2D size,
             size_t num_components,
             size_t pitch,
-            std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
         );
         VkDescriptorImageInfo descriptor();
         void upload(
@@ -29,7 +29,7 @@ namespace my_vulkan::helpers
         void prepare_for_shader(command_buffer_t::scope_t& commands);
         VkExtent3D extent() const;
         VkFormat format() const;
-        std::optional<device_memory_t::external_memory_info_t> external_memory_info();
+        std::optional<device_memory_t::external_memory_info_t> external_memory_info(VkExternalMemoryHandleTypeFlagBits externalHandleType);
     private:
         buffer_t& staging_buffer();
         device_t* _device;
@@ -39,5 +39,5 @@ namespace my_vulkan::helpers
         image_t _image;
         image_view_t _view;
         texture_sampler_t _sampler;
-    };    
+    };
 }

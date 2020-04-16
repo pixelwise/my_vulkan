@@ -5,6 +5,7 @@
 #include "utils.hpp"
 
 #include <stdexcept>
+#include <iostream>
 
 namespace my_vulkan
 {
@@ -14,7 +15,7 @@ namespace my_vulkan
         VkImage image,
         VkMemoryPropertyFlags properties,
         PFN_vkGetMemoryFdKHR pfn_vkGetMemoryFdKHR,
-        std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
     )
     {
         VkMemoryRequirements requirements;
@@ -39,7 +40,7 @@ namespace my_vulkan
         VkImageUsageFlags usage,
         VkImageTiling tiling,
         VkImageLayout initial_layout,
-        std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
     )
     {
         VkImageCreateInfo imageInfo = {};
@@ -107,7 +108,7 @@ namespace my_vulkan
         VkImageLayout initial_layout,
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties,
-        std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
     )
     : image_t{
         device.get(),
@@ -134,7 +135,7 @@ namespace my_vulkan
         VkImageLayout initial_layout,
         VkImageTiling tiling,
         VkMemoryPropertyFlags properties,
-        std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types,
+        std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types,
         bool bind_memory
     )
     : _device{device}
@@ -426,6 +427,10 @@ namespace my_vulkan
         command_buffer_t::scope_t& command_scope
     )
     {
+        if (oldLayout == newLayout)
+        {
+            std::cerr << "WARNING: old layout is the same as new layout.";
+        }
         VkImageMemoryBarrier barrier = {};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout = oldLayout;
@@ -556,8 +561,14 @@ namespace my_vulkan
         oneshot_scope.execute_and_wait();
     }
 
-    std::optional<device_memory_t::external_memory_info_t> image_t::external_memory_info()
+    std::optional<device_memory_t::external_memory_info_t> image_t::external_memory_info(VkExternalMemoryHandleTypeFlagBits externalHandleType)
     {
-        return memory()->external_info(*_external_handle_types);
+        return memory()->external_info(externalHandleType);
+    }
+
+    void image_t::transition_layout(VkImageLayout newLayout, command_buffer_t::scope_t &command_scope)
+    {
+        transition_layout(_layout, newLayout, command_scope);
+
     }
 }
