@@ -96,6 +96,10 @@ namespace my_vulkan
             VkImageLayout newLayout,
             command_buffer_t::scope_t& command_scope
         );
+        void transition_layout(
+            VkImageLayout newLayout,
+            command_buffer_t::scope_t& command_scope
+        );
         void load_pixels(
             command_pool_t& commands,
             const void* pixels,

@@ -5,6 +5,7 @@
 #include "utils.hpp"
 
 #include <stdexcept>
+#include <iostream>
 
 namespace my_vulkan
 {
@@ -426,6 +427,10 @@ namespace my_vulkan
         command_buffer_t::scope_t& command_scope
     )
     {
+        if (oldLayout == newLayout)
+        {
+            std::cerr << "WARNING: old layout is the same as new layout.";
+        }
         VkImageMemoryBarrier barrier = {};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout = oldLayout;
@@ -559,5 +564,11 @@ namespace my_vulkan
     std::optional<device_memory_t::external_memory_info_t> image_t::external_memory_info(VkExternalMemoryHandleTypeFlagBits externalHandleType)
     {
         return memory()->external_info(externalHandleType);
+    }
+
+    void image_t::transition_layout(VkImageLayout newLayout, command_buffer_t::scope_t &command_scope)
+    {
+        transition_layout(_layout, newLayout, command_scope);
+
     }
 }

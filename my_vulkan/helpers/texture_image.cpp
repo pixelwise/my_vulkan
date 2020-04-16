@@ -87,17 +87,9 @@ namespace my_vulkan::helpers
         oneshot_scope.execute_and_wait();
     }
 
-    void texture_image_t::prepare_for_shader_without_transfer_stage(my_vulkan::command_pool_t &command_pool)
-    {
-        auto oneshot_scope = command_pool.begin_oneshot();
-        prepare_for_shader_without_transfer_stage(oneshot_scope.commands());
-        oneshot_scope.execute_and_wait();
-    }
-
     void texture_image_t::prepare_for_transfer(command_buffer_t::scope_t& commands)
     {
         _image.transition_layout(
-            VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             commands
         );        
@@ -106,16 +98,6 @@ namespace my_vulkan::helpers
     void texture_image_t::prepare_for_shader(command_buffer_t::scope_t& commands)
     {
         _image.transition_layout(
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            commands
-        );
-    }
-
-    void texture_image_t::prepare_for_shader_without_transfer_stage(command_buffer_t::scope_t& commands)
-    {
-        _image.transition_layout(
-            VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             commands
         );
