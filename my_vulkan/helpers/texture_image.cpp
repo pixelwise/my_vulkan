@@ -124,8 +124,8 @@ namespace my_vulkan::helpers
         return _image.format();
     }
 
-    std::optional<device_memory_t::external_memory_info_t> texture_image_t::external_memory_info()
+    std::optional<device_memory_t::external_memory_info_t> texture_image_t::external_memory_info(VkExternalMemoryHandleTypeFlagBits externalHandleType)
     {
-        return _image.external_memory_info();
+        return _image.external_memory_info(externalHandleType);
     }
 }

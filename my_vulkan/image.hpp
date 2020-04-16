@@ -30,7 +30,7 @@ namespace my_vulkan
             VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
             VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
         );
         image_t(
             VkDevice device,
@@ -101,7 +101,7 @@ namespace my_vulkan
             const void* pixels,
             std::optional<size_t> pitch = std::nullopt
         );
-        std::optional<device_memory_t::external_memory_info_t> external_memory_info();
+        std::optional<device_memory_t::external_memory_info_t> external_memory_info(VkExternalMemoryHandleTypeFlagBits externalHandleType);
     private:
         image_t(
             VkDevice device,
@@ -113,14 +113,14 @@ namespace my_vulkan
             VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
             VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
             VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt,
+            std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt,
             bool bind_memory = true
         );
 
         void cleanup();
         VkDevice _device;
         VkPhysicalDevice _physical_device;
-        std::optional<VkExternalMemoryHandleTypeFlagBits> _external_handle_types;
+        std::optional<VkExternalMemoryHandleTypeFlags> _external_handle_types;
         VkImage _image;
         VkFormat _format;
         VkExtent3D _extent;
