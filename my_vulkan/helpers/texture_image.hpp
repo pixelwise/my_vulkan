@@ -23,6 +23,10 @@ namespace my_vulkan::helpers
             const void* pixels,
             bool keep_buffers = true
         );
+        void upload(
+            command_buffer_t::scope_t& commands,
+            const void* pixels
+        );
         void prepare_for_transfer(my_vulkan::command_pool_t& command_pool);
         void prepare_for_shader(my_vulkan::command_pool_t& command_pool);
         void prepare_for_transfer(command_buffer_t::scope_t& commands);

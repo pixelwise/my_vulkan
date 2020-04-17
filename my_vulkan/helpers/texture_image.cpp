@@ -12,6 +12,8 @@ namespace my_vulkan::helpers
                 return VK_FORMAT_R8G8_UNORM;
             case 3:
                 return VK_FORMAT_R8G8B8_UNORM;
+            case 4:
+                return VK_FORMAT_B8G8R8A8_UNORM;
         }
         return VK_FORMAT_UNDEFINED;
     }
@@ -24,7 +26,7 @@ namespace my_vulkan::helpers
         std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
     )
     : _device{&device}
-    , _pitch{pitch}
+    , _pitch{pitch / num_components}
     , _transfer_byte_size{pitch * size.height}
     , _image{
         device,
@@ -39,6 +41,7 @@ namespace my_vulkan::helpers
     , _view{_image.view()}
     , _sampler{device.get()}
     {
+        assert(_image.memory());
     }
 
     buffer_t& texture_image_t::staging_buffer()
@@ -60,17 +63,25 @@ namespace my_vulkan::helpers
     )
     {
         auto oneshot_scope = command_pool.begin_oneshot();
-        staging_buffer().memory()->set_data(pixels, _transfer_byte_size);
-        prepare_for_transfer(oneshot_scope.commands());
-        _image.copy_from(
-            staging_buffer().get(),
-            oneshot_scope.commands(),
-            _pitch
-        );
-        prepare_for_shader(oneshot_scope.commands());
+        upload(oneshot_scope.commands(), pixels);
         oneshot_scope.execute_and_wait();
         if (!keep_buffers)
             _staging_buffer.reset();
+    }
+
+    void texture_image_t::upload(
+        command_buffer_t::scope_t& commands,
+        const void* pixels
+    )
+    {
+        staging_buffer().memory()->set_data(pixels, _transfer_byte_size);
+        prepare_for_transfer(commands);
+        _image.copy_from(
+            staging_buffer().get(),
+            commands,
+            _pitch
+        );
+        prepare_for_shader(commands);
     }
 
     void texture_image_t::prepare_for_transfer(my_vulkan::command_pool_t& command_pool)
@@ -122,7 +133,9 @@ namespace my_vulkan::helpers
         return _image.format();
     }
 
-    std::optional<device_memory_t::external_memory_info_t> texture_image_t::external_memory_info(VkExternalMemoryHandleTypeFlagBits externalHandleType)
+    std::optional<device_memory_t::external_memory_info_t> texture_image_t::external_memory_info(
+        VkExternalMemoryHandleTypeFlagBits externalHandleType
+    )
     {
         return _image.external_memory_info(externalHandleType);
     }
