@@ -250,9 +250,14 @@ if(glfw3_FOUND)
 
 endif()
 
+EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} --version OUTPUT_VARIABLE clang_full_version_string)
+string (REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1" CLANG_VERSION_STRING ${clang_full_version_string})
+message(STATUS "clang version: ${CLANG_VERSION_STRING}")
 if(APPLE)
 else(APPLE)
+  if (CLANG_VERSION_STRING VERSION_LESS 9.0)
     set(CXX_FILESYSTEM_LIB c++fs)
+  endif()
 endif(APPLE)
 
 if(glfw3_FOUND)
