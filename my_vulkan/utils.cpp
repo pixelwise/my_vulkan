@@ -557,16 +557,7 @@ namespace my_vulkan
         std::vector<const char*> deviceExtensions
     )
     {
-        uint32_t extensionCount;
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-        vkEnumerateDeviceExtensionProperties(
-            device,
-            nullptr,
-            &extensionCount,
-            availableExtensions.data()
-        );
+        auto availableExtensions = get_device_exts(device);
 
         std::set<std::string> requiredExtensions(
             deviceExtensions.begin(),
@@ -696,5 +687,21 @@ namespace my_vulkan
         return from_vkflag(flag, supported);
     }
 
+    std::vector<VkExtensionProperties> get_device_exts(VkPhysicalDevice device)
+    {
+        uint32_t extensionCount = 0;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties> exts(extensionCount);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, exts.data());
+        return exts;
+    }
 
+    std::vector<VkExtensionProperties> get_instance_exts()
+    {
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties> exts(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, exts.data());
+        return exts;
+    }
 }
