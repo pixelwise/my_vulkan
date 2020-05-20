@@ -128,14 +128,10 @@ if (_is_top_project)
 endif()
 find_package(Vulkan REQUIRED)
 find_package(glfw3 3.2)
-find_package(boost REQUIRED)
 
 if (USE_ASAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
-
-find_package(opencv REQUIRED)
-find_package(glm 0.9.8 REQUIRED)
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
     "*.frag"
@@ -192,10 +188,10 @@ target_link_libraries(
     my_vulkan_offscreen
     PUBLIC
     Vulkan::Vulkan
-    boost::boost
     dl
-    glm::glm
-    opencv::opencv
+    CONAN_PKG::boost
+    CONAN_PKG::glm
+    CONAN_PKG::opencv
 )
 
 if(glfw3_FOUND)
@@ -236,10 +232,10 @@ if(glfw3_FOUND)
         glfw
         PUBLIC
         Vulkan::Vulkan
-        boost::boost
         dl
-        opencv::opencv
-        glm::glm
+        CONAN_PKG::boost
+        CONAN_PKG::glm
+        CONAN_PKG::opencv
     )
 
     target_include_directories(
