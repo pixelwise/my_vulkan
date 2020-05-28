@@ -130,6 +130,9 @@ namespace my_vulkan
             void update_vertices(
                 std::shared_ptr<buffer_t> vertices
             );
+            void update_vertices(
+                const std::vector<vertex_t>& vertices
+            );
             void update_indices(
                 const std::vector<uint32_t>& indices
             );

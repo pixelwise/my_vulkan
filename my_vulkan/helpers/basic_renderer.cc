@@ -355,6 +355,40 @@ namespace my_vulkan
         size_t num_textures,
         size_t num_input_attachments
     >
+    void
+    basic_renderer_t<
+        vertex_uniforms_t,
+        fragment_uniforms_t,
+        vertex_t,
+        num_textures,
+        num_input_attachments
+    >::pipeline_buffer_t::update_vertices(
+        const std::vector<vertex_t>& vertices
+    )
+    {
+        size_t data_size = sizeof(vertex_t) * vertices.size();
+        if (!_vertices || _vertices->size() < data_size)
+        {
+            _vertices = std::make_shared<buffer_t>(
+                *_device,
+                data_size,
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            );
+        }
+        _vertices->memory()->set_data(
+            vertices.data(),
+            data_size
+        );
+    }
+
+    template<
+        typename vertex_uniforms_t,
+        typename fragment_uniforms_t,
+        typename vertex_t,
+        size_t num_textures,
+        size_t num_input_attachments
+    >
     std::shared_ptr<buffer_t>
     basic_renderer_t<
         vertex_uniforms_t,
