@@ -433,17 +433,19 @@ namespace my_vulkan
     )
     {
         size_t data_size = sizeof(uint32_t) * indices.size();
-        buffer_t index_buffer{
-            *_device,
-            data_size,
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        };
-        index_buffer.memory()->set_data(
+        if (!_indices || _indices->size() < data_size)
+        {
+            _indices = buffer_t{
+                *_device,
+                data_size,
+                VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            };
+        }
+        _indices->memory()->set_data(
             indices.data(),
             data_size
         );
-        _indices = std::move(index_buffer);
     }
 
     template<
