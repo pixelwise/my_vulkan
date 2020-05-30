@@ -433,7 +433,7 @@ namespace my_vulkan
     )
     {
         size_t data_size = sizeof(uint32_t) * indices.size();
-        if (!_indices || _indices->size() < data_size)
+        if (!_indices || _indices->size() < data_size)
         {
             _indices = buffer_t{
                 *_device,
