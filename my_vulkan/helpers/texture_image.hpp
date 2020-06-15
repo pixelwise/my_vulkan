@@ -13,8 +13,8 @@ namespace my_vulkan::helpers
         texture_image_t(
             device_t& device,
             VkExtent2D size,
-            size_t num_components,
-            size_t pitch,
+            uint32_t num_components,
+            uint32_t pitch,
             std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types = std::nullopt
         );
         VkDescriptorImageInfo descriptor();
@@ -37,7 +37,7 @@ namespace my_vulkan::helpers
     private:
         buffer_t& staging_buffer();
         device_t* _device;
-        size_t _pitch;
+        uint32_t _pitch;
         size_t _transfer_byte_size;
         std::unique_ptr<buffer_t> _staging_buffer;
         image_t _image;
