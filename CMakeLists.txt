@@ -122,9 +122,9 @@ if (_is_top_project)
         cmake_find_package #create FindXXX.cmake
         cmake_paths #create conan_paths.cmake
     )
-
+    include(cmake/stdfilesystem.cmake)
     include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
-
+    get_stdfilesystem_lib(CXX_FILESYSTEM_LIB) #set the c++fs, if not the top project use the top project value
 endif()
 find_package(Vulkan REQUIRED)
 find_package(glfw3 3.2)
@@ -245,16 +245,6 @@ if(glfw3_FOUND)
     )
 
 endif()
-
-EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} --version OUTPUT_VARIABLE clang_full_version_string)
-string (REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1" CLANG_VERSION_STRING ${clang_full_version_string})
-message(STATUS "clang version: ${CLANG_VERSION_STRING}")
-if(APPLE)
-else(APPLE)
-  if (CLANG_VERSION_STRING VERSION_LESS 9.0)
-    set(CXX_FILESYSTEM_LIB c++fs)
-  endif()
-endif(APPLE)
 
 if(glfw3_FOUND)
     add_executable(glfw_vulkan_test glfw_vulkan_test.cpp)
