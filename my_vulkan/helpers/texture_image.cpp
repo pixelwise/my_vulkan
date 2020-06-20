@@ -21,8 +21,8 @@ namespace my_vulkan::helpers
     texture_image_t::texture_image_t(
         device_t& device,
         VkExtent2D size,
-        size_t num_components,
-        size_t pitch,
+        uint32_t num_components,
+        uint32_t pitch,
         std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
     )
     : _device{&device}

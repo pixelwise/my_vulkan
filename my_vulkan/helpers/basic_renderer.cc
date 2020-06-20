@@ -105,7 +105,7 @@ namespace glm
     }
 }
 
-static size_t round_to_multiple_of_16(size_t n)
+inline size_t round_to_multiple_of_16(size_t n)
 {
     return 16 * ((n + 15) / 16);
 }
