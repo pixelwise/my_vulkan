@@ -32,6 +32,7 @@ namespace my_vulkan
             end_t end;
             size_t depth;
             bool flipped;
+            bool ui_flipped;
             rect_t rect;
             glm::vec2 ui_multiplier;
             bool enabled = true;
@@ -40,7 +41,8 @@ namespace my_vulkan
                 end_t in_end,
                 VkExtent2D in_size,
                 size_t in_depth,
-                bool in_flipped,
+                bool in_flipped = false,
+                bool in_ui_flipped = false,
                 glm::vec2 ui_multiplier = {1, 1}
             )
             : render_target_t{
@@ -48,6 +50,7 @@ namespace my_vulkan
                 in_end,
                 in_depth,
                 in_flipped,
+                in_ui_flipped,
                 [in_size]{return VkRect2D{{0, 0}, in_size};},
                 ui_multiplier
             }
@@ -60,6 +63,7 @@ namespace my_vulkan
                     end,
                     depth,
                     flipped,
+                    ui_flipped,
                     rect,
                     ui_multiplier,
                 };
@@ -83,6 +87,7 @@ namespace my_vulkan
                     },
                     depth,
                     flipped,
+                    ui_flipped,
                     rect,
                     ui_multiplier,
                 };
@@ -93,6 +98,7 @@ namespace my_vulkan
                 end_t in_end,
                 size_t in_depth,
                 bool in_flipped,
+                bool in_ui_flipped,
                 rect_t in_rect,
                 glm::vec2 in_ui_multiplier
             )
@@ -100,6 +106,7 @@ namespace my_vulkan
             , end{std::move(in_end)}
             , depth{in_depth}
             , flipped{in_flipped}
+            , ui_flipped{in_ui_flipped}
             , rect{in_rect}
             , ui_multiplier{in_ui_multiplier}
             {

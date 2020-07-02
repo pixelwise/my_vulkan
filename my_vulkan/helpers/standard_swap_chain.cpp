@@ -187,8 +187,7 @@ namespace my_vulkan
                     extent().width,
                     extent().height
                 },
-                depth(),
-                false
+                depth()
             };
         }
         
