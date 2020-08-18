@@ -90,6 +90,8 @@ namespace my_vulkan
         _physical_device = other._physical_device;
         _memory = std::move(other._memory);
         std::swap(_device, other._device);
+        std::swap(_size, other._size);
+        std::swap(_fpGetMemoryFdKHR, other._fpGetMemoryFdKHR);
         return *this;
     }
 
