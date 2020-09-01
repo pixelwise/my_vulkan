@@ -2,6 +2,10 @@
 #include <my_vulkan/utils.hpp>
 #include <my_vulkan/instance.hpp>
 #include <my_vulkan/device.hpp>
+#include <my_vulkan/render_pass.hpp>
+#include <my_vulkan/graphics_pipeline.hpp>
+
+#include <my_vulkan/helpers/offscreen_render_target.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
@@ -68,26 +72,25 @@ vkrunner_test_content_t parse_test(std::istream& input)
     return result;
 }
 
-static uint32_t
-vertex_shader_passthrough[] = {
-        0x07230203, 0x00010000, 0x00070000, 0x0000000c,
-        0x00000000, 0x00020011, 0x00000001, 0x0003000e,
-        0x00000000, 0x00000001, 0x0007000f, 0x00000000,
-        0x00000001, 0x6e69616d, 0x00000000, 0x00000002,
-        0x00000003, 0x00040047, 0x00000002, 0x0000001e,
-        0x00000000, 0x00040047, 0x00000003, 0x0000000b,
-        0x00000000, 0x00020013, 0x00000004, 0x00030021,
-        0x00000005, 0x00000004, 0x00030016, 0x00000006,
-        0x00000020, 0x00040017, 0x00000007, 0x00000006,
-        0x00000004, 0x00040020, 0x00000008, 0x00000001,
-        0x00000007, 0x00040020, 0x00000009, 0x00000003,
-        0x00000007, 0x0004003b, 0x00000008, 0x00000002,
-        0x00000001, 0x0004003b, 0x00000009, 0x00000003,
-        0x00000003, 0x00050036, 0x00000004, 0x00000001,
-        0x00000000, 0x00000005, 0x000200f8, 0x0000000a,
-        0x0004003d, 0x00000007, 0x0000000b, 0x00000002,
-        0x0003003e, 0x00000003, 0x0000000b, 0x000100fd,
-        0x00010038
+static std::vector<uint32_t> vertex_shader_passthrough{
+    0x07230203, 0x00010000, 0x00070000, 0x0000000c,
+    0x00000000, 0x00020011, 0x00000001, 0x0003000e,
+    0x00000000, 0x00000001, 0x0007000f, 0x00000000,
+    0x00000001, 0x6e69616d, 0x00000000, 0x00000002,
+    0x00000003, 0x00040047, 0x00000002, 0x0000001e,
+    0x00000000, 0x00040047, 0x00000003, 0x0000000b,
+    0x00000000, 0x00020013, 0x00000004, 0x00030021,
+    0x00000005, 0x00000004, 0x00030016, 0x00000006,
+    0x00000020, 0x00040017, 0x00000007, 0x00000006,
+    0x00000004, 0x00040020, 0x00000008, 0x00000001,
+    0x00000007, 0x00040020, 0x00000009, 0x00000003,
+    0x00000007, 0x0004003b, 0x00000008, 0x00000002,
+    0x00000001, 0x0004003b, 0x00000009, 0x00000003,
+    0x00000003, 0x00050036, 0x00000004, 0x00000001,
+    0x00000000, 0x00000005, 0x000200f8, 0x0000000a,
+    0x0004003d, 0x00000007, 0x0000000b, 0x00000002,
+    0x0003003e, 0x00000003, 0x0000000b, 0x000100fd,
+    0x00010038
 };
 
 static std::vector<uint8_t> readFile(const std::string& filename) {
@@ -204,6 +207,12 @@ struct bits_t
 {
     std::optional<my_vulkan::shader_module_t> vertex_shader;
     std::optional<my_vulkan::shader_module_t> fragment_shader;
+    // todo: parse/generate these
+    VkFormat color_format = VK_FORMAT_R8G8B8A8_UNORM;
+    VkExtent2D extent{800,800};
+    VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkVertexInputBindingDescription vertex_binding = {};
+    std::vector<VkVertexInputAttributeDescription> attributes;
 };
 
 int main(int argc, const char** argv)
@@ -239,6 +248,61 @@ int main(int argc, const char** argv)
                 ".vert",
                 version
             );
+        else if (section.name == "vertex shader passthrough")
+            bits.vertex_shader = my_vulkan::shader_module_t{
+                setup.logical_device.get(),
+                reinterpret_cast<const char*>(vertex_shader_passthrough.data()),
+                vertex_shader_passthrough.size() * 4
+            };
+    }
+    my_vulkan::helpers::offscreen_render_target_t target{
+        setup.logical_device,
+        bits.color_format,
+        bits.extent
+    };
+    std::optional<my_vulkan::graphics_pipeline_t> graphics_pipeline;
+    my_vulkan::render_pass_t render_pass{
+        setup.logical_device.get(),
+        bits.color_format,
+        VK_FORMAT_UNDEFINED,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_ATTACHMENT_LOAD_OP_CLEAR
+    };
+    if (bits.vertex_shader && bits.fragment_shader)
+    {
+        std::vector<VkDescriptorSetLayoutBinding> uniform_layout{
+            {
+                0,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                1,
+                VK_SHADER_STAGE_VERTEX_BIT,
+                0
+            },
+            {
+                0,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                1,
+                VK_SHADER_STAGE_FRAGMENT_BIT,
+                0
+            },
+        };
+        graphics_pipeline = my_vulkan::graphics_pipeline_t{
+            setup.logical_device.get(),
+            bits.extent,
+            render_pass.get(),
+            0,
+            uniform_layout,
+            my_vulkan::vertex_layout_t{
+                bits.vertex_binding,
+                bits.attributes,
+            },
+            *bits.vertex_shader,
+            *bits.fragment_shader,
+            my_vulkan::render_settings_t{
+                .topology = bits.topology
+            },
+            true
+        };
     }
     return 0;
 }
