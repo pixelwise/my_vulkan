@@ -166,11 +166,13 @@ namespace my_vulkan
     {
         std::vector<VkDescriptorSetLayoutBinding> result;
         uint32_t texture_location = 0;
+        /*
         static_assert(
             boost::fusion::result_of::empty<vertex_uniforms_t>::value ==
             boost::fusion::result_of::empty<fragment_uniforms_t>::value,
             "none or both of vertex and fragment uniforms must empty"
         );
+        */
         if (!boost::fusion::result_of::empty<vertex_uniforms_t>::value)
         {
             result.push_back({
