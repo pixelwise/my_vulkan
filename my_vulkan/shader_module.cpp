@@ -37,6 +37,14 @@ namespace my_vulkan
 
     shader_module_t::shader_module_t(
         VkDevice device,
+        const std::string& code
+    )
+    : shader_module_t{device, code.data(), code.size()}
+    {
+    }
+
+     shader_module_t::shader_module_t(
+        VkDevice device,
         const char* code,
         size_t size
     )

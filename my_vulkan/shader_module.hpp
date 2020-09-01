@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+
+#include <string>
 #include <vector>
 
 namespace my_vulkan
@@ -15,6 +17,10 @@ namespace my_vulkan
             VkDevice device,
             const char* code,
             size_t size
+        );
+        shader_module_t(
+            VkDevice device,
+            const std::string& code
         );
         shader_module_t(const shader_module_t&) = delete;
         shader_module_t& operator=(const shader_module_t&) = delete;
