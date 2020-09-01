@@ -270,3 +270,11 @@ if(glfw3_FOUND)
     )
     add_dependencies(glfw_vulkan_test Shaders)
 endif(glfw3_FOUND)
+
+
+add_executable(vkrunner vkrunner/vkrunner.cpp)
+target_link_libraries(
+    vkrunner
+    my_vulkan
+    CONAN_PKG::boost
+)
