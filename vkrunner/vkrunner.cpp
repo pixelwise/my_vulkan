@@ -7,10 +7,13 @@
 
 #include <my_vulkan/helpers/offscreen_render_target.hpp>
 
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <glm/gtx/io.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/process/child.hpp>
 #include <boost/process/search_path.hpp>
 
@@ -209,6 +212,7 @@ struct bits_t
 {
     std::optional<my_vulkan::shader_module_t> vertex_shader;
     std::optional<my_vulkan::shader_module_t> fragment_shader;
+    std::vector<std::string> test_script;
     // todo: parse/generate these
     VkFormat color_format = VK_FORMAT_R8G8B8A8_UNORM;
     VkExtent2D extent{800,800};
@@ -225,6 +229,76 @@ struct bits_t
         .offset = 0,
     }};
 };
+
+struct rect_t
+{
+    glm::vec2 origin;
+    glm::vec2 size;
+};
+
+my_vulkan::buffer_t draw_rect(
+    base_setup_t& setup,
+    bits_t& bits,
+    my_vulkan::render_pass_t& render_pass,
+    my_vulkan::command_buffer_t::scope_t& command_scope,
+    rect_t rect
+)
+{
+    my_vulkan::buffer_t vertex_buffer{
+        setup.logical_device,
+        4 * sizeof(glm::vec3),
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    };
+    std::vector<glm::vec3> vertices{
+        glm::vec3{rect.origin.x, rect.origin.y, 0},
+        glm::vec3{rect.origin.x + rect.size.x, rect.origin.y, 0},
+        glm::vec3{rect.origin.x, rect.origin.y + rect.size.y, 0},
+        glm::vec3{rect.origin.x, rect.origin.y + rect.size.y, 0},
+        glm::vec3{rect.origin.x + rect.size.x, rect.origin.y, 0},
+        glm::vec3{rect.origin.x + rect.size.x, rect.origin.y + rect.size.y, 0},
+    };
+    vertex_buffer.memory()->set_data(
+        vertices.data(),
+        vertices.size() * sizeof(glm::vec3)
+    );
+    command_scope.bind_vertex_buffers(
+        {{vertex_buffer.get(), 0}}
+    );
+    command_scope.draw({0, 4});
+    return vertex_buffer;
+}
+
+std::vector<std::string> tokenize_script_command(const std::string& s)
+{
+    std::vector<std::string> result;
+    size_t token_start = 0;
+    size_t bracket_depth = 0;
+    std::cout << "tokenizing " << s << std::endl;
+    for (size_t i = 0; i < s.size(); ++i)
+    {
+        auto c = s[i];
+        if (bracket_depth == 0 && std::isspace(c))
+        {
+            if (i != token_start)
+            {
+                result.push_back(s.substr(token_start, i - token_start));
+                std::cout << "- '" << result.back() << "'" << std::endl;
+            }
+            token_start = i + 1;
+        }
+        else if (c == '(')
+            ++bracket_depth;
+        else if (c == ')')
+            --bracket_depth;
+    }
+    if (bracket_depth == 0 && token_start < s.size())
+    {
+        result.push_back(s.substr(token_start));
+        std::cout << "- '" << result.back() << "'" << std::endl;
+    }
+    return result;
+}
 
 int main(int argc, const char** argv)
 {
@@ -265,22 +339,31 @@ int main(int argc, const char** argv)
                 reinterpret_cast<const char*>(vertex_shader_passthrough.data()),
                 vertex_shader_passthrough.size() * 4
             };
+        else if (section.name == "test")
+            for (auto& line : section.lines)
+                if (!line.empty() && line[0] != '#')
+                {
+                    std::cout << "test line " << line << std::endl;
+                    bits.test_script.push_back(line);
+                }
     }
-    my_vulkan::helpers::offscreen_render_target_t target{
-        setup.logical_device,
-        bits.color_format,
-        bits.extent
-    };
-    std::optional<my_vulkan::graphics_pipeline_t> graphics_pipeline;
-    my_vulkan::render_pass_t render_pass{
-        setup.logical_device.get(),
-        bits.color_format,
-        VK_FORMAT_UNDEFINED,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_ATTACHMENT_LOAD_OP_CLEAR
-    };
     if (bits.vertex_shader && bits.fragment_shader)
     {
+        std::cout << "beginning draw test" << std::endl;
+        my_vulkan::helpers::offscreen_render_target_t target{
+            setup.logical_device,
+            bits.color_format,
+            bits.extent,
+            true, // need readback
+            1 // depth
+        };
+        my_vulkan::render_pass_t render_pass{
+            setup.logical_device.get(),
+            bits.color_format,
+            VK_FORMAT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_ATTACHMENT_LOAD_OP_CLEAR
+        };
         std::vector<VkDescriptorSetLayoutBinding> uniform_layout{
             {
                 0,
@@ -297,7 +380,7 @@ int main(int argc, const char** argv)
                 0
             },
         };
-        graphics_pipeline = my_vulkan::graphics_pipeline_t{
+        my_vulkan::graphics_pipeline_t graphics_pipeline{
             setup.logical_device.get(),
             bits.extent,
             render_pass.get(),
@@ -314,6 +397,85 @@ int main(int argc, const char** argv)
             },
             true
         };
+        my_vulkan::framebuffer_t framebuffer{
+            setup.logical_device.get(),
+            render_pass.get(),
+            {target.texture(0).imageView},
+            bits.extent
+        };
+        std::vector<my_vulkan::buffer_t> buffers;
+        std::optional<my_vulkan::helpers::offscreen_render_target_t::phase_context_t> current_scope;
+        std::optional<cv::Mat4b> current_image;
+        auto begin = [&]{
+            current_image.reset();
+            auto scope = target.begin_phase();
+            VkRect2D target_rect{
+                .offset = {0, 0},
+                .extent = bits.extent
+            };
+            scope.commands->begin_render_pass(
+                render_pass.get(),
+                framebuffer.get(),
+                target_rect,
+                {{{{0.0f, 0.0f, 0.0f, 1.0f}}},}
+            );
+            scope.commands->bind_pipeline(
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                graphics_pipeline.get(),
+                target_rect
+            );
+            current_scope = scope;
+        };
+        auto end = [&]{
+            if (!current_scope)
+                throw std::runtime_error{"no scope"};
+            current_scope->commands->end_render_pass();
+            current_scope.reset();
+            target.end_phase();
+            current_image = target.read_bgra(true/*flush*/);
+            if (!current_image)
+                throw std::runtime_error{"readback failed"};
+        };
+        auto notify_draw = [&]{
+            if (!current_scope)
+                begin();
+        };
+        auto notify_probe = [&]{
+            if (!current_image)
+                end();
+            if (!current_image)
+                throw std::runtime_error{"no image to probe"};
+        };
+        for (auto& line : bits.test_script)
+        {
+            auto tokens = tokenize_script_command(line);
+            if (tokens.size() == 6 && tokens[0] == "draw" && tokens[1] == "rect")
+            {
+                notify_draw();
+                rect_t rect = {
+                    glm::vec2{
+                        boost::lexical_cast<float>(tokens[2]),
+                        boost::lexical_cast<float>(tokens[3]),
+                    },
+                    glm::vec2{
+                        boost::lexical_cast<float>(tokens[2]),
+                        boost::lexical_cast<float>(tokens[3]),
+                    }
+                };
+                std::cout << "draw rect " << rect.origin << " " << rect.size << std::endl;
+                draw_rect(
+                    setup,
+                    bits,
+                    render_pass,
+                    *current_scope->commands,
+                    rect
+                );
+            }
+            if (tokens.size() == 5 && tokens[0] == "probe" && tokens[1] == "rect")
+            {
+                notify_probe();
+            }
+        }
     }
     return 0;
 }
