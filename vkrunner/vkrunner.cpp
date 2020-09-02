@@ -4,8 +4,9 @@
 #include <my_vulkan/device.hpp>
 #include <my_vulkan/render_pass.hpp>
 #include <my_vulkan/graphics_pipeline.hpp>
-
 #include <my_vulkan/helpers/offscreen_render_target.hpp>
+
+#include <opencv2/imgcodecs.hpp>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -265,7 +266,7 @@ my_vulkan::buffer_t draw_rect(
     command_scope.bind_vertex_buffers(
         {{vertex_buffer.get(), 0}}
     );
-    command_scope.draw({0, 4});
+    command_scope.draw({0, 6});
     return vertex_buffer;
 }
 
@@ -298,6 +299,73 @@ std::vector<std::string> tokenize_script_command(const std::string& s)
         std::cout << "- '" << result.back() << "'" << std::endl;
     }
     return result;
+}
+
+std::vector<std::string> tokenize_bracketet_vector(const std::string& s)
+{
+    std::optional<size_t> number_start;
+    std::vector<std::string> result;
+    auto is_digit = [](char c){return c >= '0' && c <= '9';};
+    if (!s.empty())
+    {
+        for (size_t i = 1; i < s.size() - 1; ++i)
+        {
+            auto c = s[i];
+            bool is_number_part = is_digit(c) || c == '.';
+            if (!number_start && is_number_part)
+            {
+                number_start = i;
+            }
+            else if (number_start && !is_number_part)
+            {
+                result.push_back(s.substr(*number_start, i - *number_start));
+                number_start.reset();
+            }
+        } 
+    } 
+    if (number_start)
+    {
+        result.push_back(s.substr(*number_start, s.size() - 1 - *number_start));
+    }
+    return result;
+}
+
+glm::vec4 tokenize_bracketet_vec4(const std::string& s)
+{
+    auto parts = tokenize_bracketet_vector(s);
+    if (parts.size() == 4)
+        return glm::vec4{
+            boost::lexical_cast<float>(parts[0]),
+            boost::lexical_cast<float>(parts[1]),
+            boost::lexical_cast<float>(parts[2]),
+            boost::lexical_cast<float>(parts[3]),
+        };
+    else
+        throw std::runtime_error{"no vec4"};
+}
+
+bool probe_rect(const cv::Mat4b& bgra, rect_t rect, glm::vec4 color, const std::string& colorspace)
+{
+    auto region = bgra(
+        cv::Range{int(rect.origin.y), int(rect.origin.y + rect.size.y)},
+        cv::Range{int(rect.origin.x), int(rect.origin.x + rect.size.x)}
+    );
+    cv::Vec4b bgra_color{
+        uint8_t(color.x * 255),
+        uint8_t(color.y * 255),
+        uint8_t(color.z * 255),
+        uint8_t(color.w * 255),
+    };
+    std::cout << " bgra color " << bgra_color << std::endl;
+    for (auto pixel : region)
+    {
+        if (pixel != bgra_color)
+        {
+            std::cout << " pixel " << pixel << " != " << bgra_color << std::endl;
+            return false;
+        }
+    }
+    return true;
 }
 
 int main(int argc, const char** argv)
@@ -347,6 +415,7 @@ int main(int argc, const char** argv)
                     bits.test_script.push_back(line);
                 }
     }
+    bool success = true;
     if (bits.vertex_shader && bits.fragment_shader)
     {
         std::cout << "beginning draw test" << std::endl;
@@ -404,6 +473,7 @@ int main(int argc, const char** argv)
             bits.extent
         };
         std::vector<my_vulkan::buffer_t> buffers;
+        size_t num_image = 0;
         std::optional<my_vulkan::helpers::offscreen_render_target_t::phase_context_t> current_scope;
         std::optional<cv::Mat4b> current_image;
         auto begin = [&]{
@@ -433,6 +503,8 @@ int main(int argc, const char** argv)
             current_scope.reset();
             target.end_phase();
             current_image = target.read_bgra(true/*flush*/);
+            cv::imwrite(str(boost::format{"test_frame%07d.png"} % num_image++), *current_image);
+            buffers.clear();
             if (!current_image)
                 throw std::runtime_error{"readback failed"};
         };
@@ -458,24 +530,45 @@ int main(int argc, const char** argv)
                         boost::lexical_cast<float>(tokens[3]),
                     },
                     glm::vec2{
-                        boost::lexical_cast<float>(tokens[2]),
-                        boost::lexical_cast<float>(tokens[3]),
+                        boost::lexical_cast<float>(tokens[4]),
+                        boost::lexical_cast<float>(tokens[5]),
                     }
                 };
                 std::cout << "draw rect " << rect.origin << " " << rect.size << std::endl;
-                draw_rect(
+                buffers.push_back(draw_rect(
                     setup,
                     bits,
                     render_pass,
                     *current_scope->commands,
                     rect
-                );
+                ));
             }
             if (tokens.size() == 5 && tokens[0] == "probe" && tokens[1] == "rect")
             {
                 notify_probe();
+                auto colorspace = tokens[2];
+                auto rect = tokenize_bracketet_vec4(tokens[3]);
+                auto color = tokenize_bracketet_vec4(tokens[4]);
+                std::cout << "probe rect " << colorspace << " " << rect << " " << color << std::endl;
+                auto result = probe_rect(
+                    *current_image,
+                    rect_t{
+                        glm::vec2{rect.x, rect.y},
+                        glm::vec2{rect.z, rect.w},
+                    },
+                    color,
+                    colorspace
+                );
+                if (result)
+                    std::cout << "-> success" << std::endl;
+                else
+                    std::cout << "-> failure" << std::endl;
+                success &= result;
             }
         }
     }
-    return 0;
+    if (success)
+        return 0;
+    else
+        return -1;
 }
