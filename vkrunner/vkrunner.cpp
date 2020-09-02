@@ -503,7 +503,7 @@ int main(int argc, const char** argv)
             current_scope.reset();
             target.end_phase();
             current_image = target.read_bgra(true/*flush*/);
-            cv::imwrite(str(boost::format{"test_frame%07d.png"} % num_image++), *current_image);
+            cv::imwrite(str(boost::format{"vkrunner_%s_frame%07d.png"} % argv[1] % num_image++), *current_image);
             buffers.clear();
             if (!current_image)
                 throw std::runtime_error{"readback failed"};

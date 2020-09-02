@@ -278,3 +278,4 @@ target_link_libraries(
     my_vulkan
     CONAN_PKG::boost
 )
+add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
