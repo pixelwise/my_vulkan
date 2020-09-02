@@ -7,6 +7,8 @@
 
 #include <my_vulkan/helpers/offscreen_render_target.hpp>
 
+#include <glm/vec3.hpp>
+
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/process/child.hpp>
@@ -211,8 +213,17 @@ struct bits_t
     VkFormat color_format = VK_FORMAT_R8G8B8A8_UNORM;
     VkExtent2D extent{800,800};
     VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    VkVertexInputBindingDescription vertex_binding = {};
-    std::vector<VkVertexInputAttributeDescription> attributes;
+    VkVertexInputBindingDescription vertex_binding = {
+        .binding = 0,
+        .stride = sizeof(glm::vec3),
+        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+    };
+    std::vector<VkVertexInputAttributeDescription> attributes{{
+        .location = 0,
+        .binding = 0,
+        .format = VK_FORMAT_R32G32B32_SFLOAT,
+        .offset = 0,
+    }};
 };
 
 int main(int argc, const char** argv)
