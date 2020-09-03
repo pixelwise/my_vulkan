@@ -16,6 +16,7 @@
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/process/child.hpp>
+#include <boost/process/io.hpp>
 #include <boost/process/search_path.hpp>
 
 #include <vector>
@@ -135,8 +136,11 @@ my_vulkan::shader_module_t load_shader_source(
         % temp_out
         % temp_in
     );
-    std::cout << compiler_command << std::endl;
-    boost::process::child compiler{compiler_command};
+    std::cerr << compiler_command << std::endl;
+    boost::process::child compiler{
+        compiler_command,
+        boost::process::std_out > stderr,
+    };
     compiler.wait();
     if (compiler.exit_code() != 0)
         throw std::runtime_error{
@@ -216,7 +220,7 @@ struct bits_t
     std::vector<std::string> test_script;
     // todo: parse/generate these
     VkFormat color_format = VK_FORMAT_R8G8B8A8_UNORM;
-    VkExtent2D extent{800,800};
+    VkExtent2D extent{250,250};
     VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     VkVertexInputBindingDescription vertex_binding = {
         .binding = 0,
@@ -275,7 +279,7 @@ std::vector<std::string> tokenize_script_command(const std::string& s)
     std::vector<std::string> result;
     size_t token_start = 0;
     size_t bracket_depth = 0;
-    std::cout << "tokenizing " << s << std::endl;
+    std::cerr << "tokenizing " << s << std::endl;
     for (size_t i = 0; i < s.size(); ++i)
     {
         auto c = s[i];
@@ -284,7 +288,7 @@ std::vector<std::string> tokenize_script_command(const std::string& s)
             if (i != token_start)
             {
                 result.push_back(s.substr(token_start, i - token_start));
-                std::cout << "- '" << result.back() << "'" << std::endl;
+                std::cerr << "- '" << result.back() << "'" << std::endl;
             }
             token_start = i + 1;
         }
@@ -296,7 +300,7 @@ std::vector<std::string> tokenize_script_command(const std::string& s)
     if (bracket_depth == 0 && token_start < s.size())
     {
         result.push_back(s.substr(token_start));
-        std::cout << "- '" << result.back() << "'" << std::endl;
+        std::cerr << "- '" << result.back() << "'" << std::endl;
     }
     return result;
 }
@@ -356,12 +360,12 @@ bool probe_rect(const cv::Mat4b& bgra, rect_t rect, glm::vec4 color, const std::
         uint8_t(color.z * 255),
         uint8_t(color.w * 255),
     };
-    std::cout << " bgra color " << bgra_color << std::endl;
+    std::cerr << " bgra color " << bgra_color << std::endl;
     for (auto pixel : region)
     {
         if (pixel != bgra_color)
         {
-            std::cout << " pixel " << pixel << " != " << bgra_color << std::endl;
+            std::cerr << " pixel " << pixel << " != " << bgra_color << std::endl;
             return false;
         }
     }
@@ -372,7 +376,7 @@ int main(int argc, const char** argv)
 {
     if (argc < 2)
     {
-        std::cout << "usage " << argv[0] << " <test file>" << std::endl;
+        std::cerr << "usage " << argv[0] << " <test file>" << std::endl;
         return -1;
     }
     std::ifstream input{argv[1]};
@@ -382,10 +386,10 @@ int main(int argc, const char** argv)
     auto version = VK_MAKE_VERSION(1, 0, 2);
     for (auto&& section : test.sections)
     {
-        std::cout << "section '" << section.name << "' with " << section.lines.size() << " lines " << std::endl;
+        std::cerr << "section '" << section.name << "' with " << section.lines.size() << " lines " << std::endl;
         for (auto& line : section.lines)
         {
-            std::cout << " " << line << std::endl;
+            std::cerr << " " << line << std::endl;
         }
         if (section.name == "fragment shader")
             bits.fragment_shader = load_shader_source(
@@ -411,14 +415,14 @@ int main(int argc, const char** argv)
             for (auto& line : section.lines)
                 if (!line.empty() && line[0] != '#')
                 {
-                    std::cout << "test line " << line << std::endl;
+                    std::cerr << "test line " << line << std::endl;
                     bits.test_script.push_back(line);
                 }
     }
     bool success = true;
     if (bits.vertex_shader && bits.fragment_shader)
     {
-        std::cout << "beginning draw test" << std::endl;
+        std::cerr << "beginning draw test" << std::endl;
         my_vulkan::helpers::offscreen_render_target_t target{
             setup.logical_device,
             bits.color_format,
@@ -491,8 +495,7 @@ int main(int argc, const char** argv)
             );
             scope.commands->bind_pipeline(
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                graphics_pipeline.get(),
-                target_rect
+                graphics_pipeline.get()
             );
             current_scope = scope;
         };
@@ -534,7 +537,7 @@ int main(int argc, const char** argv)
                         boost::lexical_cast<float>(tokens[5]),
                     }
                 };
-                std::cout << "draw rect " << rect.origin << " " << rect.size << std::endl;
+                std::cerr << "draw rect " << rect.origin << " " << rect.size << std::endl;
                 buffers.push_back(draw_rect(
                     setup,
                     bits,
@@ -549,7 +552,7 @@ int main(int argc, const char** argv)
                 auto colorspace = tokens[2];
                 auto rect = tokenize_bracketet_vec4(tokens[3]);
                 auto color = tokenize_bracketet_vec4(tokens[4]);
-                std::cout << "probe rect " << colorspace << " " << rect << " " << color << std::endl;
+                std::cerr << "probe rect " << colorspace << " " << rect << " " << color << std::endl;
                 auto result = probe_rect(
                     *current_image,
                     rect_t{
@@ -560,9 +563,9 @@ int main(int argc, const char** argv)
                     colorspace
                 );
                 if (result)
-                    std::cout << "-> success" << std::endl;
+                    std::cerr << "-> success" << std::endl;
                 else
-                    std::cout << "-> failure" << std::endl;
+                    std::cerr << "-> failure" << std::endl;
                 success &= result;
             }
         }
