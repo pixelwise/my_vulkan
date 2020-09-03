@@ -219,7 +219,7 @@ struct bits_t
     std::optional<my_vulkan::shader_module_t> fragment_shader;
     std::vector<std::string> test_script;
     // todo: parse/generate these
-    VkFormat color_format = VK_FORMAT_R8G8B8A8_UNORM;
+    VkFormat color_format = VK_FORMAT_B8G8R8A8_UNORM;
     VkExtent2D extent{250,250};
     VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     VkVertexInputBindingDescription vertex_binding = {
@@ -355,9 +355,9 @@ bool probe_rect(const cv::Mat4b& bgra, rect_t rect, glm::vec4 color, const std::
         cv::Range{int(rect.origin.x), int(rect.origin.x + rect.size.x)}
     );
     cv::Vec4b bgra_color{
-        uint8_t(color.x * 255),
-        uint8_t(color.y * 255),
         uint8_t(color.z * 255),
+        uint8_t(color.y * 255),
+        uint8_t(color.x * 255),
         uint8_t(color.w * 255),
     };
     std::cerr << " bgra color " << bgra_color << std::endl;
@@ -506,10 +506,10 @@ int main(int argc, const char** argv)
             current_scope.reset();
             target.end_phase();
             current_image = target.read_bgra(true/*flush*/);
-            cv::imwrite(str(boost::format{"vkrunner_%s_frame%07d.png"} % argv[1] % num_image++), *current_image);
             buffers.clear();
             if (!current_image)
                 throw std::runtime_error{"readback failed"};
+            cv::imwrite(str(boost::format{"vkrunner_%s_frame%07d.png"} % argv[1] % num_image++), *current_image);
         };
         auto notify_draw = [&]{
             if (!current_scope)
