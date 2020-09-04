@@ -221,7 +221,7 @@ struct bits_t
     // todo: parse/generate these
     VkFormat color_format = VK_FORMAT_B8G8R8A8_UNORM;
     VkExtent2D extent{250,250};
-    VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     VkVertexInputBindingDescription vertex_binding = {
         .binding = 0,
         .stride = sizeof(glm::vec3),
@@ -259,8 +259,6 @@ my_vulkan::buffer_t draw_rect(
         glm::vec3{rect.origin.x, rect.origin.y, 0},
         glm::vec3{rect.origin.x + rect.size.x, rect.origin.y, 0},
         glm::vec3{rect.origin.x, rect.origin.y + rect.size.y, 0},
-        glm::vec3{rect.origin.x, rect.origin.y + rect.size.y, 0},
-        glm::vec3{rect.origin.x + rect.size.x, rect.origin.y, 0},
         glm::vec3{rect.origin.x + rect.size.x, rect.origin.y + rect.size.y, 0},
     };
     vertex_buffer.memory()->set_data(
@@ -270,7 +268,7 @@ my_vulkan::buffer_t draw_rect(
     command_scope.bind_vertex_buffers(
         {{vertex_buffer.get(), 0}}
     );
-    command_scope.draw({0, 6});
+    command_scope.draw({0, 4});
     return vertex_buffer;
 }
 
@@ -435,7 +433,7 @@ int main(int argc, const char** argv)
             bits.color_format,
             VK_FORMAT_UNDEFINED,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_ATTACHMENT_LOAD_OP_CLEAR
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE
         };
         std::vector<VkDescriptorSetLayoutBinding> uniform_layout{
             {
@@ -468,7 +466,7 @@ int main(int argc, const char** argv)
             my_vulkan::render_settings_t{
                 .topology = bits.topology
             },
-            true
+            false // dynamic viewport
         };
         my_vulkan::framebuffer_t framebuffer{
             setup.logical_device.get(),
@@ -490,8 +488,7 @@ int main(int argc, const char** argv)
             scope.commands->begin_render_pass(
                 render_pass.get(),
                 framebuffer.get(),
-                target_rect,
-                {{{{0.0f, 0.0f, 0.0f, 1.0f}}},}
+                target_rect
             );
             scope.commands->bind_pipeline(
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -509,7 +506,14 @@ int main(int argc, const char** argv)
             buffers.clear();
             if (!current_image)
                 throw std::runtime_error{"readback failed"};
-            cv::imwrite(str(boost::format{"vkrunner_%s_frame%07d.png"} % argv[1] % num_image++), *current_image);
+            cv::imwrite(
+                str(
+                    boost::format{"vkrunner_%s_frame%07d.png"}
+                    % boost::filesystem::path{argv[1]}.stem()
+                    % num_image++
+                ),
+                *current_image
+            );
         };
         auto notify_draw = [&]{
             if (!current_scope)

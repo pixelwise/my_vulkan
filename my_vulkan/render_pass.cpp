@@ -34,29 +34,30 @@ namespace my_vulkan
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         colorAttachment.finalLayout = color_attachment_final_layout;
 
-        VkAttachmentDescription depthAttachment = {};
-        depthAttachment.format = depth_format;
-        depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        depthAttachment.loadOp = attachment_loadop;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
         VkAttachmentReference colorAttachmentRef = {};
         colorAttachmentRef.attachment = 0;
         colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         std::vector<VkAttachmentDescription> attachments{
             colorAttachment
         };
-        VkAttachmentReference depthAttachmentRef = {};
-        depthAttachmentRef.attachment = VK_ATTACHMENT_UNUSED;
-        depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        if (depthAttachment.format != VK_FORMAT_UNDEFINED)
+
+        std::unique_ptr<VkAttachmentReference> depthAttachmentRef;
+        if (depth_format != VK_FORMAT_UNDEFINED)
         {
+            VkAttachmentDescription depthAttachment = {};
+            depthAttachment.format = depth_format;
+            depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+            depthAttachment.loadOp = attachment_loadop;
+            depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             attachments.push_back(depthAttachment);
-            depthAttachmentRef.attachment = 1;
+            depthAttachmentRef.reset(new VkAttachmentReference{});
+            depthAttachmentRef->attachment = VK_ATTACHMENT_UNUSED;
+            depthAttachmentRef->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            depthAttachmentRef->attachment = 1;
         }
 
 
@@ -64,7 +65,7 @@ namespace my_vulkan
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subpass.colorAttachmentCount = 1;
         subpass.pColorAttachments = &colorAttachmentRef;
-        subpass.pDepthStencilAttachment = &depthAttachmentRef;
+        subpass.pDepthStencilAttachment = depthAttachmentRef.get();
 
         VkSubpassDependency dependency = {};
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
