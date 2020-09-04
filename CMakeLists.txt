@@ -1,6 +1,11 @@
 cmake_policy(SET CMP0025 NEW) # needed for conan.cmake to work right
+enable_testing()
 project(my_vulkan)
 cmake_minimum_required(VERSION 3.10)
+
+if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR "${CMAKE_CXX_COMPILER_ID} does not match Clang: we need clang right now, please set CC/CXX accordingly!")
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
