@@ -51,20 +51,27 @@ namespace my_vulkan
         // according to https://devblogs.nvidia.com/vulkan-dos-donts/
         // VK_KHR_get_memory_requirements2 is preferred
         vkGetBufferMemoryRequirements(_device, _buffer, &memRequirements);
+        auto memory_type = findMemoryType(
+            physical_device,
+            memRequirements.memoryTypeBits,
+            properties
+        );
         _memory = std::make_unique<device_memory_t>(
             _device,
             device_memory_t::config_t {
                 .size = memRequirements.size,
-                .type_index = findMemoryType(
-                    physical_device,
-                    memRequirements.memoryTypeBits,
-                    properties
-                ),
+                .type_index = memory_type.index,
                 .external_handle_types=external_handle_type,
                 .pfn_vkGetMemoryFdKHR=_fpGetMemoryFdKHR
             }
         );
+        _memory_properties = memory_type.properties;
         vkBindBufferMemory(_device, _buffer, _memory->get(), 0);
+    }
+
+    VkMemoryPropertyFlags buffer_t::memory_properties() const
+    {
+        return _memory_properties;
     }
 
     device_memory_t * buffer_t::memory() const

@@ -27,7 +27,7 @@ namespace my_vulkan
         );
         return {
             requirements.size,
-            type,
+            type.index,
             external_handle_types,
             pfn_vkGetMemoryFdKHR
         };
@@ -349,16 +349,44 @@ namespace my_vulkan
         region.bufferOffset = 0;
         region.bufferRowLength = pitch;
         region.bufferImageHeight = 0;
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.imageSubresource.mipLevel = 0;
-        region.imageSubresource.baseArrayLayer = 0;
-        region.imageSubresource.layerCount = 1;
+        region.imageSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
         region.imageOffset = {0, 0, 0};
         region.imageExtent = in_extent.value_or(extent());
         command_scope.copy(
             buffer,
             _image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            {region}
+        );
+    }
+
+    void image_t::copy_to(
+        VkBuffer buffer,
+        command_buffer_t::scope_t& command_scope,
+        std::optional<VkExtent3D> in_extent
+    )
+    {
+        VkBufferImageCopy region = {};
+        region.bufferOffset = 0;
+        region.bufferRowLength = extent().width;
+        region.bufferImageHeight = extent().height;
+        region.imageSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = in_extent.value_or(extent());
+        command_scope.copy(
+            _image,
+            buffer,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             {region}
         );
     }

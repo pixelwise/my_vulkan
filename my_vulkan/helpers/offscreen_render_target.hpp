@@ -36,19 +36,19 @@ namespace my_vulkan
                 )>;
                 using end_callback_t = std::function<void(
                     command_buffer_t::scope_t&,
-                    image_t*
+                    buffer_t*
                 )>;
                 slot_t(
                     device_t& device,
                     queue_reference_t& queue,
-                    VkExtent2D size,
+                    VkExtent2D extent,
                     VkImageView color_view,
                     bool need_readback,
                     begin_callback_t begin_callback = 0,
                     end_callback_t end_callback = 0,
                     sync_points_t sync_points = {{},{}}
                 );
-                phase_context_t begin(size_t index, VkRect2D rect);
+                phase_context_t begin(size_t index, VkRect2D rect, VkCommandBufferUsageFlags flags);
                 void finish(
                     std::vector<queue_reference_t::wait_semaphore_info_t> waits,
                     std::vector<VkSemaphore> signals
@@ -56,12 +56,14 @@ namespace my_vulkan
                 cv::Mat4b read_bgra();
             private:
                 queue_reference_t* _queue;
-                std::unique_ptr<image_t> _readback_image;
+                VkExtent2D _extent;
+                std::unique_ptr<buffer_t> _readback_buffer;
+                bool _need_invalidate;
+                std::unique_ptr<device_memory_t::mapping_t> _mapping;
                 fence_t _fence;
                 command_pool_t _command_pool;
                 command_buffer_t _command_buffer;
                 std::optional<command_buffer_t::scope_t> _commands;
-                std::optional<device_memory_t::mapping_t> _mapping;
                 begin_callback_t _begin_callback;
                 end_callback_t _end_callback;
                 sync_points_t _sync_points;
@@ -87,7 +89,10 @@ namespace my_vulkan
             render_target_t render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type);
             render_target_t render_target();
             size_t depth() const;
-            phase_context_t begin_phase(std::optional<VkRect2D> rect = std::nullopt);
+            phase_context_t begin_phase(
+                std::optional<VkRect2D> rect = std::nullopt,
+                VkCommandBufferUsageFlags flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
+            );
             void end_phase(
                 std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
                 std::vector<VkSemaphore> signals = {}

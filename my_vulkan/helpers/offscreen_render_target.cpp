@@ -63,57 +63,69 @@ namespace my_vulkan
                         //size = size
                     ](
                         command_buffer_t::scope_t &commands,
-                        image_t* readback_image
+                        buffer_t* readback_buffer
                     )
                     {
                         commands.pipeline_barrier(
                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                            VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                             {VkImageMemoryBarrier{
-                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, nullptr,
-                                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                                VK_ACCESS_TRANSFER_READ_BIT,
-                                VK_IMAGE_LAYOUT_UNDEFINED,//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                VK_QUEUE_FAMILY_IGNORED,
-                                VK_QUEUE_FAMILY_IGNORED,
-                                image.get(),
-                                VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
+                                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                .dstAccessMask = (VK_ACCESS_TRANSFER_READ_BIT |
+                                                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                                  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT),
+                                .oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                .image = image.get(),
+                                .subresourceRange = {
+                                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                        .baseMipLevel = 0,
+                                        .levelCount = 1,
+                                        .baseArrayLayer = 0,
+                                        .layerCount = 1
+                                }
                             }}
                         );
-                        commands.pipeline_barrier(
-                            VK_PIPELINE_STAGE_HOST_BIT,
-                            VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            {VkImageMemoryBarrier{
-                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, nullptr,
-                                0,
-                                VK_ACCESS_TRANSFER_WRITE_BIT,
-                                VK_IMAGE_LAYOUT_UNDEFINED,
-                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                VK_QUEUE_FAMILY_IGNORED,
-                                VK_QUEUE_FAMILY_IGNORED,
-                                readback_image->get(),
-                                VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
-                            }}
-                        );
-                        readback_image->copy_from(
-                            image.get(),
+                        image.copy_to(
+                            readback_buffer->get(),
                             commands
                         );
                         commands.pipeline_barrier(
                             VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            VK_PIPELINE_STAGE_HOST_BIT,
+                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                             {VkImageMemoryBarrier{
-                                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                nullptr,
-                                VK_ACCESS_TRANSFER_WRITE_BIT,
-                                VK_ACCESS_HOST_READ_BIT,
-                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                VK_IMAGE_LAYOUT_GENERAL,
-                                VK_QUEUE_FAMILY_IGNORED,
-                                VK_QUEUE_FAMILY_IGNORED,
-                                readback_image->get(),
-                                VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
+                                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                .srcAccessMask = 0,
+                                .dstAccessMask = 0,
+                                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                .image = image.get(),
+                                .subresourceRange = {
+                                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                        .baseMipLevel = 0,
+                                        .levelCount = 1,
+                                        .baseArrayLayer = 0,
+                                        .layerCount = 1
+                                }
+                            }}
+                        );
+                        commands.pipeline_barrier(
+                            VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_PIPELINE_STAGE_HOST_BIT,
+                            {VkBufferMemoryBarrier{
+                                    .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                                    .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                                    .dstAccessMask = VK_ACCESS_HOST_READ_BIT,
+                                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                    .buffer = readback_buffer->get(),
+                                    .offset = 0,
+                                    .size = VK_WHOLE_SIZE
                             }}
                         );
                     };
@@ -122,16 +134,18 @@ namespace my_vulkan
                 {
                     end_callback =
                         [
-                            &image = _color_buffers[i].image
+                            &image = _color_buffers[i].image,
+                            do_transition = bool{!external_handle_types}
                         ](
                             command_buffer_t::scope_t& commands,
-                            image_t* //readback_image
+                            buffer_t* //readback buffer
                         ) {
-                            image.transition_layout(
-                                VK_IMAGE_LAYOUT_UNDEFINED,
-                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                commands
-                            );                        
+                            if (do_transition)
+                                image.transition_layout(
+                                    VK_IMAGE_LAYOUT_UNDEFINED,
+                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                    commands
+                                );
                         };
                 }
                 _slots.emplace_back(
@@ -235,9 +249,9 @@ namespace my_vulkan
         }
 
         offscreen_render_target_t::phase_context_t
-        offscreen_render_target_t::begin_phase(std::optional<VkRect2D> rect)
+        offscreen_render_target_t::begin_phase(std::optional<VkRect2D> rect, VkCommandBufferUsageFlags flags)
         {
-            return _slots[_write_slot].begin(_write_slot, rect.value_or(VkRect2D{{0, 0}, size()}));
+            return _slots[_write_slot].begin(_write_slot, rect.value_or(VkRect2D{{0, 0}, size()}), flags);
         }
 
         void offscreen_render_target_t::end_phase(
@@ -279,7 +293,7 @@ namespace my_vulkan
         offscreen_render_target_t::slot_t::slot_t(
             device_t& device,
             queue_reference_t& queue,
-            VkExtent2D size,
+            VkExtent2D extent,
             VkImageView color_view,
             bool need_readback,
             begin_callback_t begin_callback,
@@ -287,19 +301,28 @@ namespace my_vulkan
             sync_points_t sync_points
         )
         : _queue{&queue}
-        , _readback_image{
+        , _extent{extent}
+        , _readback_buffer{
             need_readback ?
-            new image_t{
+            new buffer_t{
                 device,
-                {size.width, size.height, 1},
-                VK_FORMAT_B8G8R8A8_UNORM,
-                VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_TILING_LINEAR,
-                //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+                4 * extent.width * extent.height,
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+            } :
+            nullptr
+        }
+        , _need_invalidate{
+            _readback_buffer &&
+            (
+                _readback_buffer->memory_properties() &
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            ) == 0
+        }
+        , _mapping{
+            _readback_buffer ?
+            new device_memory_t::mapping_t{
+                _readback_buffer->memory()->map()
             } :
             nullptr
         }
@@ -315,24 +338,22 @@ namespace my_vulkan
 
         cv::Mat4b offscreen_render_target_t::slot_t::read_bgra()
         {
-            if (!_readback_image)
+            if (!_readback_buffer)
                 throw std::runtime_error{"no readback enabled"};
             _fence.wait();
-            _mapping = _readback_image->memory()->map();
-            _mapping->invalidate();
-            auto size = _readback_image->extent();
-            auto layout = _readback_image->memory_layout();
-            auto data = ((const unsigned char*)_mapping->data()) + layout.offset;
+            if (_need_invalidate)
+                _mapping->invalidate();
+            auto data = ((const unsigned char*)_mapping->data());
             return cv::Mat4b{
-                int(size.height),
-                int(size.width),
+                int(_extent.height),
+                int(_extent.width),
                 (cv::Vec4b*)data,
-                layout.rowPitch
+                4 * _extent.width
             };
         }
 
         offscreen_render_target_t::phase_context_t
-        offscreen_render_target_t::slot_t::begin(size_t index, VkRect2D rect)
+        offscreen_render_target_t::slot_t::begin(size_t index, VkRect2D rect, VkCommandBufferUsageFlags flags)
         {
             if (_commands)
                 throw std::runtime_error{
@@ -340,7 +361,7 @@ namespace my_vulkan
                 };
             _fence.wait();
             _fence.reset();
-            _commands = _command_buffer.begin(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+            _commands = _command_buffer.begin(flags);
             if (_begin_callback)
                 _begin_callback(*_commands);
             return {
@@ -359,9 +380,8 @@ namespace my_vulkan
                 throw std::runtime_error{
                     "finish before begin in vulkan::offscreen_render_target_t"
                 };
-            _mapping.reset();
             if (_end_callback)
-                _end_callback(*_commands, _readback_image.get());
+                _end_callback(*_commands, _readback_buffer.get());
             _commands.reset();
             auto in_waits = std::move(waits);
             auto in_signals = std::move(signals);

@@ -17,6 +17,18 @@ namespace my_vulkan
         }
         return ret;
     }
+
+    device_memory_t::device_memory_t(
+        device_t& device,
+        config_t config
+    )
+    : device_memory_t(
+        device.get(),
+        set_fpGetMemoryFdKHR_if_needed(device, config)
+    )
+    {
+    }
+
     device_memory_t::device_memory_t(
         VkDevice device,
         config_t config
@@ -62,17 +74,6 @@ namespace my_vulkan
         {
             record_external_handle(type);
         }
-    }
-
-    device_memory_t::device_memory_t(
-        device_t& device,
-        config_t config
-    )
-    : device_memory_t(
-        device.get(),
-        set_fpGetMemoryFdKHR_if_needed(device, config)
-    )
-    {
     }
 
     device_memory_t::device_memory_t(device_memory_t&& other) noexcept
@@ -202,7 +203,7 @@ namespace my_vulkan
     )
     : _memory(memory._memory)
     , _device{memory._device}
-    , _region{optional_region.value_or(region_t{0, memory.size()})}
+    , _region{optional_region.value_or(region_t{0, VK_WHOLE_SIZE})}
     {
         vk_require(
             vkMapMemory(

@@ -100,7 +100,7 @@ namespace my_vulkan
         return indices;
     }
 
-    uint32_t findMemoryType(
+    memory_type_info_t findMemoryType(
         VkPhysicalDevice physical_device,
         uint32_t typeFilter,
         VkMemoryPropertyFlags properties
@@ -114,7 +114,10 @@ namespace my_vulkan
                 (typeFilter & (1 << i)) &&
                 (memProperties.memoryTypes[i].propertyFlags & properties) == properties
             )
-                return i;
+                return {
+                    i,
+                    memProperties.memoryTypes[i].propertyFlags
+                };
         }
         throw std::runtime_error("failed to find suitable memory type!");
     }

@@ -78,6 +78,11 @@ namespace my_vulkan
             command_pool_t& command_pool,
             std::optional<VkExtent3D> extent = std::nullopt
         );
+        void copy_to(
+            VkBuffer buffer,
+            command_buffer_t::scope_t& command_scope,
+            std::optional<VkExtent3D> in_extent = std::nullopt
+        );
         void copy_from(
             VkImage image,
             command_buffer_t::scope_t& command_scope,
