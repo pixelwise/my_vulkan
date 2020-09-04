@@ -57,11 +57,12 @@ namespace my_vulkan
     {
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
         if (_uniform_layout)
         {
-            pipelineLayoutInfo.setLayoutCount = 1;
-            auto uniform_layout_handle = _uniform_layout->get();
-            pipelineLayoutInfo.pSetLayouts = &uniform_layout_handle;
+            descriptor_set_layouts.push_back(_uniform_layout->get());
+            pipelineLayoutInfo.setLayoutCount = uint32_t(descriptor_set_layouts.size());
+            pipelineLayoutInfo.pSetLayouts = descriptor_set_layouts.data();
         }
         else
         {
