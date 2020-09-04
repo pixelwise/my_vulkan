@@ -122,6 +122,12 @@ namespace my_vulkan
             );
             void copy(
                 VkImage src,
+                VkBuffer dst,
+                VkImageLayout src_layout,
+                std::vector<VkBufferImageCopy> operations
+            );
+            void copy(
+                VkImage src,
                 VkImageLayout src_layout,
                 VkImage dst,
                 VkImageLayout dst_layout,
