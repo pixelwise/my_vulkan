@@ -432,7 +432,7 @@ int main(int argc, const char** argv)
             setup.logical_device.get(),
             bits.color_format,
             VK_FORMAT_UNDEFINED,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VK_ATTACHMENT_LOAD_OP_DONT_CARE
         };
         my_vulkan::graphics_pipeline_t graphics_pipeline{
