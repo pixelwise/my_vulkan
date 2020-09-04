@@ -1,10 +1,12 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <vector>
 #include "descriptor_set_layout.hpp"
 #include "swap_chain.hpp"
 #include "shader_module.hpp"
+
+#include <vector>
+#include <memory>
 
 namespace my_vulkan
 {
@@ -65,7 +67,7 @@ namespace my_vulkan
     private:
         void cleanup();
         VkDevice _device;
-        descriptor_set_layout_t _uniform_layout;
+        std::unique_ptr<descriptor_set_layout_t> _uniform_layout;
         VkPipeline _pipeline;
         VkPipelineLayout _layout;
     };    

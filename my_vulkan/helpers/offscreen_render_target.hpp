@@ -48,7 +48,7 @@ namespace my_vulkan
                     end_callback_t end_callback = 0,
                     sync_points_t sync_points = {{},{}}
                 );
-                phase_context_t begin(size_t index, VkRect2D rect);
+                phase_context_t begin(size_t index, VkRect2D rect, VkCommandBufferUsageFlags flags);
                 void finish(
                     std::vector<queue_reference_t::wait_semaphore_info_t> waits,
                     std::vector<VkSemaphore> signals
@@ -87,7 +87,10 @@ namespace my_vulkan
             render_target_t render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type);
             render_target_t render_target();
             size_t depth() const;
-            phase_context_t begin_phase(std::optional<VkRect2D> rect = std::nullopt);
+            phase_context_t begin_phase(
+                std::optional<VkRect2D> rect = std::nullopt,
+                VkCommandBufferUsageFlags flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
+            );
             void end_phase(
                 std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
                 std::vector<VkSemaphore> signals = {}

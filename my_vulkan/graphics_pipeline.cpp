@@ -53,13 +53,21 @@ namespace my_vulkan
         bool dynamic_viewport
     )
     : _device{device}
-    , _uniform_layout{_device, uniform_layout}
+    , _uniform_layout{uniform_layout.empty() ? nullptr : new descriptor_set_layout_t{_device, uniform_layout}}
     {
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        auto uniform_layout_handle = _uniform_layout.get();
-        pipelineLayoutInfo.pSetLayouts = &uniform_layout_handle;
+        if (_uniform_layout)
+        {
+            pipelineLayoutInfo.setLayoutCount = 1;
+            auto uniform_layout_handle = _uniform_layout->get();
+            pipelineLayoutInfo.pSetLayouts = &uniform_layout_handle;
+        }
+        else
+        {
+            pipelineLayoutInfo.setLayoutCount = 0;
+            pipelineLayoutInfo.pSetLayouts = nullptr;
+        }
 
         vk_require(
             vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &_layout),
@@ -282,7 +290,7 @@ namespace my_vulkan
 
     VkDescriptorSetLayout graphics_pipeline_t::uniform_layout()
     {
-        return _uniform_layout.get();
+        return _uniform_layout ? _uniform_layout->get() : nullptr;
     }
 
     VkDevice graphics_pipeline_t::device()

@@ -235,9 +235,9 @@ namespace my_vulkan
         }
 
         offscreen_render_target_t::phase_context_t
-        offscreen_render_target_t::begin_phase(std::optional<VkRect2D> rect)
+        offscreen_render_target_t::begin_phase(std::optional<VkRect2D> rect, VkCommandBufferUsageFlags flags)
         {
-            return _slots[_write_slot].begin(_write_slot, rect.value_or(VkRect2D{{0, 0}, size()}));
+            return _slots[_write_slot].begin(_write_slot, rect.value_or(VkRect2D{{0, 0}, size()}), flags);
         }
 
         void offscreen_render_target_t::end_phase(
@@ -332,7 +332,7 @@ namespace my_vulkan
         }
 
         offscreen_render_target_t::phase_context_t
-        offscreen_render_target_t::slot_t::begin(size_t index, VkRect2D rect)
+        offscreen_render_target_t::slot_t::begin(size_t index, VkRect2D rect, VkCommandBufferUsageFlags flags)
         {
             if (_commands)
                 throw std::runtime_error{
@@ -340,7 +340,7 @@ namespace my_vulkan
                 };
             _fence.wait();
             _fence.reset();
-            _commands = _command_buffer.begin(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+            _commands = _command_buffer.begin(flags);
             if (_begin_callback)
                 _begin_callback(*_commands);
             return {

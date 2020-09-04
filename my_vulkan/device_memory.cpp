@@ -202,7 +202,7 @@ namespace my_vulkan
     )
     : _memory(memory._memory)
     , _device{memory._device}
-    , _region{optional_region.value_or(region_t{0, memory.size()})}
+    , _region{optional_region.value_or(region_t{0, VK_WHOLE_SIZE})}
     {
         vk_require(
             vkMapMemory(

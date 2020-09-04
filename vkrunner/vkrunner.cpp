@@ -435,28 +435,12 @@ int main(int argc, const char** argv)
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_ATTACHMENT_LOAD_OP_DONT_CARE
         };
-        std::vector<VkDescriptorSetLayoutBinding> uniform_layout{
-            {
-                0,
-                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                1,
-                VK_SHADER_STAGE_VERTEX_BIT,
-                0
-            },
-            {
-                0,
-                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                1,
-                VK_SHADER_STAGE_FRAGMENT_BIT,
-                0
-            },
-        };
         my_vulkan::graphics_pipeline_t graphics_pipeline{
             setup.logical_device.get(),
             bits.extent,
             render_pass.get(),
             0,
-            uniform_layout,
+            {}, // uniform layout
             my_vulkan::vertex_layout_t{
                 bits.vertex_binding,
                 bits.attributes,
@@ -480,7 +464,7 @@ int main(int argc, const char** argv)
         std::optional<cv::Mat4b> current_image;
         auto begin = [&]{
             current_image.reset();
-            auto scope = target.begin_phase();
+            auto scope = target.begin_phase(std::nullopt, 0);
             VkRect2D target_rect{
                 .offset = {0, 0},
                 .extent = bits.extent
