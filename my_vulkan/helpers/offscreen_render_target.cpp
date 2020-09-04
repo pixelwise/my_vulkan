@@ -134,16 +134,18 @@ namespace my_vulkan
                 {
                     end_callback =
                         [
-                            &image = _color_buffers[i].image
+                            &image = _color_buffers[i].image,
+                            do_transition = bool{!external_handle_types}
                         ](
                             command_buffer_t::scope_t& commands,
                             buffer_t* //readback buffer
                         ) {
-                            image.transition_layout(
-                                VK_IMAGE_LAYOUT_UNDEFINED,
-                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                commands
-                            );                        
+                            if (do_transition)
+                                image.transition_layout(
+                                    VK_IMAGE_LAYOUT_UNDEFINED,
+                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                    commands
+                                );
                         };
                 }
                 _slots.emplace_back(
