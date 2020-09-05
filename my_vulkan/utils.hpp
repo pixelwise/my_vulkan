@@ -49,7 +49,12 @@ namespace my_vulkan
         VkPhysicalDevice device,
         VkQueueFlags queue_type
     );
-    uint32_t findMemoryType(
+    struct memory_type_info_t
+    {
+        uint32_t index;
+        VkMemoryPropertyFlags properties;
+    };
+    memory_type_info_t findMemoryType(
         VkPhysicalDevice physical_device,
         uint32_t typeFilter,
         VkMemoryPropertyFlags properties

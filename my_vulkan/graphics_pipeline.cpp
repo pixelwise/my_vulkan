@@ -3,7 +3,7 @@
 #include "utils.hpp"
 #include "shader_module.hpp"
 
-#include <iostream>
+#include <memory>
 
 namespace my_vulkan
 {
@@ -53,13 +53,22 @@ namespace my_vulkan
         bool dynamic_viewport
     )
     : _device{device}
-    , _uniform_layout{_device, uniform_layout}
+    , _uniform_layout{uniform_layout.empty() ? nullptr : new descriptor_set_layout_t{_device, uniform_layout}}
     {
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        auto uniform_layout_handle = _uniform_layout.get();
-        pipelineLayoutInfo.pSetLayouts = &uniform_layout_handle;
+        std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
+        if (_uniform_layout)
+        {
+            descriptor_set_layouts.push_back(_uniform_layout->get());
+            pipelineLayoutInfo.setLayoutCount = uint32_t(descriptor_set_layouts.size());
+            pipelineLayoutInfo.pSetLayouts = descriptor_set_layouts.data();
+        }
+        else
+        {
+            pipelineLayoutInfo.setLayoutCount = 0;
+            pipelineLayoutInfo.pSetLayouts = nullptr;
+        }
 
         vk_require(
             vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &_layout),
@@ -188,21 +197,22 @@ namespace my_vulkan
             vertex_layout.attributes.data();
 
         std::vector<VkDynamicState> dynamic_states;
+        std::unique_ptr<VkPipelineDynamicStateCreateInfo> dynamic_state_info;
         if (dynamic_viewport)
         {
             dynamic_states = {
                 VK_DYNAMIC_STATE_VIEWPORT,
                 VK_DYNAMIC_STATE_SCISSOR
             };
+            dynamic_state_info.reset(new VkPipelineDynamicStateCreateInfo{
+                VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                0,
+                0,
+                static_cast<uint32_t>(dynamic_states.size()),
+                dynamic_states.data()
+            });
         }
 
-        VkPipelineDynamicStateCreateInfo dynamic_state_info = {
-            VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-            0,
-            0,
-            static_cast<uint32_t>(dynamic_states.size()),
-            dynamic_states.data()
-        };
 
         VkGraphicsPipelineCreateInfo pipelineInfo = {};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -218,7 +228,7 @@ namespace my_vulkan
         pipelineInfo.layout = _layout;
         pipelineInfo.renderPass = render_pass;
         pipelineInfo.subpass = subpass;
-        pipelineInfo.pDynamicState = &dynamic_state_info;
+        pipelineInfo.pDynamicState = dynamic_state_info.get();
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
         vk_require(
@@ -281,7 +291,7 @@ namespace my_vulkan
 
     VkDescriptorSetLayout graphics_pipeline_t::uniform_layout()
     {
-        return _uniform_layout.get();
+        return _uniform_layout ? _uniform_layout->get() : nullptr;
     }
 
     VkDevice graphics_pipeline_t::device()

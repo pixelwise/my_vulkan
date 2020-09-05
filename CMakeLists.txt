@@ -1,6 +1,11 @@
 cmake_policy(SET CMP0025 NEW) # needed for conan.cmake to work right
+enable_testing()
 project(my_vulkan)
 cmake_minimum_required(VERSION 3.10)
+
+if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR "${CMAKE_CXX_COMPILER_ID} does not match Clang: we need clang right now, please set CC/CXX accordingly!")
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -250,11 +255,12 @@ if(glfw3_FOUND)
     add_dependencies(glfw_vulkan_test Shaders)
 endif(glfw3_FOUND)
 
-
-add_executable(vkrunner vkrunner/vkrunner.cpp)
-target_link_libraries(
-    vkrunner
-    my_vulkan
-    CONAN_PKG::boost
-)
-add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
+if (_is_top_project)
+    add_executable(vkrunner vkrunner/vkrunner.cpp)
+    target_link_libraries(
+        vkrunner
+        my_vulkan
+        CONAN_PKG::boost
+    )
+    add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
+endif (_is_top_project)

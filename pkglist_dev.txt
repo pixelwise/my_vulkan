@@ -1,0 +1,13 @@
+cmake
+clang
+ccache
+libcxx-static
+libcxx-devel
+vulkan-devel
+vulkan-tools
+vulkan-validation-layers
+python3-devel
+python3-pip
+ninja-build
+glslc
+glslang

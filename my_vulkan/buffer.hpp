@@ -34,6 +34,7 @@ namespace my_vulkan
         device_memory_t * memory();
         VkBuffer get();
         VkDeviceSize size() const;
+        VkMemoryPropertyFlags memory_properties() const;
         void load_data(command_pool_t& command_pool, const void* data);
         ~buffer_t();
     private:
@@ -44,5 +45,6 @@ namespace my_vulkan
         VkBuffer _buffer;
         PFN_vkGetMemoryFdKHR _fpGetMemoryFdKHR;
         std::unique_ptr<device_memory_t> _memory;
+        VkMemoryPropertyFlags _memory_properties;
     };
 }

@@ -1,0 +1,3 @@
+biggest remaining difference is readback
+vkrunner copies back though a buffer
+we use an image

@@ -72,6 +72,7 @@ namespace my_vulkan
         template<typename T>
         void set_data(const std::vector<T>& data);
         void set_data(const void* data, size_t size);
+        VkMemoryPropertyFlags get_property_flags();
         VkDeviceMemory get();
         void record_external_handle(VkExternalMemoryHandleTypeFlagBits externalHandleType);
         std::optional<external_memory_info_t> external_info(VkExternalMemoryHandleTypeFlagBits externalHandleType) const;
