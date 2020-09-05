@@ -4,6 +4,7 @@
 #include <boost/range/algorithm/find.hpp>
 #include <iostream>
 #include <boost/format.hpp>
+#include "physical_device_utils.hpp"
 
 namespace my_vulkan
 {
