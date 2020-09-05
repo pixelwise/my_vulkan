@@ -1,3 +1,4 @@
+#pragma once
 #include <vulkan/vulkan.h>
 #include "instance.hpp"
 #include "utils.hpp"
