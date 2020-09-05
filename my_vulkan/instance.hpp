@@ -19,7 +19,7 @@ namespace my_vulkan
         instance_t& operator=(const instance_t& other) = delete;
         instance_t& operator=(instance_t&& other) noexcept;
         VkInstance get();
-        std::vector<VkPhysicalDevice> physical_devices();
+        std::vector<VkPhysicalDevice> physical_devices() const;
         ~instance_t();
         template <typename T>
         T get_proc(const std::string & proc_name) const

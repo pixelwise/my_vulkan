@@ -70,7 +70,7 @@ namespace my_vulkan
         return *this;
     }
 
-    std::vector<VkPhysicalDevice> instance_t::physical_devices()
+    std::vector<VkPhysicalDevice> instance_t::physical_devices() const
     {
         uint32_t num_devices = 0;
         vk_require(
