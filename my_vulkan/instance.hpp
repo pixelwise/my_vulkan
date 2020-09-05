@@ -4,7 +4,7 @@
 #include <vector>
 #include <boost/format.hpp>
 #include <vulkan/vulkan.h>
-
+#include <map>
 namespace my_vulkan
 {
     struct instance_t
@@ -24,7 +24,8 @@ namespace my_vulkan
         template <typename T>
         T get_proc(const std::string & proc_name) const
         {
-            auto ret =(T)vkGetInstanceProcAddr(_instance, proc_name.c_str());
+            T ret = nullptr;
+            ret =(T)vkGetInstanceProcAddr(_instance, proc_name.c_str());
             if (ret == nullptr) {
                 auto msg = boost::format(
                     "Vulkan instance(%p): Proc address for \"%s\" not "
@@ -34,8 +35,13 @@ namespace my_vulkan
             }
             return ret;
         }
+        PFN_vkGetPhysicalDeviceProperties2 fetch_fpGetPhysicalDeviceProperties2() const
+        {
+            return get_proc<PFN_vkGetPhysicalDeviceProperties2>("vkGetPhysicalDeviceProperties2");
+        }
     private:
         void cleanup();
         VkInstance _instance{0};
+        std::map<std::string, PFN_vkVoidFunction> _loaded_procs;
     };
 }

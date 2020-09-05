@@ -78,10 +78,6 @@ namespace my_vulkan
         queue_reference_t* _present_queue{0};
         queue_reference_t* _transfer_queue{0};
         void fetch_physical_device_ID();
-        static PFN_vkGetPhysicalDeviceProperties2 fetch_fpGetPhysicalDeviceProperties2(const instance_t& instance)
-        {
-            return instance.get_proc<PFN_vkGetPhysicalDeviceProperties2>("vkGetPhysicalDeviceProperties2");
-        }
         std::map<std::string, PFN_vkVoidFunction> _loaded_procs;
     };
 }

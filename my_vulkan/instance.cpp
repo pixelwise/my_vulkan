@@ -103,6 +103,7 @@ namespace my_vulkan
     {
         if (_instance)
         {
+            _loaded_procs.clear();
             vkDestroyInstance(_instance, 0);
             _instance = 0;
         }

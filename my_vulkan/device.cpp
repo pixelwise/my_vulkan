@@ -27,7 +27,7 @@ namespace my_vulkan
         std::move(device_extensions)
     }
     {
-        _fpGetPhysicalDeviceProperties2 = fetch_fpGetPhysicalDeviceProperties2(instance);
+        _fpGetPhysicalDeviceProperties2 = instance.fetch_fpGetPhysicalDeviceProperties2();
         fetch_physical_device_ID();
     }
     device_t::device_t(
@@ -160,24 +160,7 @@ namespace my_vulkan
 
     void device_t::fetch_physical_device_ID()
     {
-        if (_fpGetPhysicalDeviceProperties2 == nullptr)
-        {
-            std::cerr << "WARNING: this device does not support GetPhysicalDeviceProperties2.\n";
-            return;
-        }
-        VkPhysicalDeviceIDProperties vkPhysicalDeviceIDProperties{};
-        vkPhysicalDeviceIDProperties.sType =
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
-        vkPhysicalDeviceIDProperties.pNext = NULL;
-
-        VkPhysicalDeviceProperties2 vkPhysicalDeviceProperties2 = {};
-        vkPhysicalDeviceProperties2.sType =
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-        vkPhysicalDeviceProperties2.pNext = &vkPhysicalDeviceIDProperties;
-
-        _fpGetPhysicalDeviceProperties2(_physical_device,
-            &vkPhysicalDeviceProperties2);
-        _maybe_vkPhysicalDeviceIDProperties = vkPhysicalDeviceIDProperties;
+        _maybe_vkPhysicalDeviceIDProperties = fetch_physical_device_IDProp(_physical_device, _fpGetPhysicalDeviceProperties2, std::nullopt);
     }
 
     std::optional<VkPhysicalDeviceIDProperties> device_t::physcial_device_id_properties() const
@@ -207,7 +190,7 @@ namespace my_vulkan
 
     std::optional<vk_uuid_t> device_t::physical_device_uuid(const instance_t &instance)
     {
-        _fpGetPhysicalDeviceProperties2 = fetch_fpGetPhysicalDeviceProperties2(instance);
+        _fpGetPhysicalDeviceProperties2 = instance.fetch_fpGetPhysicalDeviceProperties2();
         fetch_physical_device_ID();
         return physical_device_uuid();
     }
