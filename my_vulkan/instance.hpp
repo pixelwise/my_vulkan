@@ -4,7 +4,6 @@
 #include <vector>
 #include <boost/format.hpp>
 #include <vulkan/vulkan.h>
-#include <map>
 namespace my_vulkan
 {
     struct instance_t
@@ -42,6 +41,5 @@ namespace my_vulkan
     private:
         void cleanup();
         VkInstance _instance{0};
-        std::map<std::string, PFN_vkVoidFunction> _loaded_procs;
     };
 }
