@@ -161,7 +161,7 @@ namespace my_vulkan
 
     void device_t::fetch_physical_device_ID()
     {
-        _maybe_vkPhysicalDeviceIDProperties = fetch_physical_device_IDProp(_physical_device, _fpGetPhysicalDeviceProperties2, std::nullopt);
+        _maybe_vkPhysicalDeviceIDProperties = fetch_physical_device_id_properties(_physical_device, _fpGetPhysicalDeviceProperties2, std::nullopt);
     }
 
     std::optional<VkPhysicalDeviceIDProperties> device_t::physcial_device_id_properties() const

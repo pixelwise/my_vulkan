@@ -3,7 +3,7 @@
 
 namespace my_vulkan
 {
-    std::optional<VkPhysicalDeviceIDProperties> fetch_physical_device_IDProp(
+    std::optional<VkPhysicalDeviceIDProperties> fetch_physical_device_id_properties(
         VkPhysicalDevice device,
         PFN_vkGetPhysicalDeviceProperties2 fpGetPhysicalDeviceProperties2,
         std::optional<uint32_t> maybe_api_version
