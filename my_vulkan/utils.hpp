@@ -147,5 +147,12 @@ namespace my_vulkan
 
     std::vector<VkExtensionProperties> get_instance_exts();
 
+    inline vk_uuid_t convert_to_vkuuid(const uint8_t* raw_uuid)
+    {
+        vk_uuid_t ret;
+        memcpy(ret.data(), raw_uuid, ret.size());
+        return ret;
+    }
+
 }
 
