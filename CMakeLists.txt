@@ -255,12 +255,10 @@ if(glfw3_FOUND)
     add_dependencies(glfw_vulkan_test Shaders)
 endif(glfw3_FOUND)
 
-if (_is_top_project)
-    add_executable(vkrunner vkrunner/vkrunner.cpp)
-    target_link_libraries(
-        vkrunner
-        my_vulkan
-        CONAN_PKG::boost
-    )
-    add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
-endif (_is_top_project)
+add_executable(vkrunner vkrunner/vkrunner.cpp)
+target_link_libraries(
+    vkrunner
+    my_vulkan
+    CONAN_PKG::boost
+)
+add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
