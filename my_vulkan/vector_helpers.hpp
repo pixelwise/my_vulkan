@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
 template <typename T>
 void extend_vector(std::vector<T> & v1, const std::vector<T> & v2)
 {
