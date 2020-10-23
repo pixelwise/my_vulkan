@@ -1,5 +1,6 @@
 #include "render_pass.hpp"
 #include "utils.hpp"
+#include <memory>
 
 namespace my_vulkan
 {
