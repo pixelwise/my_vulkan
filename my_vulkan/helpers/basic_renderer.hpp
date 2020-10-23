@@ -30,7 +30,7 @@ namespace my_vulkan
         : context_id{context_id}
         , phase{phase}
         {}
-        basic_renderer_phase_t(size_t phase)
+        explicit basic_renderer_phase_t(size_t phase)
         : context_id{0}
         , phase{phase}
         {}
@@ -91,7 +91,7 @@ namespace my_vulkan
                 {
                     return _target;
                 }
-                pinned_t(pipeline_buffer_t& target)
+                explicit pinned_t(pipeline_buffer_t& target)
                 {
                     if (target._pinned)
                         throw std::runtime_error{"double pinned pipeline buffer"};
@@ -105,7 +105,7 @@ namespace my_vulkan
                 {
                     *this = std::move(other);
                 }
-                pinned_t& operator=(pinned_t&& other)
+                pinned_t& operator=(pinned_t&& other) noexcept
                 {
                     reset();
                     std::swap(_target, other._target);
@@ -194,10 +194,10 @@ namespace my_vulkan
             std::optional<VkRect2D> target_rect = std::nullopt
         );
         pipeline_buffer_t& buffer();
-        basic_renderer_t(basic_renderer_t&) = delete;
-        basic_renderer_t(basic_renderer_t&&) = default;
+        basic_renderer_t(const basic_renderer_t&) = delete;
+        basic_renderer_t(basic_renderer_t&&) noexcept = default;
         basic_renderer_t& operator=(const basic_renderer_t&) = delete;
-        basic_renderer_t& operator=(basic_renderer_t&&) = default;
+        basic_renderer_t& operator=(basic_renderer_t&&) noexcept = default;
     private:
         void bind(
             pipeline_buffer_t& buffer,
@@ -208,10 +208,10 @@ namespace my_vulkan
         static std::vector<VkVertexInputAttributeDescription> make_attribute_descriptions();
         static vertex_layout_t make_vertex_layout();
         static std::vector<VkDescriptorSetLayoutBinding> make_uniform_layout();
-        device_t* _device;
+        device_t* _device{};
         std::vector<VkDescriptorSetLayoutBinding> _uniform_layout;
         render_settings_t _render_settings;
-        bool _dynamic_viewport;
+        bool _dynamic_viewport{};
         graphics_pipeline_t _graphics_pipeline;
         std::vector<std::unique_ptr<pipeline_buffer_t>> _pipeline_buffers;
         phase_t _current_phase{0, 0};
