@@ -4,6 +4,7 @@
 #include <optional>
 #include <vector>
 #include <array>
+#include <algorithm>
 namespace my_vulkan
 {
     enum class acquisition_failure_t {
@@ -147,10 +148,10 @@ namespace my_vulkan
 
     std::vector<VkExtensionProperties> get_instance_exts();
 
-    inline vk_uuid_t convert_to_vkuuid(const uint8_t* raw_uuid)
+    inline vk_uuid_t convert_to_vkuuid(const uint8_t (&raw_uuid)[16])
     {
         vk_uuid_t ret;
-        memcpy(ret.data(), raw_uuid, ret.size());
+        std::copy(std::begin(raw_uuid), std::end(raw_uuid), std::begin(ret));
         return ret;
     }
 
