@@ -1,6 +1,8 @@
 #include "descriptor_set.hpp"
 #include "utils.hpp"
 
+#include <stdexcept>
+
 namespace my_vulkan
 {
     descriptor_set_t::descriptor_set_t(
