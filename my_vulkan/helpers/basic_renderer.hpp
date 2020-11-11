@@ -208,10 +208,10 @@ namespace my_vulkan
         static std::vector<VkVertexInputAttributeDescription> make_attribute_descriptions();
         static vertex_layout_t make_vertex_layout();
         static std::vector<VkDescriptorSetLayoutBinding> make_uniform_layout();
-        device_t* _device{};
+        device_t* _device{nullptr};
         std::vector<VkDescriptorSetLayoutBinding> _uniform_layout;
         render_settings_t _render_settings;
-        bool _dynamic_viewport{};
+        bool _dynamic_viewport{false};
         graphics_pipeline_t _graphics_pipeline;
         std::vector<std::unique_ptr<pipeline_buffer_t>> _pipeline_buffers;
         phase_t _current_phase{0, 0};
