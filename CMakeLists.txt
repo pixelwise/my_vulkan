@@ -130,6 +130,7 @@ if (_is_top_project)
 
     include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
     add_library(boost ALIAS CONAN_PKG::boost)
+    add_library(boost_filesystem ALIAS CONAN_PKG::boost_filesystem)
     add_library(glm ALIAS CONAN_PKG::glm)
     add_library(opencv ALIAS CONAN_PKG::opencv)
 else()
@@ -268,5 +269,6 @@ target_link_libraries(
     vkrunner
     my_vulkan
     boost
+    boost_filesystem
 )
 add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
