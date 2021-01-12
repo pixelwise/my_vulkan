@@ -129,6 +129,9 @@ if (_is_top_project)
     )
 
     include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
+    add_library(boost ALIAS CONAN_PKG::boost)
+    add_library(glm ALIAS CONAN_PKG::glm)
+    add_library(opencv ALIAS CONAN_PKG::opencv)
 
 endif()
 find_package(Vulkan REQUIRED)
@@ -203,9 +206,9 @@ target_link_libraries(
     PUBLIC
     Vulkan::Vulkan
     dl
-    CONAN_PKG::boost
-    CONAN_PKG::glm
-    CONAN_PKG::opencv
+    boost
+    glm
+    opencv
 )
 
 if(glfw3_FOUND)
@@ -221,9 +224,9 @@ if(glfw3_FOUND)
         PUBLIC
         Vulkan::Vulkan
         dl
-        CONAN_PKG::boost
-        CONAN_PKG::glm
-        CONAN_PKG::opencv
+        boost
+        glm
+        opencv
     )
 
     target_include_directories(
@@ -263,6 +266,6 @@ add_executable(vkrunner vkrunner/vkrunner.cpp)
 target_link_libraries(
     vkrunner
     my_vulkan
-    CONAN_PKG::boost
+    boost
 )
 add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
