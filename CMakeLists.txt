@@ -270,5 +270,6 @@ target_link_libraries(
     my_vulkan
     boost
     boost_filesystem
+    opencv_imgcodecs
 )
 add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
