@@ -1,13 +1,23 @@
 cmake
-clang
 ccache
+ninja-build
+{% if DISTRIBUTOR_ID == 'Fedora' %}
+clang
 libcxx-static
 libcxx-devel
 vulkan-devel
 vulkan-tools
 vulkan-validation-layers
-python3-devel
-python3-pip
-ninja-build
 glslc
 glslang
+{% endif %}
+{% if DISTRIBUTOR_ID == 'CentOS' %}
+libglvnd-devel
+python38-devel
+python38-pip
+python38-numpy
+python38-scipy
+{% else %}
+python3-devel
+python3-pip
+{% endif %}
