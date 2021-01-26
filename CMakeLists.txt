@@ -136,7 +136,6 @@ if (_is_top_project)
 else()
     add_library(opencv ALIAS opencv_core)
 endif()
-find_package(Vulkan REQUIRED)
 find_package(glfw3 3.2)
 
 if (USE_ASAN)
