@@ -46,7 +46,7 @@ namespace my_vulkan
         {
             // otherwise get weird crashes at least on ios
             _device->wait_idle();
-            //wait_for_idle();
+            wait_for_idle();            
             _swap_chain.reset(new swap_chain_t{
                 *_device,
                 _surface,
@@ -70,6 +70,7 @@ namespace my_vulkan
             acquisition_outcome_t outcome;
             auto& sync_points = _frame_sync_points[_current_frame];
             _current_frame = (_current_frame + 1) % _frame_sync_points.size();
+            sync_points.in_flight.wait();
             auto parent_outcome = _swap_chain->acquire_next_image(sync_points.image_available.get());
             outcome.failure = parent_outcome.failure;
             if (auto i = parent_outcome.image_index)
@@ -141,6 +142,13 @@ namespace my_vulkan
         command_pool_t& standard_swap_chain_t::command_pool()
         {
             return _command_pool;
+        }
+
+
+        void standard_swap_chain_t::wait_for_idle()
+        {
+            for (auto& sync : _frame_sync_points)
+                sync.in_flight.wait();
         }
 
         render_target_t standard_swap_chain_t::render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type)
