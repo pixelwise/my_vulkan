@@ -87,6 +87,7 @@ namespace my_vulkan
             std::vector<pipeline_resources_t> _pipeline_resources;
             std::vector<frame_sync_points_t> _frame_sync_points;
             size_t _current_frame{0};
+            bool _updated = false;
         };
     }
 }

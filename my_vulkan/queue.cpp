@@ -97,6 +97,12 @@ namespace my_vulkan
         return std::nullopt;   
     }
 
+    void queue_reference_t::wait_idle()
+    {
+        std::unique_lock<std::mutex> lock{_mutex};
+        vkQueueWaitIdle(_queue);
+    }
+
     uint32_t queue_reference_t::family_index()
     {
         return _family_index;

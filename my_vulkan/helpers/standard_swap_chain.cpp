@@ -46,7 +46,8 @@ namespace my_vulkan
         {
             // otherwise get weird crashes at least on ios
             _device->wait_idle();
-            wait_for_idle();            
+            wait_for_idle();
+            _swap_chain.reset(); // avoid having two live swapchains alive for a moment
             _swap_chain.reset(new swap_chain_t{
                 *_device,
                 _surface,
@@ -60,6 +61,7 @@ namespace my_vulkan
                     VK_IMAGE_ASPECT_COLOR_BIT
                 );
             }
+            _updated = true;
             std::cout << "updated swap chain with size "
                 << new_extent.width << "x" << new_extent.height
                 << std::endl;
@@ -70,7 +72,7 @@ namespace my_vulkan
             acquisition_outcome_t outcome;
             auto& sync_points = _frame_sync_points[_current_frame];
             _current_frame = (_current_frame + 1) % _frame_sync_points.size();
-            sync_points.in_flight.wait();
+            //sync_points.in_flight.wait();
             auto parent_outcome = _swap_chain->acquire_next_image(sync_points.image_available.get());
             outcome.failure = parent_outcome.failure;
             if (auto i = parent_outcome.image_index)
@@ -147,8 +149,8 @@ namespace my_vulkan
 
         void standard_swap_chain_t::wait_for_idle()
         {
-            for (auto& sync : _frame_sync_points)
-                sync.in_flight.wait();
+            _graphics_queue->wait_idle();
+            _present_queue->wait_idle();
         }
 
         render_target_t standard_swap_chain_t::render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type)
@@ -168,6 +170,8 @@ namespace my_vulkan
                     }
                     *working_set = std::move(*outcome.working_set);
                     uint32_t phase = (*working_set)->phase();
+                    auto updated = _updated;
+                    _updated = false;
                     return render_scope_t{
                         &(*working_set)->commands(),
                         phase,
@@ -176,7 +180,8 @@ namespace my_vulkan
                         rect,
                         _swap_chain->images()[phase].memory() ?
                             _swap_chain->images()[phase].memory()->external_info(external_mem_type) :
-                            std::nullopt
+                            std::nullopt,
+                        updated
                     };
                 },
                 [working_set](auto waits, auto signals){

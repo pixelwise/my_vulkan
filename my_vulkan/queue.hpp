@@ -42,6 +42,7 @@ namespace my_vulkan
         : _queue{other._queue}
         , _family_index{other._family_index}
         {}
+        void wait_idle();
     private:
         std::mutex _mutex;
         VkQueue _queue;

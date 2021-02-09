@@ -19,6 +19,7 @@ namespace my_vulkan
             VkExtent2D extent;
             VkRect2D rect;
             std::optional<device_memory_t::external_memory_info_t> mem_info;
+            bool swapchain_updated = false;
         };
         struct render_target_t
         {
