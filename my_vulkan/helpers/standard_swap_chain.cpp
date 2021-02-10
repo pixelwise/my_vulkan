@@ -43,7 +43,7 @@ namespace my_vulkan
         }
 
         void standard_swap_chain_t::update(VkExtent2D new_extent)
-        {
+        {            
             // otherwise get weird crashes at least on ios
             _device->wait_idle();
             wait_for_idle();
@@ -164,7 +164,7 @@ namespace my_vulkan
                     if (outcome.failure)
                     {
                         throw std::runtime_error{
-                            std::string{"swap chaing acquisition failed: "} +
+                            std::string{"swap chain acquisition failed: "} +
                             to_string(*outcome.failure)
                         };
                     }
