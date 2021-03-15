@@ -1,5 +1,8 @@
 #include "standard_swap_chain.hpp"
-#include <iostream>
+
+#include <utils/logging/log_message.hpp>
+
+#include <boost/format.hpp>
 
 namespace my_vulkan
 {
@@ -46,7 +49,7 @@ namespace my_vulkan
         {            
             // otherwise get weird crashes at least on ios
             _device->wait_idle();
-            wait_for_idle();
+            //wait_for_idle();
             _swap_chain.reset(); // avoid having two live swapchains alive for a moment
             _swap_chain.reset(new swap_chain_t{
                 *_device,
@@ -61,28 +64,31 @@ namespace my_vulkan
                     VK_IMAGE_ASPECT_COLOR_BIT
                 );
             }
+            
             _updated = true;
-            std::cout << "updated swap chain with size "
-                << new_extent.width << "x" << new_extent.height
-                << std::endl;
+            game_on::log_message(
+                boost::format{"updated swap chain with size %sx%s"}
+                % new_extent.width
+                % new_extent.height
+            );
         }
 
         standard_swap_chain_t::acquisition_outcome_t standard_swap_chain_t::acquire()
         {
             acquisition_outcome_t outcome;
             auto& sync_points = _frame_sync_points[_current_frame];
-            _current_frame = (_current_frame + 1) % _frame_sync_points.size();
-            //sync_points.in_flight.wait();
             auto parent_outcome = _swap_chain->acquire_next_image(sync_points.image_available.get());
             outcome.failure = parent_outcome.failure;
-            if (auto i = parent_outcome.image_index)
+            if (parent_outcome.image_index && !parent_outcome.failure)
             {
+                sync_points.in_flight.wait();
                 sync_points.in_flight.reset();
                 outcome.working_set = working_set_t{
                     *this,
-                    *i,
+                    *parent_outcome.image_index,
                     sync_points
                 };
+                _current_frame = (_current_frame + 1) % _frame_sync_points.size();
             }
             return outcome;
         }
@@ -186,7 +192,7 @@ namespace my_vulkan
                 },
                 [working_set](auto waits, auto signals){
                     if (auto failure = (*working_set)->finish(std::move(waits), std::move(signals)))
-                        std::cout << "presentation failure: " << to_string(*failure) << std::endl;
+                        game_on::log_message(boost::format{"presentation failure: %s"} % to_string(*failure));
                 },
                 {
                     extent().width,
