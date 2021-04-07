@@ -155,6 +155,10 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 
+if (NOT TARGET gameon-utils-cpp)
+    find_package(gameon-utils-cpp REQUIRED)
+endif()
+
 add_custom_target(
     Shaders
     DEPENDS ${SPIRV_BINARY_FILES}
@@ -210,6 +214,7 @@ target_link_libraries(
     boost
     glm
     opencv
+    gameon-utils-cpp
 )
 
 if(glfw3_FOUND)
@@ -228,6 +233,7 @@ if(glfw3_FOUND)
         boost
         glm
         opencv
+        gameon-utils-cpp
     )
 
     target_include_directories(
