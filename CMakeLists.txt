@@ -129,9 +129,13 @@ if (_is_top_project)
     )
 
     include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
-
+    add_library(boost ALIAS CONAN_PKG::boost)
+    add_library(boost_filesystem ALIAS CONAN_PKG::boost_filesystem)
+    add_library(glm ALIAS CONAN_PKG::glm)
+    add_library(opencv ALIAS CONAN_PKG::opencv)
+else()
+    add_library(opencv ALIAS opencv_core)
 endif()
-find_package(Vulkan REQUIRED)
 find_package(glfw3 3.2)
 
 if (USE_ASAN)
@@ -142,6 +146,10 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
     "*.frag"
     "*.vert"
     )
+if (NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+endif()
+
 foreach(GLSL ${GLSL_SOURCE_FILES})
   compile_shader(${GLSL} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} SPIRV)
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
@@ -199,9 +207,9 @@ target_link_libraries(
     PUBLIC
     Vulkan::Vulkan
     dl
-    CONAN_PKG::boost
-    CONAN_PKG::glm
-    CONAN_PKG::opencv
+    boost
+    glm
+    opencv
 )
 
 if(glfw3_FOUND)
@@ -217,9 +225,9 @@ if(glfw3_FOUND)
         PUBLIC
         Vulkan::Vulkan
         dl
-        CONAN_PKG::boost
-        CONAN_PKG::glm
-        CONAN_PKG::opencv
+        boost
+        glm
+        opencv
     )
 
     target_include_directories(
@@ -255,12 +263,12 @@ if(glfw3_FOUND)
     add_dependencies(glfw_vulkan_test Shaders)
 endif(glfw3_FOUND)
 
-if (_is_top_project)
-    add_executable(vkrunner vkrunner/vkrunner.cpp)
-    target_link_libraries(
-        vkrunner
-        my_vulkan
-        CONAN_PKG::boost
-    )
-    add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
-endif (_is_top_project)
+add_executable(vkrunner vkrunner/vkrunner.cpp)
+target_link_libraries(
+    vkrunner
+    my_vulkan
+    boost
+    boost_filesystem
+    opencv_imgcodecs
+)
+add_test(NAME vkrunner_tricolore COMMAND vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
