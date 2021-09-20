@@ -272,7 +272,7 @@ endif(glfw3_FOUND)
 add_executable(vkrunner vkrunner/vkrunner.cpp)
 target_link_libraries(
     vkrunner
-    my_vulkan
+    my_vulkan_offscreen
     boost
     boost_filesystem
     opencv_imgcodecs
