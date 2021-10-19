@@ -54,6 +54,7 @@ namespace my_vulkan
                     std::vector<VkSemaphore> signals
                 );
                 cv::Mat4b read_bgra();
+                void set_color_view(VkImageView view);
             private:
                 queue_reference_t* _queue;
                 VkExtent2D _extent;
@@ -99,6 +100,7 @@ namespace my_vulkan
             );
             std::optional<size_t> consume_read_slot(bool flush = false);
             std::optional<cv::Mat4b> read_bgra(bool flush = false);
+            void set_texture(size_t phase, VkImageView texture);
             VkDescriptorImageInfo texture(size_t phase);
             VkExtent2D size();
         private:

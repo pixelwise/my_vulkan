@@ -243,6 +243,11 @@ namespace my_vulkan
             return _textures.at(phase);
         }
 
+        void offscreen_render_target_t::set_texture(size_t phase, VkImageView texture)
+        {
+            _slots.at(phase).set_color_view(texture);
+        }
+
         size_t offscreen_render_target_t::depth() const
         {
             return _slots.size();
@@ -350,6 +355,11 @@ namespace my_vulkan
                 (cv::Vec4b*)data,
                 4 * _extent.width
             };
+        }
+
+        void offscreen_render_target_t::slot_t::set_color_view(VkImageView view)
+        {
+            _color_view = view;
         }
 
         offscreen_render_target_t::phase_context_t
