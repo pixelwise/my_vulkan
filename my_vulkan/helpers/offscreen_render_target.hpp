@@ -27,6 +27,37 @@ namespace my_vulkan
                 std::vector<VkSemaphore> signals;
 //                std::vector<fence_t> fences;
             };
+            offscreen_render_target_t(
+                device_t& device,
+                VkFormat color_format,
+                VkExtent2D size,
+                bool need_readback = false,
+                size_t depth = 2,
+                std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt,
+                std::vector<sync_points_t> sync_points_list = {}
+            );
+            offscreen_render_target_t(
+                device_t& device,
+                std::vector<VkImageView> color_views,
+                VkExtent2D size
+            );
+            typedef std::function<sync_points_t(size_t)> sync_points_getter_t;
+            render_target_t render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type);
+            render_target_t render_target();
+            size_t depth() const;
+            phase_context_t begin_phase(
+                std::optional<VkRect2D> rect = std::nullopt,
+                VkCommandBufferUsageFlags flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
+            );
+            void end_phase(
+                std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
+                std::vector<VkSemaphore> signals = {}
+            );
+            std::optional<size_t> consume_read_slot(bool flush = false);
+            std::optional<cv::Mat4b> read_bgra(bool flush = false);
+            void set_texture(size_t phase, VkImageView texture);
+            VkDescriptorImageInfo texture(size_t phase);
+            VkExtent2D size();
         private:
             class slot_t
             {
@@ -70,40 +101,6 @@ namespace my_vulkan
                 sync_points_t _sync_points;
                 VkImageView _color_view;
             };
-        public:
-            // it is better to store the color format and create a getter.
-            offscreen_render_target_t(
-                device_t& device,
-                VkFormat color_format,
-                VkExtent2D size,
-                bool need_readback = false,
-                size_t depth = 2,
-                std::optional<VkExternalMemoryHandleTypeFlagBits> external_handle_types = std::nullopt,
-                std::vector<sync_points_t> sync_points_list = {}
-            );
-            offscreen_render_target_t(
-                device_t& device,
-                std::vector<VkImageView> color_views,
-                VkExtent2D size
-            );
-            typedef std::function<sync_points_t(size_t)> sync_points_getter_t;
-            render_target_t render_target(VkExternalMemoryHandleTypeFlagBits external_mem_type);
-            render_target_t render_target();
-            size_t depth() const;
-            phase_context_t begin_phase(
-                std::optional<VkRect2D> rect = std::nullopt,
-                VkCommandBufferUsageFlags flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
-            );
-            void end_phase(
-                std::vector<queue_reference_t::wait_semaphore_info_t> waits = {},
-                std::vector<VkSemaphore> signals = {}
-            );
-            std::optional<size_t> consume_read_slot(bool flush = false);
-            std::optional<cv::Mat4b> read_bgra(bool flush = false);
-            void set_texture(size_t phase, VkImageView texture);
-            VkDescriptorImageInfo texture(size_t phase);
-            VkExtent2D size();
-        private:
             struct color_buffer_t
             {
                 image_t image;
@@ -123,6 +120,6 @@ namespace my_vulkan
             std::vector<slot_t> _slots;
             size_t _write_slot{0};
             size_t _num_slots_filled{0};
-        };    
+        };
     }
 }
