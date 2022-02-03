@@ -2,6 +2,7 @@ cmake_policy(SET CMP0025 NEW) # needed for conan.cmake to work right
 enable_testing()
 project(my_vulkan)
 cmake_minimum_required(VERSION 3.10)
+option(HAS_GPU "any GPU with vulkan or opengl" YES)
 
 if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "${CMAKE_CXX_COMPILER_ID} does not match Clang: we need clang right now, please set CC/CXX accordingly!")
@@ -277,4 +278,7 @@ target_link_libraries(
     boost_filesystem
     opencv_imgcodecs
 )
-add_test(NAME vkrunner_tricolore COMMAND ${VK_TEST_ENV} vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
+
+if (HAS_GPU)
+    add_test(NAME vkrunner_tricolore COMMAND ${VK_TEST_ENV} vkrunner ${CMAKE_CURRENT_SOURCE_DIR}/vkrunner/examples/tricolore.shader_test)
+endif()
