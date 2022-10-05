@@ -83,6 +83,7 @@ namespace my_vulkan
             {
                 sync_points.in_flight.wait();
                 sync_points.in_flight.reset();
+                _pipeline_resources[*parent_outcome.image_index].command_buffer.reset();
                 outcome.working_set = working_set_t{
                     *this,
                     *parent_outcome.image_index,
