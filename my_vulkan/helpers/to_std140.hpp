@@ -85,6 +85,18 @@ namespace glm
     }
 }
 
+namespace std
+{
+    template<typename value_t, size_t n> std140_data to_std140(const std::array<value_t, n> v)
+    {
+        std140_array<value_t, n> sv;
+        for (auto i : boost::counting_range<size_t>(0, v.size()))
+            sv[i] = v[i];
+        auto* p = reinterpret_cast<char*>(&sv);
+        return {std::vector<char>(p, p + sizeof(sv)), sv.align};
+    }
+}
+
 template<typename struct_t>
 inline std140_data to_std140(struct_t the_struct)
 {
