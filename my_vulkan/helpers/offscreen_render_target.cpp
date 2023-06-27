@@ -273,7 +273,7 @@ namespace my_vulkan
         std::optional<cv::Mat4b> offscreen_render_target_t::read_bgra(bool flush)
         {
             if (auto read_slot = consume_read_slot(flush))
-                return _slots[*read_slot].read_bgra();
+                return _slots[*read_slot].read_bgra().clone();
             else
                 return std::nullopt;
         }
