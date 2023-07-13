@@ -35,9 +35,10 @@ namespace my_vulkan
         VkPhysicalDevice physical_device,
         queue_family_indices_t queue_indices,
         std::vector<const char*> validation_layers,
-        std::vector<const char*> device_extensions        
+        std::vector<const char*> device_extensions
     )
     : _physical_device{physical_device}
+    , _fpGetPhysicalDeviceProperties2{nullptr}
     , _device{make_device(
         physical_device,
         queue_indices.request_one_each(),
@@ -45,7 +46,6 @@ namespace my_vulkan
         device_extensions
     )}
     , _queue_indices{queue_indices}
-    , _fpGetPhysicalDeviceProperties2{nullptr}
     {
         auto unique_queue_indices = _queue_indices.unique_indices();
         for (auto i : unique_queue_indices)
@@ -111,7 +111,7 @@ namespace my_vulkan
         VkPhysicalDevice physical_device,
         std::vector<queue_request_t> queue_requests,
         std::vector<const char*> validation_layers,
-        std::vector<const char*> device_extensions        
+        std::vector<const char*> device_extensions
     )
     {
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;

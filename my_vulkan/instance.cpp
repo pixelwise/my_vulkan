@@ -52,6 +52,7 @@ namespace my_vulkan
         createInfo.ppEnabledExtensionNames = extensions.data();
         createInfo.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
         createInfo.ppEnabledLayerNames = validation_layers.data();
+        createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         vk_require(
             vkCreateInstance(&createInfo, nullptr, &_instance),
             "creating instance"
