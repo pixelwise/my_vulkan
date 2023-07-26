@@ -53,7 +53,9 @@ namespace my_vulkan
         createInfo.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
         createInfo.ppEnabledLayerNames = validation_layers.data();
 #if(__APPLE__)
+#if(!VK_USE_PLATFORM_MACOS_MVK)
         createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
 #endif
         vk_require(
             vkCreateInstance(&createInfo, nullptr, &_instance),
