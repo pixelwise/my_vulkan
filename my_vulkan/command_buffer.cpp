@@ -148,6 +148,27 @@ namespace my_vulkan
         );
     }
 
+    void command_buffer_t::scope_t::set_depth_test_enabled(bool enabled)
+    {
+        vkCmdSetDepthTestEnable(
+            _command_buffer,
+            enabled
+        );
+    }
+
+    void command_buffer_t::scope_t::set_blending_enabled(bool enabled)
+    {
+        // hardcoded to the first attachement
+        // since our graphics pipeline is set up with exactly one
+        VkBool32 vk_enabled = enabled;
+        vkCmdSetColorBlendEnableEXT(
+            _command_buffer,
+            0,
+            1,
+            &vk_enabled
+        );
+    }
+
     void command_buffer_t::scope_t::clear(
         std::vector<VkClearAttachment> attachements,
         std::vector<VkClearRect> rects
