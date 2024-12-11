@@ -16,9 +16,7 @@ pipeline {
                     conditionalSlackSend(color: '#FFFF00', msgPrefix: 'STARTED')
                 }
                 sh './jenkins/prepare.sh'
-                sshagent(credentials: ['game-on-ci-agent']) {
-                    sh './update_submodules.sh'
-                }
+                sh './update_submodules.sh'
             }
         }
         stage('build') {
