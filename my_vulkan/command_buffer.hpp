@@ -43,8 +43,8 @@ namespace my_vulkan
                 std::vector<VkRect2D> scissors,
                 uint32_t first = 0
             );
-            void set_depth_test_enabled(bool enabled);
-            void set_blending_enabled(bool enabled);
+            // void set_depth_test_enabled(bool enabled);
+            // void set_blending_enabled(bool enabled);
             void clear(
                 std::vector<VkClearAttachment> attachements,
                 std::vector<VkClearRect> rects
