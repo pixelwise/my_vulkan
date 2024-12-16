@@ -21,11 +21,13 @@ namespace my_vulkan::helpers
         void upload(
             my_vulkan::command_pool_t& command_pool,
             const void* pixels,
-            bool keep_buffers = true
+            bool keep_buffers = true,
+            std::optional<uint32_t> pitch = std::nullopt
         );
         void upload(
             command_buffer_t::scope_t& commands,
-            const void* pixels
+            const void* pixels,
+            std::optional<uint32_t> pitch = std::nullopt
         );
         void prepare_for_transfer(my_vulkan::command_pool_t& command_pool);
         void prepare_for_shader(my_vulkan::command_pool_t& command_pool);
@@ -37,6 +39,7 @@ namespace my_vulkan::helpers
     private:
         buffer_t& staging_buffer();
         device_t* _device;
+        uint32_t _num_components;
         uint32_t _pitch;
         size_t _transfer_byte_size;
         std::unique_ptr<buffer_t> _staging_buffer;

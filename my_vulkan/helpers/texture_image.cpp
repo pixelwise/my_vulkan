@@ -26,6 +26,7 @@ namespace my_vulkan::helpers
         std::optional<VkExternalMemoryHandleTypeFlags> external_handle_types
     )
     : _device{&device}
+    , _num_components{num_components}
     , _pitch{pitch / num_components}
     , _transfer_byte_size{pitch * size.height}
     , _image{
@@ -59,11 +60,12 @@ namespace my_vulkan::helpers
     void texture_image_t::upload(
         my_vulkan::command_pool_t& command_pool,
         const void* pixels,
-        bool keep_buffers
+        bool keep_buffers,
+        std::optional<uint32_t> pitch
     )
     {
         auto oneshot_scope = command_pool.begin_oneshot();
-        upload(oneshot_scope.commands(), pixels);
+        upload(oneshot_scope.commands(), pixels, pitch);
         oneshot_scope.execute_and_wait();
         if (!keep_buffers)
             _staging_buffer.reset();
@@ -71,15 +73,19 @@ namespace my_vulkan::helpers
 
     void texture_image_t::upload(
         command_buffer_t::scope_t& commands,
-        const void* pixels
+        const void* pixels,
+        std::optional<uint32_t> pitch
     )
     {
         staging_buffer().memory()->set_data(pixels, _transfer_byte_size);
         prepare_for_transfer(commands);
+        auto out_pitch = _pitch;
+        if (pitch)
+            out_pitch = *pitch / _num_components;
         _image.copy_from(
             staging_buffer().get(),
             commands,
-            _pitch
+            out_pitch
         );
         prepare_for_shader(commands);
     }
