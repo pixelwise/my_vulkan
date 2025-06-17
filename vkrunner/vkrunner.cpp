@@ -15,9 +15,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/process/child.hpp>
-#include <boost/process/io.hpp>
-#include <boost/process/search_path.hpp>
+#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/io.hpp>
+#include <boost/process/v1/search_path.hpp>
 
 #include <vector>
 #include <string>
@@ -130,16 +130,16 @@ my_vulkan::shader_module_t load_shader_source(
     source_file.close();
     auto compiler_command =str(
         boost::format{"%s -V --target-env vulkan%s.%s -o %s %s"}
-        % boost::process::search_path("glslangValidator").string()
+        % boost::process::v1::search_path("glslangValidator").string()
         % VK_VERSION_MAJOR(version)
         % VK_VERSION_MINOR(version)
         % temp_out
         % temp_in
     );
     std::cerr << compiler_command << std::endl;
-    boost::process::child compiler{
+    boost::process::v1::child compiler{
         compiler_command,
-        boost::process::std_out > stderr,
+        boost::process::v1::std_out > stderr,
     };
     compiler.wait();
     if (compiler.exit_code() != 0)
