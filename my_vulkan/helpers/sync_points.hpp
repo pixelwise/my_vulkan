@@ -2,6 +2,7 @@
 #include "../queue.hpp"
 #include "../vector_helpers.hpp"
 #include "../fence.hpp"
+#include <string>
 namespace my_vulkan
 {
     struct sync_point_refs_t
